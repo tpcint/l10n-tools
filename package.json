@@ -29,7 +29,7 @@
     "@lokalise/node-api": "^14.8.0",
     "ajv": "^8.17.1",
     "command-exists": "^1.2.9",
-    "commander": "^12.1.0",
+    "commander": "^13.1.0",
     "cosmiconfig": "^9.0.0",
     "domhandler": "^5.0.3",
     "domutils": "^3.2.2",

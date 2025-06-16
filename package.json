@@ -60,7 +60,7 @@
     "@types/gettext-parser": "^8.0.0",
     "@types/he": "^1.2.3",
     "@types/lodash-es": "^4.17.12",
-    "@types/node": "^18.19.76",
+    "@types/node": "^18.19.112",
     "@types/npmlog": "^7.0.0",
     "@types/plist": "^3.0.5",
     "@typescript-eslint/parser": "^8.34.0",

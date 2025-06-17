@@ -1,5 +1,33 @@
 # Changelog
 
+## [4.6.1](https://github.com/tpcint/l10n-tools/compare/v4.6.0...v4.6.1) (2025-06-17)
+
+
+### Continuous Integration
+
+* add dependabot group ([#62](https://github.com/tpcint/l10n-tools/issues/62)) ([f5457de](https://github.com/tpcint/l10n-tools/commit/f5457de39b73a3d97fc3fd20539894bf0665dc17))
+* run lint on test workflows ([#60](https://github.com/tpcint/l10n-tools/issues/60)) ([5ee528c](https://github.com/tpcint/l10n-tools/commit/5ee528cc1a160214606208b7897cc9e345b494eb))
+
+
+### Miscellaneous Chores
+
+* **deps-dev:** bump @swc/core from 1.11.29 to 1.12.1 in the swc group ([#64](https://github.com/tpcint/l10n-tools/issues/64)) ([60e4ab8](https://github.com/tpcint/l10n-tools/commit/60e4ab8cd37b2decec6efc20758d2b2a4d41982d))
+* **deps-dev:** bump @types/node from 18.19.76 to 18.19.112 ([#68](https://github.com/tpcint/l10n-tools/issues/68)) ([64ddbe6](https://github.com/tpcint/l10n-tools/commit/64ddbe697ba70eac84ea3a0748ba791d4091aec7))
+* **deps-dev:** bump expect from 29.7.0 to 30.0.0 ([#67](https://github.com/tpcint/l10n-tools/issues/67)) ([b6440ba](https://github.com/tpcint/l10n-tools/commit/b6440ba33c3286735dc30898b23d978c9fd837d3))
+* **deps:** bump @lokalise/node-api from 14.7.0 to 14.8.0 ([#51](https://github.com/tpcint/l10n-tools/issues/51)) ([079334b](https://github.com/tpcint/l10n-tools/commit/079334b3d63e6f842e38cbd8be4afdeb13db3a77))
+* **deps:** bump commander from 12.1.0 to 13.1.0 ([#69](https://github.com/tpcint/l10n-tools/issues/69)) ([0286876](https://github.com/tpcint/l10n-tools/commit/0286876fd326943e59ee4f1aec84b2f5cb0f1982))
+* **deps:** bump fast-xml-parser from 5.2.3 to 5.2.5 ([#66](https://github.com/tpcint/l10n-tools/issues/66)) ([935c748](https://github.com/tpcint/l10n-tools/commit/935c74888d0bf0e142dca41faa0daddc8c07ae86))
+* **deps:** bump the google-cloud group with 2 updates ([#63](https://github.com/tpcint/l10n-tools/issues/63)) ([89a62ff](https://github.com/tpcint/l10n-tools/commit/89a62ffabddbec33ef7511e2a5555ca9ca99b94a))
+* **deps:** bump typescript from 5.5.4 to 5.8.3 ([#50](https://github.com/tpcint/l10n-tools/issues/50)) ([907943d](https://github.com/tpcint/l10n-tools/commit/907943de2f5a1c284dd2eaa2383805b9e12320f7))
+* eslint ([#58](https://github.com/tpcint/l10n-tools/issues/58)) ([799b48c](https://github.com/tpcint/l10n-tools/commit/799b48c5b10f602faff30ecbe7a08d7c79a49581))
+* TPC-Internet -&gt; tpcint ([#56](https://github.com/tpcint/l10n-tools/issues/56)) ([e16f969](https://github.com/tpcint/l10n-tools/commit/e16f969dd87b242641a1b4576a89ec88c31bd0d9))
+* use ts-json-schema-generator to generate json schema ([#59](https://github.com/tpcint/l10n-tools/issues/59)) ([c3fe092](https://github.com/tpcint/l10n-tools/commit/c3fe09205c2ad4dd86150061b32e60a73446c254))
+
+
+### Tests
+
+* make test not to fail randomly ([#61](https://github.com/tpcint/l10n-tools/issues/61)) ([e4b5fbf](https://github.com/tpcint/l10n-tools/commit/e4b5fbf498ed9f62c6c5c3ad0c255cd9e8ab444c))
+
 ## [4.6.0](https://github.com/tpcint/l10n-tools/compare/v4.5.0...v4.6.0) (2025-05-27)
 
 

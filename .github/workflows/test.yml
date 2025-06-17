@@ -20,7 +20,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Setup node with cached node_modules
-        uses: ./.github/actions/setup-node-cached
+        uses: tpcint/workflow-storage/setup-node-cached@main
         with:
           node-version: ${{ matrix.version }}
       - name: Tsc

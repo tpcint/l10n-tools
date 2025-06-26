@@ -71,7 +71,7 @@
     "eslint-import-resolver-typescript": "^4.4.3",
     "eslint-plugin-import-newlines": "^1.4.0",
     "eslint-plugin-import-x": "^4.15.2",
-    "expect": "^30.0.0",
+    "expect": "^30.0.3",
     "ts-json-schema-generator": "^2.4.0",
     "ts-node": "^10.9.2",
     "typescript-eslint": "^8.34.0"

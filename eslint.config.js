@@ -2,7 +2,6 @@ import js from '@eslint/js'
 import stylistic from '@stylistic/eslint-plugin'
 import tseslint from 'typescript-eslint'
 import * as importX from 'eslint-plugin-import-x'
-import tsParser from '@typescript-eslint/parser'
 import newLines from 'eslint-plugin-import-newlines'
 
 export default [
@@ -23,7 +22,6 @@ export default [
   },
   {
     languageOptions: {
-      parser: tsParser,
       ecmaVersion: 'latest',
       sourceType: 'module',
     },

@@ -1,5 +1,12 @@
 # Changelog
 
+## [4.6.4](https://github.com/tpcint/l10n-tools/compare/v4.6.3...v4.6.4) (2025-06-26)
+
+
+### Bug Fixes
+
+* no more peer dependencies ([14731fd](https://github.com/tpcint/l10n-tools/commit/14731fd8856af95c4f0807b1246472f56d086449))
+
 ## [4.6.3](https://github.com/tpcint/l10n-tools/compare/v4.6.2...v4.6.3) (2025-06-26)
 
 

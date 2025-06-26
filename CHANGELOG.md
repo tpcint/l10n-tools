@@ -1,5 +1,12 @@
 # Changelog
 
+## [4.6.3](https://github.com/tpcint/l10n-tools/compare/v4.6.2...v4.6.3) (2025-06-26)
+
+
+### Miscellaneous Chores
+
+* cleanup dependencies and npmignore ([#78](https://github.com/tpcint/l10n-tools/issues/78)) ([972f937](https://github.com/tpcint/l10n-tools/commit/972f93795bf3c0607dd21f51cb3900e7ca170c18))
+
 ## [4.6.2](https://github.com/tpcint/l10n-tools/compare/v4.6.1...v4.6.2) (2025-06-26)
 
 

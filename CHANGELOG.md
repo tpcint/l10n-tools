@@ -1,5 +1,14 @@
 # Changelog
 
+## [4.6.2](https://github.com/tpcint/l10n-tools/compare/v4.6.1...v4.6.2) (2025-06-26)
+
+
+### Miscellaneous Chores
+
+* **deps-dev:** bump @swc/core from 1.12.1 to 1.12.5 in the swc group ([#71](https://github.com/tpcint/l10n-tools/issues/71)) ([8706bb3](https://github.com/tpcint/l10n-tools/commit/8706bb3513556d469352b462bb75b843b9cdbb2f))
+* **deps-dev:** bump expect from 30.0.0 to 30.0.3 ([#75](https://github.com/tpcint/l10n-tools/issues/75)) ([fd68734](https://github.com/tpcint/l10n-tools/commit/fd68734d166e81fb099497eef0f40d2401e5b2ec))
+* **deps-dev:** bump the eslint group across 1 directory with 5 updates ([#76](https://github.com/tpcint/l10n-tools/issues/76)) ([3c4db89](https://github.com/tpcint/l10n-tools/commit/3c4db89369b97e647487412e44361fdc20959363))
+
 ## [4.6.1](https://github.com/tpcint/l10n-tools/compare/v4.6.0...v4.6.1) (2025-06-17)
 
 

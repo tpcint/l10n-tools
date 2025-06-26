@@ -26,7 +26,6 @@
     "l10n": "dist/l10n.js"
   },
   "dependencies": {
-    "@lokalise/node-api": "^14.8.0",
     "ajv": "^8.17.1",
     "command-exists": "^1.2.9",
     "commander": "^13.1.0",
@@ -36,19 +35,22 @@
     "fast-xml-parser": "^5.2.5",
     "gettext-parser": "^8.0.0",
     "glob": "^10.4.5",
-    "google-auth-library": "^10.1.0",
-    "googleapis": "^150.0.1",
     "he": "^1.2.0",
     "htmlparser2": "^10.0.0",
-    "http-shutdown": "^1.2.2",
     "i18n-strings-files": "^2.0.0",
     "lodash-es": "^4.17.21",
     "npmlog": "^7.0.1",
-    "open": "^10.1.2",
     "p-queue": "^8.1.0",
     "php-parser": "^3.2.3",
     "plist": "^3.1.0",
     "typescript": "^5.8.3"
+  },
+  "optionalDependencies": {
+    "@lokalise/node-api": "^14.8.0",
+    "google-auth-library": "^10.1.0",
+    "googleapis": "^150.0.1",
+    "http-shutdown": "^1.2.2",
+    "open": "^10.1.2"
   },
   "devDependencies": {
     "@eslint/js": "^9.29.0",

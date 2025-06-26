@@ -41,7 +41,7 @@
     "p-queue": "^8.1.0",
     "typescript": "^5.8.3"
   },
-  "peerDependencies": {
+  "optionalDependencies": {
     "@lokalise/node-api": "^14.8.0",
     "google-auth-library": "^10.1.0",
     "googleapis": "^150.0.1",
@@ -51,35 +51,6 @@
     "open": "^10.1.2",
     "php-parser": "^3.2.3",
     "plist": "^3.1.0"
-  },
-  "peerDependenciesMeta": {
-    "@lokalise/node-api": {
-      "optional": true
-    },
-    "google-auth-library": {
-      "optional": true
-    },
-    "googleapis": {
-      "optional": true
-    },
-    "he": {
-      "optional": true
-    },
-    "http-shutdown": {
-      "optional": true
-    },
-    "i18n-strings-files": {
-      "optional": true
-    },
-    "open": {
-      "optional": true
-    },
-    "php-parser": {
-      "optional": true
-    },
-    "plist": {
-      "optional": true
-    }
   },
   "devDependencies": {
     "@eslint/js": "^9.29.0",

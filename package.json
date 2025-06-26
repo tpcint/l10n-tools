@@ -57,7 +57,7 @@
     "@faker-js/faker": "^9.8.0",
     "@stylistic/eslint-plugin": "^4.4.1",
     "@swc/cli": "^0.7.7",
-    "@swc/core": "^1.12.1",
+    "@swc/core": "^1.12.7",
     "@types/command-exists": "^1.2.3",
     "@types/gettext-parser": "^8.0.0",
     "@types/he": "^1.2.3",

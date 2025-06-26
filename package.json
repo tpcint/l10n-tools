@@ -35,22 +35,51 @@
     "fast-xml-parser": "^5.2.5",
     "gettext-parser": "^8.0.0",
     "glob": "^10.4.5",
-    "he": "^1.2.0",
     "htmlparser2": "^10.0.0",
-    "i18n-strings-files": "^2.0.0",
     "lodash-es": "^4.17.21",
     "npmlog": "^7.0.1",
     "p-queue": "^8.1.0",
-    "php-parser": "^3.2.3",
-    "plist": "^3.1.0",
     "typescript": "^5.8.3"
   },
-  "optionalDependencies": {
+  "peerDependencies": {
     "@lokalise/node-api": "^14.8.0",
     "google-auth-library": "^10.1.0",
     "googleapis": "^150.0.1",
+    "he": "^1.2.0",
     "http-shutdown": "^1.2.2",
-    "open": "^10.1.2"
+    "i18n-strings-files": "^2.0.0",
+    "open": "^10.1.2",
+    "php-parser": "^3.2.3",
+    "plist": "^3.1.0"
+  },
+  "peerDependenciesMeta": {
+    "@lokalise/node-api": {
+      "optional": true
+    },
+    "google-auth-library": {
+      "optional": true
+    },
+    "googleapis": {
+      "optional": true
+    },
+    "he": {
+      "optional": true
+    },
+    "http-shutdown": {
+      "optional": true
+    },
+    "i18n-strings-files": {
+      "optional": true
+    },
+    "open": {
+      "optional": true
+    },
+    "php-parser": {
+      "optional": true
+    },
+    "plist": {
+      "optional": true
+    }
   },
   "devDependencies": {
     "@eslint/js": "^9.29.0",

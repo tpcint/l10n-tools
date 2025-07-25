@@ -1,5 +1,17 @@
 # Changelog
 
+## [4.6.5](https://github.com/tpcint/l10n-tools/compare/v4.6.4...v4.6.5) (2025-07-25)
+
+
+### Miscellaneous Chores
+
+* **deps-dev:** bump @types/node from 18.19.112 to 18.19.120 ([#92](https://github.com/tpcint/l10n-tools/issues/92)) ([e82b97a](https://github.com/tpcint/l10n-tools/commit/e82b97ab758cc0ff7ccf36fa25142e4940789b5e))
+* **deps-dev:** bump expect from 30.0.3 to 30.0.4 ([#84](https://github.com/tpcint/l10n-tools/issues/84)) ([dc3105c](https://github.com/tpcint/l10n-tools/commit/dc3105cdc3c802d7ecc6a8428be5220c52ef44c0))
+* **deps-dev:** bump the eslint group across 1 directory with 6 updates ([#85](https://github.com/tpcint/l10n-tools/issues/85)) ([6155c5f](https://github.com/tpcint/l10n-tools/commit/6155c5fbcd72a6434d449c1f7bffdc2cc044dc4a))
+* **deps-dev:** bump the swc group across 1 directory with 2 updates ([#91](https://github.com/tpcint/l10n-tools/issues/91)) ([481c4f8](https://github.com/tpcint/l10n-tools/commit/481c4f83820da235d2d32d827ada0050dd9f9752))
+* **deps:** bump php-parser from 3.2.3 to 3.2.5 ([#89](https://github.com/tpcint/l10n-tools/issues/89)) ([241e508](https://github.com/tpcint/l10n-tools/commit/241e50863b99f09705efaaa63795d622559d12af))
+* **deps:** bump the google-cloud group across 1 directory with 2 updates ([#94](https://github.com/tpcint/l10n-tools/issues/94)) ([1ef65b7](https://github.com/tpcint/l10n-tools/commit/1ef65b7b0d0d8cfd68a0a151a5aa4676aaf052b2))
+
 ## [4.6.4](https://github.com/tpcint/l10n-tools/compare/v4.6.3...v4.6.4) (2025-06-26)
 
 

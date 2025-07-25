@@ -43,8 +43,8 @@
   },
   "optionalDependencies": {
     "@lokalise/node-api": "^14.8.0",
-    "google-auth-library": "^10.1.0",
-    "googleapis": "^150.0.1",
+    "google-auth-library": "^10.2.0",
+    "googleapis": "^154.0.0",
     "he": "^1.2.0",
     "http-shutdown": "^1.2.2",
     "i18n-strings-files": "^2.0.0",

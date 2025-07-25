@@ -190,9 +190,9 @@ function updateKeyData(
   allTransEntries: { [locale: string]: TransEntry[] },
   listedKeyMap: { [keyName: string]: Key },
 ): {
-    creatingKeyMap: { [keyName: string]: CreateKeyData },
-    updatingKeyMap: { [keyName: string]: UpdateKeyDataWithId },
-  } {
+  creatingKeyMap: { [keyName: string]: CreateKeyData },
+  updatingKeyMap: { [keyName: string]: UpdateKeyDataWithId },
+} {
   const keys = EntryCollection.loadEntries(keyEntries)
   // 새로 만들 키
   const creatingKeyMap: { [keyName: string]: CreateKeyData } = {}

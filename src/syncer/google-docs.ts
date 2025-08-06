@@ -4,7 +4,8 @@ import log from 'npmlog'
 import * as path from 'path'
 import type { KeyEntry, TransEntry } from '../entry.js'
 import fsp from 'node:fs/promises'
-import { type drive_v3, google, type sheets_v4 } from 'googleapis'
+import { type drive_v3, drive as googleDrive } from '@googleapis/drive'
+import { sheets as googleSheets, type sheets_v4 } from '@googleapis/sheets'
 import { OAuth2Client } from 'google-auth-library'
 import open from 'open'
 import type { DomainConfig, GoogleCredentials, GoogleDocsConfig, L10nConfig } from '../config.js'
@@ -16,8 +17,8 @@ export async function syncTransToGoogleDocs(config: L10nConfig, domainConfig: Do
   const sheetName = googleDocsConfig.getSheetName()
   const credentials = await googleDocsConfig.getCredentials()
 
-  const drive = google.drive('v3')
-  const sheets = google.sheets('v4')
+  const drive = googleDrive('v3')
+  const sheets = googleSheets('v4')
 
   const auth = await authorize(sheetName, credentials)
 

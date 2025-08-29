@@ -1,5 +1,14 @@
 # Changelog
 
+## [4.6.6](https://github.com/tpcint/l10n-tools/compare/v4.6.5...v4.6.6) (2025-08-29)
+
+
+### Miscellaneous Chores
+
+* **deps-dev:** bump @types/node from 18.19.121 to 18.19.123 ([#109](https://github.com/tpcint/l10n-tools/issues/109)) ([f988e71](https://github.com/tpcint/l10n-tools/commit/f988e715e561bf5d54ffe7d9fe7e07adea2ff7af))
+* **deps-dev:** bump the eslint group with 5 updates ([#103](https://github.com/tpcint/l10n-tools/issues/103)) ([7b849ce](https://github.com/tpcint/l10n-tools/commit/7b849ceed673484adbc768b786fd3a8ed340b3df))
+* **deps:** bump typescript from 5.8.3 to 5.9.2 ([#104](https://github.com/tpcint/l10n-tools/issues/104)) ([caec8e7](https://github.com/tpcint/l10n-tools/commit/caec8e7d3fbea9be3fc513fd61fc720bbca0fe16))
+
 ## [4.6.5](https://github.com/tpcint/l10n-tools/compare/v4.6.4...v4.6.5) (2025-08-06)
 
 

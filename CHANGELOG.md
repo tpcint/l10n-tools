@@ -1,5 +1,12 @@
 # Changelog
 
+## [5.0.1](https://github.com/tpcint/l10n-tools/compare/v5.0.0...v5.0.1) (2025-09-19)
+
+
+### Continuous Integration
+
+* fix actions ([d4ff44c](https://github.com/tpcint/l10n-tools/commit/d4ff44cbc123df4dc1d0aff9f13415c80f57426b))
+
 ## [5.0.0](https://github.com/tpcint/l10n-tools/compare/v4.6.6...v5.0.0) (2025-09-19)
 
 

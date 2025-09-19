@@ -1,5 +1,19 @@
 # Changelog
 
+## [4.6.6](https://github.com/tpcint/l10n-tools/compare/v4.6.5...v4.6.6) (2025-09-19)
+
+
+### Miscellaneous Chores
+
+* **deps-dev:** bump @swc/core from 1.13.3 to 1.13.5 in the swc group ([#112](https://github.com/tpcint/l10n-tools/issues/112)) ([7b0a6bf](https://github.com/tpcint/l10n-tools/commit/7b0a6bfd1c0cbb3f89d1e41c87f8d7064681aec0))
+* **deps-dev:** bump @types/node from 18.19.121 to 18.19.123 ([#109](https://github.com/tpcint/l10n-tools/issues/109)) ([f988e71](https://github.com/tpcint/l10n-tools/commit/f988e715e561bf5d54ffe7d9fe7e07adea2ff7af))
+* **deps-dev:** bump expect from 30.0.5 to 30.1.2 ([#115](https://github.com/tpcint/l10n-tools/issues/115)) ([741c7f1](https://github.com/tpcint/l10n-tools/commit/741c7f1dca88fafb282a25e499c7e752256ed8d8))
+* **deps-dev:** bump the eslint group with 5 updates ([#103](https://github.com/tpcint/l10n-tools/issues/103)) ([7b849ce](https://github.com/tpcint/l10n-tools/commit/7b849ceed673484adbc768b786fd3a8ed340b3df))
+* **deps-dev:** bump the eslint group with 5 updates ([#113](https://github.com/tpcint/l10n-tools/issues/113)) ([4b8877f](https://github.com/tpcint/l10n-tools/commit/4b8877f978f3c34ef12e7fd0577108ec201be5b4))
+* **deps:** bump google-auth-library in the google-cloud group ([#111](https://github.com/tpcint/l10n-tools/issues/111)) ([6dbc180](https://github.com/tpcint/l10n-tools/commit/6dbc18008e082e4813c13fba7186d078b9709029))
+* **deps:** bump p-queue from 8.1.0 to 8.1.1 ([#114](https://github.com/tpcint/l10n-tools/issues/114)) ([8fb79e8](https://github.com/tpcint/l10n-tools/commit/8fb79e88b4606a30123afe5365ebfb0634c35941))
+* **deps:** bump typescript from 5.8.3 to 5.9.2 ([#104](https://github.com/tpcint/l10n-tools/issues/104)) ([caec8e7](https://github.com/tpcint/l10n-tools/commit/caec8e7d3fbea9be3fc513fd61fc720bbca0fe16))
+
 ## [4.6.5](https://github.com/tpcint/l10n-tools/compare/v4.6.4...v4.6.5) (2025-08-06)
 
 

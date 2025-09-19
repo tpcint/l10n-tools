@@ -1,5 +1,12 @@
 # Changelog
 
+## [5.0.2](https://github.com/tpcint/l10n-tools/compare/v5.0.1...v5.0.2) (2025-09-19)
+
+
+### Bug Fixes
+
+* add tc to extract ([#119](https://github.com/tpcint/l10n-tools/issues/119)) ([e1f0556](https://github.com/tpcint/l10n-tools/commit/e1f055658b42d1b733921e497ae81abe6ca0cab4))
+
 ## [5.0.1](https://github.com/tpcint/l10n-tools/compare/v5.0.0...v5.0.1) (2025-09-19)
 
 

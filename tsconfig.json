@@ -1,8 +1,8 @@
 {
   "compilerOptions": {
-    "target": "es2022",
-    "lib": ["ES2022"],
-    "module": "Node16",
+    "target": "es2024",
+    "lib": ["ES2024"],
+    "module": "NodeNext",
     "sourceMap": true,
     "outDir": "./dist",
     "verbatimModuleSyntax": true,

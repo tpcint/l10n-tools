@@ -15,6 +15,7 @@ export default async function (domainName: string, config: DomainConfig, keysPat
   keywords.add('this.$t:0:2')
   keywords.add('app.i18n.t:0:2')
   keywords.add('$tc:0:1')
+  keywords.add('tc:0:1')
   keywords.add('vm.$tc:0:1')
   keywords.add('this.$tc:0:1')
   keywords.add('app.i18n.tc:0:1')

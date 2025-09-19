@@ -30,7 +30,7 @@ jobs:
     - name: Setup node with cached node_modules
       uses: ./.github/actions/setup-node-cached
       with:
-        node-version: 18
+        node-version: 22
         registry-url: https://registry.npmjs.org/
     - name: Prepare
       run: npm run prepare

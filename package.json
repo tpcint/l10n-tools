@@ -38,7 +38,7 @@
     "htmlparser2": "^10.0.0",
     "lodash-es": "^4.17.21",
     "npmlog": "^7.0.1",
-    "p-queue": "^8.1.0",
+    "p-queue": "^8.1.1",
     "typescript": "^5.9.2"
   },
   "optionalDependencies": {

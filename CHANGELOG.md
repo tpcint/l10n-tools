@@ -1,5 +1,16 @@
 # Changelog
 
+## [5.0.0](https://github.com/tpcint/l10n-tools/compare/v4.6.6...v5.0.0) (2025-09-19)
+
+
+### ⚠ BREAKING CHANGES
+
+* drop node 18, node 20 ([#116](https://github.com/tpcint/l10n-tools/issues/116))
+
+### Features
+
+* drop node 18, node 20 ([#116](https://github.com/tpcint/l10n-tools/issues/116)) ([ad595e6](https://github.com/tpcint/l10n-tools/commit/ad595e67353108a5db0f6603dbe9ef1c56651152))
+
 ## [4.6.6](https://github.com/tpcint/l10n-tools/compare/v4.6.5...v4.6.6) (2025-09-19)
 
 

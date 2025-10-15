@@ -30,28 +30,10 @@
     "command-exists": "^1.2.9",
     "commander": "^14.0.1",
     "cosmiconfig": "^9.0.0",
-    "domhandler": "^5.0.3",
-    "domutils": "^3.2.2",
-    "fast-xml-parser": "^5.2.5",
     "gettext-parser": "^8.0.0",
     "glob": "^11.0.3",
-    "htmlparser2": "^10.0.0",
     "lodash-es": "^4.17.21",
-    "npmlog": "^7.0.1",
-    "p-queue": "^8.1.1",
-    "typescript": "^5.9.2"
-  },
-  "optionalDependencies": {
-    "@googleapis/drive": "^17.0.0",
-    "@googleapis/sheets": "^12.0.0",
-    "@lokalise/node-api": "^15.2.1",
-    "google-auth-library": "^10.3.0",
-    "he": "^1.2.0",
-    "http-shutdown": "^1.2.2",
-    "i18n-strings-files": "^2.0.0",
-    "open": "^10.2.0",
-    "php-parser": "^3.2.5",
-    "plist": "^3.1.0"
+    "npmlog": "^7.0.1"
   },
   "devDependencies": {
     "@eslint/js": "^9.35.0",
@@ -75,6 +57,75 @@
     "expect": "^30.1.2",
     "ts-json-schema-generator": "^2.4.0",
     "ts-node": "^10.9.2",
+    "typescript": "^5.9.2",
     "typescript-eslint": "^8.44.0"
+  },
+  "peerDependencies": {
+    "@googleapis/drive": "^17.0.0",
+    "@googleapis/sheets": "^12.0.0",
+    "@lokalise/node-api": "^15.2.1",
+    "domhandler": "^5.0.3",
+    "domutils": "^3.2.2",
+    "fast-xml-parser": "^5.2.5",
+    "google-auth-library": "^10.3.0",
+    "he": "^1.2.0",
+    "htmlparser2": "^10.0.0",
+    "http-shutdown": "^1.2.2",
+    "i18n-strings-files": "^2.0.0",
+    "open": "^10.2.0",
+    "p-queue": "^8.1.1",
+    "php-parser": "^3.2.5",
+    "plist": "^3.1.0",
+    "typescript": "^5.9.2"
+  },
+  "peerDependenciesMeta": {
+    "@googleapis/drive": {
+      "optional": true
+    },
+    "@googleapis/sheets": {
+      "optional": true
+    },
+    "@lokalise/node-api": {
+      "optional": true
+    },
+    "domhandler": {
+      "optional": true
+    },
+    "domutils": {
+      "optional": true
+    },
+    "fast-xml-parser": {
+      "optional": true
+    },
+    "google-auth-library": {
+      "optional": true
+    },
+    "he": {
+      "optional": true
+    },
+    "htmlparser2": {
+      "optional": true
+    },
+    "http-shutdown": {
+      "optional": true
+    },
+    "i18n-strings-files": {
+      "optional": true
+    },
+    "open": {
+      "optional": true
+    },
+    "p-queue": {
+      "optional": true
+    },
+    "php-parser": {
+      "optional": true
+    },
+    "plist": {
+      "optional": true
+    },
+    "typescript": {
+      "optional": true
+    }
   }
 }

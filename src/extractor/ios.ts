@@ -1,5 +1,5 @@
 import log from 'npmlog'
-import { KeyExtractor } from '../key-extractor.js'
+import { KeyCollector } from '../key-collector.js'
 import fsp from 'node:fs/promises'
 import * as path from 'path'
 import i18nStringsFiles from 'i18n-strings-files'
@@ -23,7 +23,8 @@ export default async function (domainName: string, config: DomainConfig, keysPat
   const tempDir = path.join(getTempDir(), 'extractor')
   await fsp.mkdir(tempDir, { recursive: true })
 
-  const extractor = new KeyExtractor({})
+  const collector = new KeyCollector({})
+  const extractor = new IosExtractor(collector)
   const srcDir = config.getSrcDir()
 
   log.info('extractKeys', 'extracting from .swift files')
@@ -51,7 +52,7 @@ export default async function (domainName: string, config: DomainConfig, keysPat
   )
   for (const { input, swiftFile } of swiftExtracted) {
     if (input != null && swiftFile != null) {
-      extractIosStrings(extractor, swiftFile, input)
+      extractor.extractIosStrings(swiftFile, input)
     }
   }
 
@@ -60,7 +61,7 @@ export default async function (domainName: string, config: DomainConfig, keysPat
   const infoPlist = plist.parse(await fsp.readFile(infoPlistPath, { encoding: 'utf-8' })) as PlistObject
   for (const key of infoPlistKeys) {
     if (infoPlist[key] != null) {
-      extractor.addMessage({ filename: 'info.plist', line: key }, infoPlist[key] as string, { context: key })
+      collector.addMessage({ filename: 'info.plist', line: key }, infoPlist[key] as string, { context: key })
     }
   }
 
@@ -84,10 +85,10 @@ export default async function (domainName: string, config: DomainConfig, keysPat
   )
 
   for (const { input, xibName } of xibExtracted) {
-    extractIosStrings(extractor, xibName, input)
+    extractor.extractIosStrings(xibName, input)
   }
 
-  await writeKeyEntries(keysPath, extractor.keys.toEntries())
+  await writeKeyEntries(keysPath, collector.getEntries())
   await fsp.rm(tempDir, { force: true, recursive: true })
 }
 
@@ -107,28 +108,32 @@ async function getXibPaths(srcDir: string) {
   return baseXibPaths
 }
 
-function extractIosStrings(extractor: KeyExtractor, filename: string, src: string) {
-  const data = i18nStringsFiles.parse(src, true)
-  for (const [key, value] of Object.entries(data)) {
-    const { defaultValue, ignore } = parseComment(key, value.comment)
-    if (ignore) {
-      continue
-    }
+export class IosExtractor {
+  constructor(private readonly collector: KeyCollector) { }
 
-    const id = value.text.trim()
-    if (!id) {
-      continue
-    }
-    if (defaultValue) {
-      extractor.addMessage({ filename, line: key }, defaultValue, { context: key })
-    } else {
-      const comment = value.comment == 'No comment provided by engineer.' ? undefined : value.comment
-      if (comment) {
-        for (const line of comment.split('\n')) {
-          extractor.addMessage({ filename }, key, { comment: line })
-        }
+  extractIosStrings(filename: string, src: string) {
+    const data = i18nStringsFiles.parse(src, true)
+    for (const [key, value] of Object.entries(data)) {
+      const { defaultValue, ignore } = parseComment(key, value.comment)
+      if (ignore) {
+        continue
+      }
+
+      const id = value.text.trim()
+      if (!id) {
+        continue
+      }
+      if (defaultValue) {
+        this.collector.addMessage({ filename, line: key }, defaultValue, { context: key })
       } else {
-        extractor.addMessage({ filename }, key)
+        const comment = value.comment == 'No comment provided by engineer.' ? undefined : value.comment
+        if (comment) {
+          for (const line of comment.split('\n')) {
+            this.collector.addMessage({ filename }, key, { comment: line })
+          }
+        } else {
+          this.collector.addMessage({ filename }, key)
+        }
       }
     }
   }

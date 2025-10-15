@@ -1,13 +1,15 @@
 import { describe, it } from 'node:test'
-import { KeyExtractor } from './key-extractor.js'
-import { expectKeyEntry } from './test/utils.js'
+import { KeyCollector } from '../key-collector.js'
+import { TsExtractor } from './ts-extractor.js'
+import { expectKeyEntry } from '../test/utils.js'
 
-describe('KeyExtractor', () => {
+describe('TsExtractor', () => {
   describe('vue-i18n keywords', () => {
     it('extract', () => {
       const keywords = ['$t', 'vm.$t', 'this.$t', 'app.i18n.t', '$tc', 'vm.$tc', 'this.$tc', 'app.i18n.tc']
       for (const keyword of keywords) {
-        const extractor = new KeyExtractor({ keywords: [keyword] })
+        const collector = new KeyCollector({ keywords: [keyword] })
+        const extractor = new TsExtractor(collector)
         for (const key of ['js', 'ts']) {
           const module = `
                     let $t = () => {};
@@ -22,14 +24,14 @@ describe('KeyExtractor', () => {
                     `
           if (key === 'js') {
             extractor.extractJsModule('test-file', module)
-            expectKeyEntry(extractor.keys, null, 'key-js', false)
+            expectKeyEntry(collector.keys, null, 'key-js', false)
           } else if (key === 'ts') {
             extractor.extractTsModule('test-file', module)
-            expectKeyEntry(extractor.keys, null, 'key-ts', false)
+            expectKeyEntry(collector.keys, null, 'key-ts', false)
           }
         }
         extractor.extractJsExpression('test-file', `${keyword}('key-jse')`)
-        expectKeyEntry(extractor.keys, null, 'key-jse', false)
+        expectKeyEntry(collector.keys, null, 'key-jse', false)
       }
     })
   })
@@ -44,13 +46,14 @@ describe('KeyExtractor', () => {
                     </div>
                 </template>
             `
-      const extractor = new KeyExtractor({
+      const collector = new KeyCollector({
         markers: [{ start: '{{', end: '}}' }],
         keywords: ['$t'],
       })
+      const extractor = new TsExtractor(collector)
       extractor.extractVue('test-file', module)
-      expectKeyEntry(extractor.keys, null, 'Apple & Banana', false, 'test-file', '4')
-      expectKeyEntry(extractor.keys, null, 'Hello', false, 'test-file', '5')
+      expectKeyEntry(collector.keys, null, 'Apple & Banana', false, 'test-file', '4')
+      expectKeyEntry(collector.keys, null, 'Hello', false, 'test-file', '5')
     })
 
     it('extract $t in vue (space in tag)', () => {
@@ -60,12 +63,13 @@ describe('KeyExtractor', () => {
                         >{{ $t('Apple & Banana') }}</span>
                 </template>
             `
-      const extractor = new KeyExtractor({
+      const collector = new KeyCollector({
         markers: [{ start: '{{', end: '}}' }],
         keywords: ['$t'],
       })
+      const extractor = new TsExtractor(collector)
       extractor.extractVue('test-file', module)
-      expectKeyEntry(extractor.keys, null, 'Apple & Banana', false, 'test-file', '4')
+      expectKeyEntry(collector.keys, null, 'Apple & Banana', false, 'test-file', '4')
     })
 
     it('extract $t in vue (space after marker)', () => {
@@ -76,12 +80,13 @@ describe('KeyExtractor', () => {
                    'Apple & Banana') }}</span>
                 </template>
             `
-      const extractor = new KeyExtractor({
+      const collector = new KeyCollector({
         markers: [{ start: '{{', end: '}}' }],
         keywords: ['$t'],
       })
+      const extractor = new TsExtractor(collector)
       extractor.extractVue('test-file', module)
-      expectKeyEntry(extractor.keys, null, 'Apple & Banana', false, 'test-file', '4')
+      expectKeyEntry(collector.keys, null, 'Apple & Banana', false, 'test-file', '4')
     })
 
     it('extract $t in vue (plural)', () => {
@@ -93,13 +98,14 @@ describe('KeyExtractor', () => {
                     </div>
                 </template>
             `
-      const extractor = new KeyExtractor({
+      const collector = new KeyCollector({
         markers: [{ start: '{{', end: '}}' }],
         keywords: ['$t'],
       })
+      const extractor = new TsExtractor(collector)
       extractor.extractVue('test-file', module)
-      expectKeyEntry(extractor.keys, null, 'Apple & Banana', true, 'test-file', '4')
-      expectKeyEntry(extractor.keys, null, 'Hello', true, 'test-file', '5')
+      expectKeyEntry(collector.keys, null, 'Apple & Banana', true, 'test-file', '4')
+      expectKeyEntry(collector.keys, null, 'Hello', true, 'test-file', '5')
     })
   })
 
@@ -120,10 +126,11 @@ describe('KeyExtractor', () => {
                     </div>
                 </template>
             `
-      const extractor = new KeyExtractor({ tagNames: ['i18n', 'i18n-t'] })
+      const collector = new KeyCollector({ tagNames: ['i18n', 'i18n-t'] })
+      const extractor = new TsExtractor(collector)
       extractor.extractVue('test-file', module)
-      expectKeyEntry(extractor.keys, null, 'key-vue-i18n-path', false, 'test-file', '4')
-      expectKeyEntry(extractor.keys, null, 'key-vue-i18n-path-exp', false, 'test-file', '5')
+      expectKeyEntry(collector.keys, null, 'key-vue-i18n-path', false, 'test-file', '4')
+      expectKeyEntry(collector.keys, null, 'key-vue-i18n-path-exp', false, 'test-file', '5')
     })
 
     it('i18n-t tag keypath and :keypath', () => {
@@ -140,10 +147,11 @@ describe('KeyExtractor', () => {
                     </div>
                 </template>
             `
-      const extractor = new KeyExtractor({ tagNames: ['i18n', 'i18n-t'] })
+      const collector = new KeyCollector({ tagNames: ['i18n', 'i18n-t'] })
+      const extractor = new TsExtractor(collector)
       extractor.extractVue('test-file', module)
-      expectKeyEntry(extractor.keys, null, '{name}은{br}더 이상{br}실재하지 않습니다.', false, 'test-file', '4')
-      expectKeyEntry(extractor.keys, null, '사과 {count}개', true, 'test-file', '8')
+      expectKeyEntry(collector.keys, null, '{name}은{br}더 이상{br}실재하지 않습니다.', false, 'test-file', '4')
+      expectKeyEntry(collector.keys, null, '사과 {count}개', true, 'test-file', '8')
     })
 
     it('v-t attrs', () => {
@@ -153,10 +161,11 @@ describe('KeyExtractor', () => {
                     <div v-t="{path: 'key-v-t-path'}"></div>
                 </template>
             `
-      const extractor = new KeyExtractor({ objectAttrs: { 'v-t': ['', 'path'] } })
+      const collector = new KeyCollector({ objectAttrs: { 'v-t': ['', 'path'] } })
+      const extractor = new TsExtractor(collector)
       extractor.extractVue('test-file', module)
-      expectKeyEntry(extractor.keys, null, 'key-v-t', false, 'test-file', '3')
-      expectKeyEntry(extractor.keys, null, 'key-v-t-path', false, 'test-file', '4')
+      expectKeyEntry(collector.keys, null, 'key-v-t', false, 'test-file', '3')
+      expectKeyEntry(collector.keys, null, 'key-v-t-path', false, 'test-file', '4')
     })
   })
 
@@ -179,10 +188,11 @@ describe('KeyExtractor', () => {
                 }
                 </script>
             `
-      const extractor = new KeyExtractor({ keywords: ['this.$t'] })
+      const collector = new KeyCollector({ keywords: ['this.$t'] })
+      const extractor = new TsExtractor(collector)
       extractor.extractVue('test-file', module)
-      expectKeyEntry(extractor.keys, null, 'key-js', false, 'test-file', '6')
-      expectKeyEntry(extractor.keys, null, 'key-ts', false, 'test-file', '13')
+      expectKeyEntry(collector.keys, null, 'key-js', false, 'test-file', '6')
+      expectKeyEntry(collector.keys, null, 'key-ts', false, 'test-file', '13')
     })
   })
 
@@ -209,10 +219,11 @@ describe('KeyExtractor', () => {
                     );
                 }
             `
-      const extractor = new KeyExtractor({ keywords: ['translate'] })
+      const collector = new KeyCollector({ keywords: ['translate'] })
+      const extractor = new TsExtractor(collector)
       extractor.extractJsxModule('test-file', module)
       const key = '{length}(mm) {width}(mm) {height}(mm)'
-      expectKeyEntry(extractor.keys, null, key, false, 'test-file', '6')
+      expectKeyEntry(collector.keys, null, key, false, 'test-file', '6')
     })
   })
 })

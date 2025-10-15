@@ -1,6 +1,7 @@
 import log from 'npmlog'
 import { getSrcPaths } from '../common.js'
-import { KeyExtractor } from '../key-extractor.js'
+import { KeyCollector } from '../key-collector.js'
+import { TsExtractor } from './ts-extractor.js'
 import fsp from 'node:fs/promises'
 import * as path from 'path'
 import type { DomainConfig } from '../config.js'
@@ -10,7 +11,8 @@ export default async function (domainName: string, config: DomainConfig, keysPat
   const srcPaths = await getSrcPaths(config, ['.js', '.ts', '.jsx', '.tsx'])
   const keywords = config.getKeywords()
 
-  const extractor = new KeyExtractor({ keywords })
+  const collector = new KeyCollector({ keywords })
+  const extractor = new TsExtractor(collector)
   log.info('extractKeys', 'extracting from .js, .ts files')
   for (const srcPath of srcPaths) {
     log.verbose('extractKeys', `processing '${srcPath}'`)
@@ -31,5 +33,5 @@ export default async function (domainName: string, config: DomainConfig, keysPat
       log.warn('extractKeys', `skipping '${srcPath}': unknown extension`)
     }
   }
-  await writeKeyEntries(keysPath, extractor.keys.toEntries())
+  await writeKeyEntries(keysPath, collector.getEntries())
 }

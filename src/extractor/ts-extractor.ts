@@ -3,62 +3,11 @@ import { isTag } from 'domhandler'
 import { findAll } from 'domutils'
 import { getElementContent, getElementContentIndex } from './element-utils.js'
 import log from 'npmlog'
-import { KeyEntryBuilder } from './key-entry-builder.js'
-import { EntryCollection } from './entry-collection.js'
+import { getLineTo, type KeyCollector, type TemplateMarker } from '../key-collector.js'
 import ts from 'typescript'
-import php from 'php-parser'
-import type { KeyEntry } from './entry.js'
 
-export type TemplateMarker = {
-  start: string,
-  end: string,
-  type?: 'js',
-}
-
-export type KeyExtractorOptions = {
-  keywords: string[] | Set<string>,
-  tagNames: string[],
-  attrNames: string[],
-  valueAttrNames: string[],
-  objectAttrs: { [name: string]: string[] },
-  filterNames: string[],
-  markers: TemplateMarker[],
-  exprAttrs: RegExp[],
-}
-
-type KeywordDef = {
-  objectName: string | null,
-  position: number,
-  propName: string,
-}
-
-type KeywordArgumentPositions = {
-  key: number,
-  pluralCount: number | null,
-}
-
-export class KeyExtractor {
-  public readonly keys: EntryCollection<KeyEntry>
-  private options: KeyExtractorOptions
-  private readonly keywordDefs: KeywordDef[]
-  private readonly keywordMap: { [keyword: string]: KeywordArgumentPositions }
-
-  constructor(options: Partial<KeyExtractorOptions>) {
-    this.keys = new EntryCollection()
-    this.options = Object.assign<KeyExtractorOptions, Partial<KeyExtractorOptions>>({
-      keywords: [],
-      tagNames: [],
-      attrNames: [],
-      valueAttrNames: [],
-      objectAttrs: {},
-      filterNames: [],
-      markers: [],
-      exprAttrs: [],
-    }, options)
-
-    this.keywordDefs = [...this.options.keywords].map(keyword => parseKeyword(keyword))
-    this.keywordMap = buildKeywordMap(this.options.keywords)
-  }
+export class TsExtractor {
+  constructor(private readonly collector: KeyCollector) { }
 
   private extractJsIdentifierNode(filename: string, src: string, ast: ts.SourceFile, startLine: number,
     options?: { isPlural?: boolean, comment?: string | null, context?: string | null }) {
@@ -68,7 +17,7 @@ export class KeyExtractor {
         try {
           const keys = this.evaluateTsArgumentValues(node.expression)
           for (const key of keys) {
-            this.addMessage({ filename, line: getLineTo(src, pos, startLine) }, key, options)
+            this.collector.addMessage({ filename, line: getLineTo(src, pos, startLine) }, key, options)
           }
           return
         } catch (err: any) {
@@ -90,7 +39,7 @@ export class KeyExtractor {
           try {
             const keys = this.evaluateTsArgumentValues(node.expression, path)
             for (const key of keys) {
-              this.addMessage({ filename, line: getLineTo(src, pos, startLine) }, key)
+              this.collector.addMessage({ filename, line: getLineTo(src, pos, startLine) }, key)
             }
             return
           } catch (err: any) {
@@ -182,7 +131,7 @@ export class KeyExtractor {
         }
       }
 
-      if (this.options.tagNames.includes(elem.name)) {
+      if (this.collector.options.tagNames.includes(elem.name)) {
         if (elem.name == 'translate') {
           const content = getElementContent(src, elem)
           const key = content.trim()
@@ -191,13 +140,13 @@ export class KeyExtractor {
             const plural = elem.attribs['translate-plural'] || null
             const comment = elem.attribs['translate-comment'] || null
             const context = elem.attribs['translate-context'] || null
-            this.addMessage({ filename, line }, key, { isPlural: plural != null, comment, context })
+            this.collector.addMessage({ filename, line }, key, { isPlural: plural != null, comment, context })
           }
         } else if (elem.name == 'i18n') {
           if (elem.attribs['path']) {
             const key = elem.attribs['path']
             const line = getLineTo(src, getElementContentIndex(elem), startLine)
-            this.addMessage({ filename, line }, key)
+            this.collector.addMessage({ filename, line }, key)
           } else if (elem.attribs[':path']) {
             const source = elem.attribs[':path']
             const line = getLineTo(src, getElementContentIndex(elem), startLine)
@@ -208,7 +157,7 @@ export class KeyExtractor {
             const key = elem.attribs['keypath']
             const isPlural = elem.attribs['plural'] != null || elem.attribs[':plural'] != null
             const line = getLineTo(src, getElementContentIndex(elem), startLine)
-            this.addMessage({ filename, line }, key, { isPlural })
+            this.collector.addMessage({ filename, line }, key, { isPlural })
           } else if (elem.attribs[':keypath']) {
             const source = elem.attribs[':keypath']
             const isPlural = elem.attribs['plural'] != null || elem.attribs[':plural'] != null
@@ -218,21 +167,21 @@ export class KeyExtractor {
         }
       }
 
-      if (this.options.attrNames.some(attrName => elem.attribs[attrName])) {
+      if (this.collector.options.attrNames.some(attrName => elem.attribs[attrName])) {
         const key = getElementContent(src, elem).trim()
         if (key) {
           const line = getLineTo(src, getElementContentIndex(elem), startLine)
           const plural = elem.attribs['translate-plural'] || null
           const comment = elem.attribs['translate-comment'] || null
           const context = elem.attribs['translate-context'] || null
-          this.addMessage({ filename, line }, key, { isPlural: plural != null, comment, context })
+          this.collector.addMessage({ filename, line }, key, { isPlural: plural != null, comment, context })
         }
       }
 
       for (const [attr, content] of Object.entries(elem.attribs)) {
         if (content) {
           const startIndex = elem.startIndex!
-          if (this.options.exprAttrs.some(pattern => attr.match(pattern))) {
+          if (this.collector.options.exprAttrs.some(pattern => attr.match(pattern))) {
             let contentIndex = 0
             const attrIndex = src.substring(startIndex).indexOf(attr)
             if (attrIndex >= 0) {
@@ -246,7 +195,7 @@ export class KeyExtractor {
             }
             const line = getLineTo(src, startIndex + contentIndex, startLine)
             this.extractJsExpression(filename, content, line)
-          } else if (this.options.valueAttrNames.some(pattern => attr.match(pattern))) {
+          } else if (this.collector.options.valueAttrNames.some(pattern => attr.match(pattern))) {
             let contentIndex = 0
             const attrIndex = src.substring(startIndex).indexOf(attr)
             if (attrIndex >= 0) {
@@ -260,7 +209,7 @@ export class KeyExtractor {
             }
             const line = getLineTo(src, startIndex + contentIndex, startLine)
             this.extractJsIdentifier(filename, content, line)
-          } else if (Object.keys(this.options.objectAttrs).includes(attr)) {
+          } else if (Object.keys(this.collector.options.objectAttrs).includes(attr)) {
             let contentIndex = 0
             const attrIndex = src.substring(startIndex).indexOf(attr)
             if (attrIndex >= 0) {
@@ -273,13 +222,13 @@ export class KeyExtractor {
               }
             }
             const line = getLineTo(src, startIndex + contentIndex, startLine)
-            this.extractJsObjectPaths(filename, content, this.options.objectAttrs[attr], line)
+            this.extractJsObjectPaths(filename, content, this.collector.options.objectAttrs[attr], line)
           }
         }
       }
     }
 
-    for (const marker of this.options.markers) {
+    for (const marker of this.collector.options.markers) {
       let srcIndex = 0
       while (true) {
         let startOffset = src.indexOf(marker.start, srcIndex)
@@ -454,13 +403,13 @@ export class KeyExtractor {
       if (ts.isCallExpression(node)) {
         const pos = findNonSpace(src, node.pos)
         const calleeName = this.getTsCalleeName(node.expression)
-        if (calleeName != null && this.keywordMap[calleeName]) {
+        if (calleeName != null && this.collector.keywordMap[calleeName]) {
           try {
-            const positions = this.keywordMap[calleeName]
+            const positions = this.collector.keywordMap[calleeName]
             const keys = this.evaluateTsArgumentValues(node.arguments[positions.key])
             const isPlural = positions.pluralCount == null ? false : this.isNumericTsArgument(node.arguments[positions.pluralCount]) != false
             for (const key of keys) {
-              this.addMessage({ filename, line: getLineTo(src, pos, startLine) }, key, { isPlural })
+              this.collector.addMessage({ filename, line: getLineTo(src, pos, startLine) }, key, { isPlural })
             }
           } catch (err: any) {
             log.warn('extractTsNode', err.message)
@@ -490,149 +439,6 @@ export class KeyExtractor {
       log.warn('extractTsModule', `error parsing '${src.split(/\n/g)[err.loc.line - 1].trim()}' (${filename}:${err.loc.line})`)
     }
   }
-
-  private evaluatePhpArgumentValues(node: php.Node): string[] {
-    if (node instanceof php.String) {
-      return [node.value]
-    } else if (node instanceof php.Encapsed) {
-      throw new Error('cannot extract translations from interpolated string, use sprintf for formatting')
-    } else if (node instanceof php.Variable) {
-      throw new Error('cannot extract translations from variable, use string literal directly')
-    } else if (node instanceof php.PropertyLookup) {
-      throw new Error('cannot extract translations from variable, use string literal directly')
-    } else if (node instanceof php.Bin && node.type === '+') {
-      const values = []
-      for (const leftValue of this.evaluatePhpArgumentValues(node.left)) {
-        for (const rightValue of this.evaluatePhpArgumentValues(node.right)) {
-          values.push(leftValue + rightValue)
-        }
-      }
-      return values
-    } else if (node instanceof php.RetIf) {
-      return this.evaluatePhpArgumentValues(node.trueExpr)
-        .concat(this.evaluatePhpArgumentValues(node.falseExpr))
-    } else {
-      throw new Error(`cannot extract translations from '${node.kind}' node, use string literal directly`)
-    }
-  }
-
-  private extractPhpNode(filename: string, src: string, ast: php.Program) {
-    const visit = (node: php.Node) => {
-      if (node instanceof php.Call) {
-        for (const { propName, position } of this.keywordDefs) {
-          if (node.what.kind === 'classreference') {
-            if (node.what.name === propName) {
-              const startOffset = src.substr(0, node.loc!.start.offset).lastIndexOf(propName)
-              try {
-                const keys = this.evaluatePhpArgumentValues(node.arguments[position])
-                for (const key of keys) {
-                  this.addMessage({ filename, line: node.loc!.start.line }, key)
-                }
-              } catch (err: any) {
-                log.warn('extractPhpNode', err.message)
-                log.warn('extractPhpNode', `'${src.substring(startOffset, node.loc!.end.offset)}': (${filename}:${node.loc!.start.line})`)
-              }
-            }
-          }
-        }
-      }
-
-      for (const key in node) {
-        // @ts-expect-error search all properties
-        const value = node[key]
-        if (Array.isArray(value)) {
-          for (const child of value) {
-            if (child instanceof php.Node) {
-              visit(child)
-            }
-          }
-        } else if (value instanceof php.Node) {
-          visit(value)
-        }
-      }
-    }
-    visit(ast)
-  }
-
-  extractPhpCode(filename: string, src: string) {
-    const parser = new php.Engine({
-      parser: {
-        extractDoc: true,
-        locations: true,
-        php7: true,
-      },
-      ast: {
-        withPositions: true,
-      },
-    })
-
-    try {
-      const ast = parser.parseCode(src, filename)
-      this.extractPhpNode(filename, src, ast)
-    } catch (err: any) {
-      log.warn('extractPhpCode', `error parsing '${src.split(/\n/g)[err.loc.line - 1].trim()}' (${filename}:${err.loc.line})`)
-    }
-  }
-
-  addMessage({ filename, line }: { filename: string, line?: string | number }, key: string,
-    options?: { isPlural?: boolean, comment?: string | null, context?: string | null }) {
-    const { isPlural = false, comment = null, context = null } = options ?? {}
-    if (context != null) {
-      if (context != context.trim()) {
-        throw new Error(`context has leading or trailing whitespace: "${context}"`)
-      }
-    }
-    if (key != key.trim()) {
-      throw new Error(`key has leading or trailing whitespace: "${key}"`)
-    }
-    const keyEntry = this.keys.find(context, key)
-    const builder = keyEntry ? KeyEntryBuilder.fromKeyEntry(keyEntry) : new KeyEntryBuilder(context, key, isPlural)
-
-    if (typeof line === 'number') {
-      line = line.toString()
-    }
-    builder.addReference(filename, line)
-    if (comment) {
-      builder.addComment(comment)
-    }
-
-    this.keys.set(builder.toKeyEntry())
-  }
-}
-
-function parseKeyword(keyword: string): KeywordDef {
-  const [name, _pos] = keyword.split(':')
-  const position = _pos ? Number.parseInt(_pos) : 0
-  const [name1, name2] = name.split('.')
-  if (name2) {
-    return {
-      objectName: name1,
-      propName: name2,
-      position: position,
-    }
-  } else {
-    return {
-      objectName: null,
-      propName: name1,
-      position: position,
-    }
-  }
-}
-
-function buildKeywordMap(keywords: string[] | Set<string>): { [keyword: string]: KeywordArgumentPositions } {
-  const keywordMap: { [keyword: string]: KeywordArgumentPositions } = {}
-  for (const keyword of keywords) {
-    const [name, keyPos, pluralCountPos] = keyword.split(':')
-    const key = keyPos ? Number.parseInt(keyPos) : 0
-    let pluralCount: number | null
-    if (keyPos != null) {
-      pluralCount = pluralCountPos ? Number.parseInt(pluralCountPos) : null
-    } else {
-      pluralCount = key + 1
-    }
-    keywordMap[name] = { key, pluralCount }
-  }
-  return keywordMap
 }
 
 function findNonSpace(src: string, index: number): number {
@@ -642,12 +448,4 @@ function findNonSpace(src: string, index: number): number {
   } else {
     return index
   }
-}
-
-export function getLineTo(src: string, index: number, startLine: number = 1): number {
-  const matches = src.substr(0, index).match(/\n/g)
-  if (!matches) {
-    return startLine
-  }
-  return startLine + matches.length
 }

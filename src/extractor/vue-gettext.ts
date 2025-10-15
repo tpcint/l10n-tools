@@ -2,7 +2,8 @@ import fsp from 'node:fs/promises'
 import log from 'npmlog'
 import * as path from 'path'
 import { getSrcPaths } from '../common.js'
-import { KeyExtractor } from '../key-extractor.js'
+import { KeyCollector } from '../key-collector.js'
+import { TsExtractor } from './ts-extractor.js'
 import type { DomainConfig } from '../config.js'
 import { writeKeyEntries } from '../entry.js'
 
@@ -16,13 +17,14 @@ export default async function (domainName: string, config: DomainConfig, keysPat
   keywords.add('this.$gettextInterpolate')
   keywords.add('vm.$gettextInterpolate')
 
-  const extractor = new KeyExtractor({
+  const collector = new KeyCollector({
     tagNames: ['translate'],
     attrNames: ['v-translate'],
     exprAttrs: [/^:/, /^v-bind:/],
     markers: [{ start: '{{', end: '}}' }],
     keywords: keywords,
   })
+  const extractor = new TsExtractor(collector)
   log.info('extractKeys', 'extracting from .vue, .js files')
   for (const srcPath of srcPaths) {
     log.verbose('extractKeys', `processing '${srcPath}'`)
@@ -37,5 +39,5 @@ export default async function (domainName: string, config: DomainConfig, keysPat
       log.warn('extractKeys', `skipping '${srcPath}': unknown extension`)
     }
   }
-  await writeKeyEntries(keysPath, extractor.keys.toEntries())
+  await writeKeyEntries(keysPath, collector.getEntries())
 }

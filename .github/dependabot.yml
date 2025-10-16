@@ -8,7 +8,7 @@ updates:
     groups:
       google-cloud:
         patterns:
-          - "googleapis"
+          - "@googleapis/*"
           - "google-auth-library"
       swc:
         patterns:

@@ -39,7 +39,7 @@
     "lodash-es": "^4.17.21",
     "npmlog": "^7.0.1",
     "p-queue": "^9.0.0",
-    "typescript": "^5.9.2"
+    "typescript": "^5.9.3"
   },
   "optionalDependencies": {
     "@googleapis/drive": "^18.0.0",

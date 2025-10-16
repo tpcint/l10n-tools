@@ -1,5 +1,5 @@
 import { describe, it } from 'node:test'
-import { expect } from 'expect'
+import assert from 'node:assert/strict'
 import type { TransEntry } from '../entry.js'
 import { generateAndroidXml } from './android.js'
 
@@ -72,6 +72,6 @@ describe('android compiler test', () => {
 
     const dstXml = '<?xml version="1.0" encoding="utf-8"?>\n<resources></resources>'
     const newDstXml = await generateAndroidXml('en', transEntries, srcXml, dstXml)
-    expect(newDstXml).toBe(targetXml)
+    assert.equal(newDstXml, targetXml)
   })
 })

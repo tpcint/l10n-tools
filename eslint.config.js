@@ -50,4 +50,10 @@ export default [
       'sort-imports': ['error', { ignoreCase: true, ignoreDeclarationSort: true }],
     },
   },
+  {
+    files: ['**/*.test.ts'],
+    rules: {
+      '@typescript-eslint/no-unused-expressions': 'off',
+    },
+  },
 ]

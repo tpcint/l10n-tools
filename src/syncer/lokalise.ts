@@ -67,7 +67,7 @@ async function listLokaliseKeys(lokaliseApi: LokaliseApi, projectId: string, con
         log.error('lokaliseApi', 'fetching keys failed', err)
         throw err
       }
-    }, { throwOnTimeout: true }))
+    }))
   }
   const chunks = await Promise.all(chunkPromises)
   return chunks.flat()

@@ -125,7 +125,7 @@ export async function compileToIosStrings(domainName: string, config: CompilerCo
       }
     }
     const stringsPaths = await getStringsPaths(srcDir, locale)
-    await queue.addAll(stringsPaths.map(stringsPath => () => compile(stringsPath)), { throwOnTimeout: true })
+    await queue.addAll(stringsPaths.map(stringsPath => () => compile(stringsPath)))
   }
   await fsp.rm(tempDir, { force: true, recursive: true })
 }

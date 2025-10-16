@@ -1,5 +1,29 @@
 # Changelog
 
+## [5.0.3](https://github.com/tpcint/l10n-tools/compare/v5.0.2...v5.0.3) (2025-10-16)
+
+
+### Continuous Integration
+
+* update dependabot group ([d605740](https://github.com/tpcint/l10n-tools/commit/d605740a09af950c2871df695d5f00c85eba536d))
+
+
+### Miscellaneous Chores
+
+* **deps-dev:** bump the eslint group across 1 directory with 5 updates ([#122](https://github.com/tpcint/l10n-tools/issues/122)) ([67bd547](https://github.com/tpcint/l10n-tools/commit/67bd5479320b39229efecedf80d490e2d860b410))
+* **deps-dev:** bump the eslint group with 4 updates ([#131](https://github.com/tpcint/l10n-tools/issues/131)) ([e72c7a9](https://github.com/tpcint/l10n-tools/commit/e72c7a94fa32e7fe4e0e5dc790e795159a29683e))
+* **deps:** bump @googleapis/drive from 17.0.0 to 18.0.0 ([#132](https://github.com/tpcint/l10n-tools/issues/132)) ([2440b21](https://github.com/tpcint/l10n-tools/commit/2440b21e44a642c4ada28e2d0b7478617fc3a13a))
+* **deps:** bump fast-xml-parser from 5.2.5 to 5.3.0 ([#125](https://github.com/tpcint/l10n-tools/issues/125)) ([6c27360](https://github.com/tpcint/l10n-tools/commit/6c27360786b52554c3f461dea5062e6d81e2a8bd))
+* **deps:** bump google-auth-library in the google-cloud group ([#124](https://github.com/tpcint/l10n-tools/issues/124)) ([538571d](https://github.com/tpcint/l10n-tools/commit/538571df837e0dd8e2d37e7bc961211a1a192197))
+* **deps:** bump google-auth-library in the google-cloud group ([#130](https://github.com/tpcint/l10n-tools/issues/130)) ([27bbe87](https://github.com/tpcint/l10n-tools/commit/27bbe878e3128cf1084ffdb91f16b279e2a102e2))
+* **deps:** bump p-queue from 8.1.1 to 9.0.0 ([#126](https://github.com/tpcint/l10n-tools/issues/126)) ([a6c528c](https://github.com/tpcint/l10n-tools/commit/a6c528c7fa88b87e2e9dd953e4470af5ee4e969f))
+* **deps:** bump typescript from 5.9.2 to 5.9.3 ([#133](https://github.com/tpcint/l10n-tools/issues/133)) ([8270586](https://github.com/tpcint/l10n-tools/commit/82705863944c77eb5c25dc17012d53e6cbc85fe1))
+
+
+### Tests
+
+* expect 대신 assert 사용 ([#129](https://github.com/tpcint/l10n-tools/issues/129)) ([1577db4](https://github.com/tpcint/l10n-tools/commit/1577db4baaf5f0c7fb08275e6e12f82a924eb14a))
+
 ## [5.0.2](https://github.com/tpcint/l10n-tools/compare/v5.0.1...v5.0.2) (2025-09-19)
 
 

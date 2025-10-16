@@ -47,7 +47,6 @@ export default async function (domainName: string, config: DomainConfig, keysPat
   const swiftPaths = await glob(`${srcDir}/**/*.swift`)
   const swiftExtracted = await swiftQueue.addAll(
     swiftPaths.map(swiftPath => () => extractFromSwift(swiftPath)),
-    { throwOnTimeout: true },
   )
   for (const { input, swiftFile } of swiftExtracted) {
     if (input != null && swiftFile != null) {
@@ -80,7 +79,6 @@ export default async function (domainName: string, config: DomainConfig, keysPat
   const xibPaths = await getXibPaths(srcDir)
   const xibExtracted = await xibQueue.addAll(
     xibPaths.map(xibPath => () => extractFromXib(xibPath)),
-    { throwOnTimeout: true },
   )
 
   for (const { input, xibName } of xibExtracted) {

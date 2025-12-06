@@ -4,7 +4,7 @@ import log from 'npmlog'
 import os from 'node:os'
 import fsp from 'node:fs/promises'
 import path from 'path'
-import { glob } from 'glob'
+import { glob } from 'tinyglobby'
 
 export function execWithLog(cmd: string, logPrefix: string = ''): Promise<number> {
   return new Promise((resolve, reject) => {

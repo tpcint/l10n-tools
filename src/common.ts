@@ -1,4 +1,4 @@
-import { glob } from 'glob'
+import { glob } from 'tinyglobby'
 import log from 'npmlog'
 import * as path from 'path'
 import fsp from 'node:fs/promises'

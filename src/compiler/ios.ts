@@ -1,5 +1,5 @@
 import fsp from 'node:fs/promises'
-import { glob } from 'glob'
+import { glob } from 'tinyglobby'
 import log from 'npmlog'
 import * as path from 'path'
 import i18nStringsFiles, { type CommentedI18nStringsMsg, type I18nStringsMsg } from 'i18n-strings-files'

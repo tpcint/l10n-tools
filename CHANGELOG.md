@@ -1,5 +1,25 @@
 # Changelog
 
+## [5.0.4](https://github.com/tpcint/l10n-tools/compare/v5.0.3...v5.0.4) (2025-12-06)
+
+
+### Miscellaneous Chores
+
+* **deps-dev:** bump the eslint group across 1 directory with 5 updates ([#136](https://github.com/tpcint/l10n-tools/issues/136)) ([61166b6](https://github.com/tpcint/l10n-tools/commit/61166b66d579078331b15a390bdb5673e9ced674))
+* **deps-dev:** bump the swc group across 1 directory with 2 updates ([#140](https://github.com/tpcint/l10n-tools/issues/140)) ([7297380](https://github.com/tpcint/l10n-tools/commit/72973808efc8df70845795a60ceb7476c9cb8272))
+* **deps:** bump fast-xml-parser from 5.3.0 to 5.3.1 ([#139](https://github.com/tpcint/l10n-tools/issues/139)) ([b2bd49d](https://github.com/tpcint/l10n-tools/commit/b2bd49d1dc84126fccd202ad32c955c981f2aec9))
+* **deps:** bump glob from 11.0.3 to 11.1.0 ([#142](https://github.com/tpcint/l10n-tools/issues/142)) ([17ace41](https://github.com/tpcint/l10n-tools/commit/17ace41ce3146a3474b85cb7177bce5deb92eb66))
+* **deps:** bump js-yaml from 4.1.0 to 4.1.1 ([#141](https://github.com/tpcint/l10n-tools/issues/141)) ([554e185](https://github.com/tpcint/l10n-tools/commit/554e185b6ffbc86b2cf56b7fc54f42f69729fce3))
+* **deps:** bump jws from 4.0.0 to 4.0.1 ([#143](https://github.com/tpcint/l10n-tools/issues/143)) ([d6a0d82](https://github.com/tpcint/l10n-tools/commit/d6a0d821104c7380158ffd87e7df6a27bad9da9b))
+* **deps:** bump the google-cloud group with 2 updates ([#137](https://github.com/tpcint/l10n-tools/issues/137)) ([d4d92fd](https://github.com/tpcint/l10n-tools/commit/d4d92fd808121939fc66319568f82d11a14cb7d8))
+* **deps:** bump the google-cloud group with 2 updates ([#145](https://github.com/tpcint/l10n-tools/issues/145)) ([004e62f](https://github.com/tpcint/l10n-tools/commit/004e62f85016efd8e0745c73aff44d7b293477c0))
+* update package-lock.json ([cd4658e](https://github.com/tpcint/l10n-tools/commit/cd4658e17a0f0484fea2eadf55fe75532ffd2e30))
+
+
+### Code Refactoring
+
+* use tinyglobby ([#147](https://github.com/tpcint/l10n-tools/issues/147)) ([916d3fe](https://github.com/tpcint/l10n-tools/commit/916d3feeeffb5b60f3e9ba088975db2cad85e752))
+
 ## [5.0.3](https://github.com/tpcint/l10n-tools/compare/v5.0.2...v5.0.3) (2025-10-16)
 
 

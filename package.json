@@ -1,6 +1,6 @@
 {
   "name": "l10n-tools",
-  "version": "5.0.4",
+  "version": "5.0.5",
   "description": "Localization tools",
   "type": "module",
   "engines": {

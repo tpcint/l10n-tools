@@ -1,5 +1,20 @@
 # Changelog
 
+## [5.0.5](https://github.com/tpcint/l10n-tools/compare/v5.0.4...v5.0.5) (2025-12-11)
+
+
+### Continuous Integration
+
+* limit npm version ([#154](https://github.com/tpcint/l10n-tools/issues/154)) ([c18f85f](https://github.com/tpcint/l10n-tools/commit/c18f85f47e504c1224339fbc8d295baf12b8db3a))
+
+
+### Miscellaneous Chores
+
+* **deps-dev:** bump the eslint group with 5 updates ([#148](https://github.com/tpcint/l10n-tools/issues/148)) ([7dd6b5b](https://github.com/tpcint/l10n-tools/commit/7dd6b5b603900284c0a9baa6aae596bdc320e400))
+* **deps:** bump fast-xml-parser from 5.3.1 to 5.3.2 ([#149](https://github.com/tpcint/l10n-tools/issues/149)) ([0660ec2](https://github.com/tpcint/l10n-tools/commit/0660ec2a65961afd1d61407491c8dce4c7b7f3e1))
+* **deps:** bump open from 10.2.0 to 11.0.0 ([#150](https://github.com/tpcint/l10n-tools/issues/150)) ([4695191](https://github.com/tpcint/l10n-tools/commit/46951911baf67312775910167e1f94e8bcc22d7a))
+* **deps:** bump p-queue from 9.0.0 to 9.0.1 ([#151](https://github.com/tpcint/l10n-tools/issues/151)) ([69fb38d](https://github.com/tpcint/l10n-tools/commit/69fb38d9599cba62c5505e8b8d9fa5bb837da798))
+
 ## [5.0.4](https://github.com/tpcint/l10n-tools/compare/v5.0.3...v5.0.4) (2025-12-06)
 
 

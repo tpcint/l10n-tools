@@ -50,7 +50,7 @@
     "he": "^1.2.0",
     "http-shutdown": "^1.2.2",
     "i18n-strings-files": "^2.0.0",
-    "open": "^10.2.0",
+    "open": "^11.0.0",
     "php-parser": "^3.2.5",
     "plist": "^3.1.0"
   },

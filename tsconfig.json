@@ -11,9 +11,6 @@
     "strict": true,
     "skipLibCheck": true
   },
-  "ts-node": {
-    "swc": true,
-  },
   "include": [
     "./src",
     "./@types"

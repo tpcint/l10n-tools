@@ -156,33 +156,6 @@
       ],
       "type": "string"
     },
-    "GoogleDocsConf": {
-      "additionalProperties": false,
-      "properties": {
-        "client-id": {
-          "type": "string"
-        },
-        "client-secret": {
-          "type": "string"
-        },
-        "client-secret-path": {
-          "type": "string"
-        },
-        "doc-id": {
-          "type": "string"
-        },
-        "doc-name": {
-          "type": "string"
-        },
-        "sheet-name": {
-          "type": "string"
-        }
-      },
-      "required": [
-        "sheet-name"
-      ],
-      "type": "object"
-    },
     "LokaliseConf": {
       "additionalProperties": false,
       "properties": {
@@ -238,10 +211,7 @@
       "type": "string"
     },
     "SyncTarget": {
-      "enum": [
-        "google-docs",
-        "lokalise"
-      ],
+      "const": "lokalise",
       "type": "string"
     },
     "ValidationConf": {
@@ -268,9 +238,6 @@
         "$ref": "#/definitions/DomainConf"
       },
       "type": "object"
-    },
-    "google-docs": {
-      "$ref": "#/definitions/GoogleDocsConf"
     },
     "lokalise": {
       "$ref": "#/definitions/LokaliseConf"

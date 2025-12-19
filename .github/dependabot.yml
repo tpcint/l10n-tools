@@ -6,10 +6,6 @@ updates:
     schedule:
       interval: "weekly"
     groups:
-      google-cloud:
-        patterns:
-          - "@googleapis/*"
-          - "google-auth-library"
       swc:
         patterns:
           - "@swc/*"

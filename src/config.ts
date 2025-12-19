@@ -1,5 +1,4 @@
 import type { Command } from 'commander'
-import fsp from 'node:fs/promises'
 import type { SupportedPlatforms } from '@lokalise/node-api'
 import { invert } from 'lodash-es'
 
@@ -9,11 +8,10 @@ type L10nConf = {
   /** Validation Config */
   'validation'?: ValidationConf,
   'sync-target'?: SyncTarget,
-  'google-docs'?: GoogleDocsConf,
   'lokalise'?: LokaliseConf,
 }
 
-export type SyncTarget = 'google-docs' | 'lokalise'
+export type SyncTarget = 'lokalise'
 
 /**
  * vue-gettext: Extract from $gettext like function, translate tag, and v-translate attrs
@@ -100,15 +98,7 @@ export class L10nConfig {
   }
 
   getSyncTarget(): SyncTarget {
-    return this.rc['sync-target'] ?? 'google-docs'
-  }
-
-  getGoogleDocsConfig(): GoogleDocsConfig {
-    const gdc = this.rc['google-docs']
-    if (gdc == null) {
-      throw new Error('no google-docs in rc')
-    }
-    return new GoogleDocsConfig(gdc)
+    return this.rc['sync-target'] ?? 'lokalise'
   }
 
   getLokaliseConfig(): LokaliseConfig {
@@ -310,53 +300,6 @@ export class ValidationConfig {
 
   getSkip(): boolean {
     return this.opts['skip'] ?? this.vc?.['skip'] ?? false
-  }
-}
-
-type GoogleDocsConf = {
-  'doc-id'?: string,
-  'doc-name'?: string,
-  'sheet-name': string,
-  'client-secret-path'?: string,
-  'client-id'?: string,
-  'client-secret'?: string,
-}
-
-export type GoogleCredentials = {
-  clientId: string,
-  clientSecret: string,
-}
-
-export class GoogleDocsConfig {
-  private readonly gdc: GoogleDocsConf
-  constructor(gdc: GoogleDocsConf) {
-    this.gdc = gdc
-  }
-
-  getDocId(): string | undefined {
-    return this.gdc['doc-id']
-  }
-
-  getDocName(): string | undefined {
-    return this.gdc['doc-name']
-  }
-
-  getSheetName(): string {
-    return this.gdc['sheet-name']
-  }
-
-  async getCredentials(): Promise<GoogleCredentials> {
-    const clientSecretPath = this.gdc['client-secret-path']
-    if (clientSecretPath != null) {
-      const input = await fsp.readFile(clientSecretPath, { encoding: 'utf-8' })
-      return JSON.parse(input)['installed']
-    }
-    const clientId = this.gdc['client-id']
-    const clientSecret = this.gdc['client-secret']
-    if (clientId != null && clientSecret != null) {
-      return { clientId, clientSecret }
-    }
-    throw new Error('no client-secret for google-docs')
   }
 }
 

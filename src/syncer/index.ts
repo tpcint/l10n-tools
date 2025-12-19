@@ -22,8 +22,6 @@ export async function syncTransToTarget(config: L10nConfig, domainConfig: Domain
 
 async function loadSyncer(target: SyncTarget): Promise<SyncerFunc> {
   switch (target) {
-    case 'google-docs':
-      return (await import('./google-docs.js')).syncTransToGoogleDocs
     case 'lokalise':
       return (await import('./lokalise.js')).syncTransToLokalise
   }

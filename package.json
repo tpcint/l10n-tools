@@ -43,14 +43,9 @@
     "typescript": "^5.9.3"
   },
   "optionalDependencies": {
-    "@googleapis/drive": "^19.2.0",
-    "@googleapis/sheets": "^12.0.0",
     "@lokalise/node-api": "^15.3.1",
-    "google-auth-library": "^10.5.0",
     "he": "^1.2.0",
-    "http-shutdown": "^1.2.2",
     "i18n-strings-files": "^2.0.0",
-    "open": "^11.0.0",
     "php-parser": "^3.2.5",
     "plist": "^3.1.0"
   },

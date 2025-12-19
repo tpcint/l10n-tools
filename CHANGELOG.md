@@ -1,5 +1,34 @@
 # Changelog
 
+## [6.0.0](https://github.com/tpcint/l10n-tools/compare/v5.0.4...v6.0.0) (2025-12-19)
+
+
+### ⚠ BREAKING CHANGES
+
+* remove google-docs syncer ([#160](https://github.com/tpcint/l10n-tools/issues/160))
+
+### Continuous Integration
+
+* limit npm version ([#154](https://github.com/tpcint/l10n-tools/issues/154)) ([c18f85f](https://github.com/tpcint/l10n-tools/commit/c18f85f47e504c1224339fbc8d295baf12b8db3a))
+* use tsc instead of swc to reduce modules ([#162](https://github.com/tpcint/l10n-tools/issues/162)) ([538420b](https://github.com/tpcint/l10n-tools/commit/538420b04b8241a23f9696ea05e4fca72a67cd5d))
+
+
+### Miscellaneous Chores
+
+* **deps-dev:** bump @types/node from 22.18.10 to 22.19.3 ([#164](https://github.com/tpcint/l10n-tools/issues/164)) ([bcfaa43](https://github.com/tpcint/l10n-tools/commit/bcfaa438fd871de663eceb1e55594b2769b3e8ce))
+* **deps-dev:** bump the eslint group with 4 updates ([#157](https://github.com/tpcint/l10n-tools/issues/157)) ([755756d](https://github.com/tpcint/l10n-tools/commit/755756dd45b6b8cbcba7e3e7c65e5f1aed733997))
+* **deps-dev:** bump the eslint group with 5 updates ([#148](https://github.com/tpcint/l10n-tools/issues/148)) ([7dd6b5b](https://github.com/tpcint/l10n-tools/commit/7dd6b5b603900284c0a9baa6aae596bdc320e400))
+* **deps:** bump fast-xml-parser from 5.3.1 to 5.3.2 ([#149](https://github.com/tpcint/l10n-tools/issues/149)) ([0660ec2](https://github.com/tpcint/l10n-tools/commit/0660ec2a65961afd1d61407491c8dce4c7b7f3e1))
+* **deps:** bump fast-xml-parser from 5.3.2 to 5.3.3 ([#158](https://github.com/tpcint/l10n-tools/issues/158)) ([56f5ff3](https://github.com/tpcint/l10n-tools/commit/56f5ff3df9f08bf05013d2a2e205d2232f1bcd7f))
+* **deps:** bump lodash-es from 4.17.21 to 4.17.22 ([#161](https://github.com/tpcint/l10n-tools/issues/161)) ([d275b7a](https://github.com/tpcint/l10n-tools/commit/d275b7a89a6b8504196ff6edc8d6aa575bacd022))
+* **deps:** bump open from 10.2.0 to 11.0.0 ([#150](https://github.com/tpcint/l10n-tools/issues/150)) ([4695191](https://github.com/tpcint/l10n-tools/commit/46951911baf67312775910167e1f94e8bcc22d7a))
+* **deps:** bump p-queue from 9.0.0 to 9.0.1 ([#151](https://github.com/tpcint/l10n-tools/issues/151)) ([69fb38d](https://github.com/tpcint/l10n-tools/commit/69fb38d9599cba62c5505e8b8d9fa5bb837da798))
+
+
+### Features
+
+* remove google-docs syncer ([#160](https://github.com/tpcint/l10n-tools/issues/160)) ([ead0289](https://github.com/tpcint/l10n-tools/commit/ead02895f6da83bf0e6398511aabc7efe4de3e6d))
+
 ## [5.0.4](https://github.com/tpcint/l10n-tools/compare/v5.0.3...v5.0.4) (2025-12-06)
 
 

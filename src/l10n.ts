@@ -18,28 +18,38 @@ import { Ajv } from 'ajv'
 const program = new Command('l10n-tools')
 const dirname = path.dirname(fileURLToPath(import.meta.url))
 
+export type ProgramOptions = {
+  rcfile?: string,
+  domains?: string,
+  skipValidation?: boolean,
+  validationBaseLocale?: string,
+  drySync?: boolean,
+  verbose?: boolean,
+  quiet?: boolean,
+}
+
 async function run() {
   const pkg = JSON.parse(await fsp.readFile(path.join(dirname, '..', 'package.json'), { encoding: 'utf-8' }))
   program.version(pkg.version)
     .description(pkg.description)
-    .option('-r, --rcfile <rcfile>', '설정 파일 지정, 기본값은 .l10nrc')
-    .option('-d, --domains <domains>', '적용할 도메인 지정, 없으면 설정 파일에 있는 모든 도메인 (콤마로 여러 도메인 나열 가능)', val => val.split(','))
-    .option('-s, --skip-validation', 'Skip format validation')
-    .option('-b, --validation-base-locale <locale>', 'Use msgstr of locale as validation base, default to msgid')
+    .option('-r, --rcfile <rcfile>', 'specify config file, default to .l10nrc')
+    .option('-d, --domains <domains>', 'specify domains to apply, if not specified, all domains in config file (comma separated)', val => val.split(','))
+    .option('-s, --skip-validation', 'skip format validation')
+    .option('-b, --validation-base-locale <locale>', 'use msgstr of locale as validation base, default to msgid')
     .option('-n, --dry-sync', 'skip actual sync')
     .option('-v, --verbose', 'log verbose')
-    .option('-q, --quiet', '조용히')
+    .option('-q, --quiet', 'be quiet')
     .on('--help', () => {
-      console.info('\nRC file:\n  Refer [L10nConf] type or see \'l10nrc.schema.json\'')
+      console.info('\nRC file:\n  refer to [L10nConf] type or see \'l10nrc.schema.json\'')
     })
 
   program.command('update')
     .description('Update local translations')
-    .action(async (opts, cmd) => {
+    .action(async (opts, cmd: Command) => {
       await runSubCommand(cmd.name(), async (domainName, config, domainConfig) => {
         const cacheDir = domainConfig.getCacheDir()
         const locales = domainConfig.getLocales()
-        const validationConfig = config.getValidationConfig(program)
+        const validationConfig = config.getValidationConfig(program.opts<ProgramOptions>())
 
         const keysPath = getKeysPath(path.join(cacheDir, domainName))
         const transDir = path.join(cacheDir, domainName)
@@ -53,12 +63,12 @@ async function run() {
 
   program.command('upload')
     .description('Upload local changes to sync target (local files will not touched)')
-    .action(async (opts, cmd) => {
+    .action(async (opts, cmd: Command) => {
       await runSubCommand(cmd.name(), async (domainName, config, domainConfig, drySync) => {
         const cacheDir = domainConfig.getCacheDir()
         const locales = domainConfig.getLocales()
         const tag = domainConfig.getTag()
-        const validationConfig = config.getValidationConfig(program)
+        const validationConfig = config.getValidationConfig(program.opts<ProgramOptions>())
 
         const keysPath = getKeysPath(path.join(cacheDir, domainName))
         const transDir = path.join(cacheDir, domainName)
@@ -72,12 +82,12 @@ async function run() {
 
   program.command('sync')
     .description('Synchronize local translations and sync target')
-    .action(async (opts, cmd) => {
+    .action(async (opts, cmd: Command) => {
       await runSubCommand(cmd.name(), async (domainName, config, domainConfig, drySync) => {
         const cacheDir = domainConfig.getCacheDir()
         const locales = domainConfig.getLocales()
         const tag = domainConfig.getTag()
-        const validationConfig = config.getValidationConfig(program)
+        const validationConfig = config.getValidationConfig(program.opts<ProgramOptions>())
 
         const keysPath = getKeysPath(path.join(cacheDir, domainName))
         const transDir = path.join(cacheDir, domainName)
@@ -91,16 +101,21 @@ async function run() {
       })
     })
 
+  type CheckOptions = {
+    locales?: string,
+    forceSync?: boolean,
+  }
   program.command('check')
     .description('Check all translated')
-    .option('-l, --locales [locales]', 'Locales to check, all if not specified (comma separated)')
-    .option('--force-sync', 'sync even if cached')
-    .action(async (opts, cmd) => {
+    .option('-l, --locales [locales]', 'locales to check, all if not specified (comma separated)')
+    .option('--force-sync', 'sync even if translations are cached')
+    .argument('[files...]', 'files to check, if not specified, all files will be checked')
+    .action(async (files: string[], opts: CheckOptions, cmd: Command) => {
       await runSubCommand(cmd.name(), async (domainName, config, domainConfig, drySync) => {
         const cacheDir = domainConfig.getCacheDir()
         const locales = opts['locales'] ? opts['locales'].split(',') : domainConfig.getLocales()
         const tag = domainConfig.getTag()
-        const validationConfig = config.getValidationConfig(program)
+        const validationConfig = config.getValidationConfig(program.opts<ProgramOptions>())
 
         const specs = ['untranslated']
         const keysPath = getKeysPath(path.join(cacheDir, domainName))
@@ -137,10 +152,13 @@ async function run() {
       })
     })
 
+  type ExtractKeysOptions = {
+    keysDir?: string,
+  }
   program.command('_extractKeys')
-    .description('(Internal) Extract key entries from source and saved to files')
-    .option('--keys-dir [keysDir]', 'Directory to save key files')
-    .action(async (opts, cmd) => {
+    .description('Extract key entries from source and saved to files (internal use only)')
+    .option('--keys-dir [keysDir]', 'directory to save key files')
+    .action(async (opts: ExtractKeysOptions, cmd: Command) => {
       await runSubCommand(cmd.name(), async (domainName, config, domainConfig) => {
         const cacheDir = opts['keysDir'] || domainConfig.getCacheDir()
         const keysPath = getKeysPath(path.join(cacheDir, domainName))
@@ -149,17 +167,22 @@ async function run() {
       })
     })
 
+  type UpdateTransOptions = {
+    locales?: string,
+    keysDir?: string,
+    transDir?: string,
+  }
   program.command('_updateTrans')
-    .description('(Internal) Apply key changes to translations')
-    .option('-l, --locales [locales]', 'Locales to update (comma separated)')
-    .option('--keys-dir [keysDir]', 'Directory to load key files')
-    .option('--trans-dir [transDir]', 'Directory to save translation files')
-    .action(async (opts, cmd) => {
+    .description('Apply key changes to translations (internal use only)')
+    .option('-l, --locales [locales]', 'locales to update (comma separated)')
+    .option('--keys-dir [keysDir]', 'directory to load key files')
+    .option('--trans-dir [transDir]', 'directory to save translation files')
+    .action(async (opts: UpdateTransOptions, cmd: Command) => {
       await runSubCommand(cmd.name(), async (domainName, config, domainConfig) => {
         const cacheDir = domainConfig.getCacheDir()
         const locales = opts['locales'] ? opts['locales'].split(',') : domainConfig.getLocales()
-        config.getValidationConfig(program)
-        const validationConfig = config.getValidationConfig(program)
+        config.getValidationConfig(program.opts<ProgramOptions>())
+        const validationConfig = config.getValidationConfig(program.opts<ProgramOptions>())
 
         const keysPath = getKeysPath(path.join(opts['keysDir'] || cacheDir, domainName))
         const fromTransDir = path.join(cacheDir, domainName)
@@ -169,12 +192,17 @@ async function run() {
       })
     })
 
+  type CountOptions = {
+    transDir?: string,
+    locales?: string,
+    spec?: string,
+  }
   program.command('_count')
-    .description('(Internal) Count translations')
-    .option('--trans-dir [transDir]', 'Directory to load translation files')
-    .option('-l, --locales [locales]', 'Locales to count (comma separated)')
-    .option('-s, --spec [spec]', 'Spec to count (required, negate if starting with !, comma separated) supported: total,translated,untranslated,<flag>')
-    .action(async (opts, cmd) => {
+    .description('Count translations (internal use only)')
+    .option('--trans-dir [transDir]', 'directory to load translation files')
+    .option('-l, --locales [locales]', 'locales to count (comma separated)')
+    .option('-s, --spec [spec]', 'spec to count (required, negate if starting with !, comma separated) supported: total,translated,untranslated,<flag>')
+    .action(async (opts: CountOptions, cmd: Command) => {
       await runSubCommand(cmd.name(), async (domainName, config, domainConfig) => {
         const cacheDir = domainConfig.getCacheDir()
         const locales: string[] = opts['locales'] ? opts['locales'].split(',') : domainConfig.getLocales()
@@ -197,12 +225,17 @@ async function run() {
       })
     })
 
+  type CatOptions = {
+    transDir?: string,
+    locale?: string,
+    spec?: string,
+  }
   program.command('_cat')
-    .description('[고급] 번역 항목 표시')
-    .option('--trans-dir [transDir]', 'Directory to read translations')
-    .option('-l, --locale [locale]', 'Locale to print (required)')
-    .option('-s, --spec [spec]', 'Spec to print (required, negate if starting with !, comma separated) supported: total,translated,untranslated,<flag>')
-    .action(async (opts, cmd) => {
+    .description('Print translation entries (internal use only)')
+    .option('--trans-dir [transDir]', 'directory to read translations')
+    .option('-l, --locale [locale]', 'locale to print (required)')
+    .option('-s, --spec [spec]', 'spec to print (required, negate if starting with !, comma separated) supported: total,translated,untranslated,<flag>')
+    .action(async (opts: CatOptions, cmd: Command) => {
       await runSubCommand(cmd.name(), async (domainName, config, domainConfig) => {
         if (!opts['locale']) {
           cmd.help()
@@ -235,8 +268,8 @@ async function run() {
     })
 
   program.command('_compile')
-    .description('(Internal) Write domain asset from translations')
-    .action(async (opts, cmd) => {
+    .description('Write domain asset from translations (internal use only)')
+    .action(async (opts, cmd: Command) => {
       await runSubCommand(cmd.name(), async (domainName, config, domainConfig) => {
         const cacheDir = domainConfig.getCacheDir()
         const transDir = path.join(cacheDir, domainName)
@@ -245,8 +278,8 @@ async function run() {
     })
 
   program.command('_sync')
-    .description('(Internal) Synchronize translations to remote target')
-    .action(async (opts, cmd) => {
+    .description('Synchronize translations to remote target (internal use only)')
+    .action(async (opts, cmd: Command) => {
       await runSubCommand(cmd.name(), async (domainName, config, domainConfig, drySync) => {
         const tag = domainConfig.getTag()
         const cacheDir = domainConfig.getCacheDir()
@@ -264,7 +297,7 @@ async function run() {
 async function runSubCommand(cmdName: string, action: (domainName: string, config: L10nConfig, domainConfig: DomainConfig, drySync: boolean) => Promise<void>) {
   log.heading = cmdName
 
-  const globalOpts = program.opts()
+  const globalOpts = program.opts<ProgramOptions>()
   if (globalOpts['verbose']) {
     log.level = 'silly'
   } else if (globalOpts['quiet']) {

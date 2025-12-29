@@ -7,7 +7,7 @@ import { fileExists, getKeysPath, getTransPath } from './utils.js'
 import { updateTrans } from './common.js'
 import { syncTransToTarget } from './syncer/index.js'
 import * as path from 'path'
-import { type DomainConfig, L10nConfig } from './config.js'
+import { type DomainConfig, L10nConfig, SessionConfig } from './config.js'
 import { extractKeys } from './extractor/index.js'
 import { compileAll } from './compiler/index.js'
 import fsp from 'node:fs/promises'
@@ -53,8 +53,9 @@ async function run() {
 
         const keysPath = getKeysPath(path.join(cacheDir, domainName))
         const transDir = path.join(cacheDir, domainName)
+        const sessionConfig = new SessionConfig(keysPath, [])
 
-        await extractKeys(domainName, domainConfig, keysPath)
+        await extractKeys(domainName, domainConfig, sessionConfig)
         await updateTrans(keysPath, transDir, transDir, locales, validationConfig)
 
         await compileAll(domainName, domainConfig, transDir)
@@ -72,8 +73,9 @@ async function run() {
 
         const keysPath = getKeysPath(path.join(cacheDir, domainName))
         const transDir = path.join(cacheDir, domainName)
+        const sessionConfig = new SessionConfig(keysPath, [])
 
-        await extractKeys(domainName, domainConfig, keysPath)
+        await extractKeys(domainName, domainConfig, sessionConfig)
         await updateTrans(keysPath, transDir, transDir, locales, null)
         await syncTransToTarget(config, domainConfig, tag, keysPath, transDir, drySync)
         await updateTrans(keysPath, transDir, transDir, locales, validationConfig)
@@ -91,8 +93,9 @@ async function run() {
 
         const keysPath = getKeysPath(path.join(cacheDir, domainName))
         const transDir = path.join(cacheDir, domainName)
+        const sessionConfig = new SessionConfig(keysPath, [])
 
-        await extractKeys(domainName, domainConfig, keysPath)
+        await extractKeys(domainName, domainConfig, sessionConfig)
         await updateTrans(keysPath, transDir, transDir, locales, null)
         await syncTransToTarget(config, domainConfig, tag, keysPath, transDir, drySync)
         await updateTrans(keysPath, transDir, transDir, locales, validationConfig)
@@ -120,8 +123,9 @@ async function run() {
         const specs = ['untranslated']
         const keysPath = getKeysPath(path.join(cacheDir, domainName))
         const transDir = path.join(cacheDir, domainName)
+        const sessionConfig = new SessionConfig(keysPath, files)
 
-        await extractKeys(domainName, domainConfig, keysPath)
+        await extractKeys(domainName, domainConfig, sessionConfig)
         if (opts['forceSync'] || !await fileExists(transDir)) {
           await updateTrans(keysPath, transDir, transDir, locales, null)
           await syncTransToTarget(config, domainConfig, tag, keysPath, transDir, drySync)
@@ -162,8 +166,9 @@ async function run() {
       await runSubCommand(cmd.name(), async (domainName, config, domainConfig) => {
         const cacheDir = opts['keysDir'] || domainConfig.getCacheDir()
         const keysPath = getKeysPath(path.join(cacheDir, domainName))
+        const sessionConfig = new SessionConfig(keysPath, [])
 
-        await extractKeys(domainName, domainConfig, keysPath)
+        await extractKeys(domainName, domainConfig, sessionConfig)
       })
     })
 

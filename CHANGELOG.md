@@ -1,5 +1,23 @@
 # Changelog
 
+## [6.1.0](https://github.com/tpcint/l10n-tools/compare/v6.0.0...v6.1.0) (2025-12-29)
+
+
+### Miscellaneous Chores
+
+* **deps-dev:** bump the eslint group with 2 updates ([#165](https://github.com/tpcint/l10n-tools/issues/165)) ([a741484](https://github.com/tpcint/l10n-tools/commit/a74148443c397fe74353d9176714b51049f047cc))
+* **deps:** bump gettext-parser from 8.0.0 to 9.0.0 ([#167](https://github.com/tpcint/l10n-tools/issues/167)) ([8a49d49](https://github.com/tpcint/l10n-tools/commit/8a49d49a7b08f0e45d6d265119c367be13ab05b4))
+
+
+### Features
+
+* check translations from specified files only ([#169](https://github.com/tpcint/l10n-tools/issues/169)) ([7f8446d](https://github.com/tpcint/l10n-tools/commit/7f8446d9be10e40a0b8e0840089e371f40602cfc))
+
+
+### Code Refactoring
+
+* cleanup, type safety ([#168](https://github.com/tpcint/l10n-tools/issues/168)) ([e6a9824](https://github.com/tpcint/l10n-tools/commit/e6a98246f6ec3ddbd5d4c1f84f77d9ed8c22ee49))
+
 ## [6.0.0](https://github.com/tpcint/l10n-tools/compare/v5.0.4...v6.0.0) (2025-12-19)
 
 

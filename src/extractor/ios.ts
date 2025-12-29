@@ -64,7 +64,7 @@ export default async function (domainName: string, config: DomainConfig, session
 
   log.info('extractKeys', 'extracting from info.plist')
   const infoPlistPath = await getInfoPlistPath(srcDir)
-  if (limitFileSet.size > 0 && !limitFileSet.has(infoPlistPath)) {
+  if (limitFileSet.size == 0 || limitFileSet.has(infoPlistPath)) {
     const infoPlist = plist.parse(await fsp.readFile(infoPlistPath, { encoding: 'utf-8' })) as PlistObject
     for (const key of infoPlistKeys) {
       if (infoPlist[key] != null) {

@@ -1,6 +1,6 @@
 import type { ProgramOptions } from './l10n.js'
 import type { SupportedPlatforms } from '@lokalise/node-api'
-import { invert } from 'lodash-es'
+import { invert } from 'es-toolkit/compat'
 
 type L10nConf = {
   '$schema'?: string,

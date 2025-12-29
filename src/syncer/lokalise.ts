@@ -9,7 +9,7 @@ import {
   type TranslationData,
   type UpdateKeyDataWithId,
 } from '@lokalise/node-api'
-import { chunk, isEqual, pickBy } from 'lodash-es'
+import { chunk, isEqual, pickBy } from 'es-toolkit/compat'
 import PQueue from 'p-queue'
 import { addContext, containsContext, getContexts, removeContext } from './lokalise-context.js'
 import { addToArraySet, isPureKey, removeFromArraySet } from '../utils.js'

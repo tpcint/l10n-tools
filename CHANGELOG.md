@@ -1,5 +1,17 @@
 # Changelog
 
+## [6.1.1](https://github.com/tpcint/l10n-tools/compare/v6.1.0...v6.1.1) (2025-12-29)
+
+
+### Bug Fixes
+
+* checking translations for specific files ([#172](https://github.com/tpcint/l10n-tools/issues/172)) ([c3d03ec](https://github.com/tpcint/l10n-tools/commit/c3d03eca822eeaeff051ebe0beb49df4c644cbd6))
+
+
+### Code Refactoring
+
+* use es-toolkit instead of lodash ([#170](https://github.com/tpcint/l10n-tools/issues/170)) ([be746bb](https://github.com/tpcint/l10n-tools/commit/be746bb8fdfee6591e97c0c4d2b00e4b38d5c367))
+
 ## [6.1.0](https://github.com/tpcint/l10n-tools/compare/v6.0.0...v6.1.0) (2025-12-29)
 
 

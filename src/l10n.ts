@@ -129,10 +129,23 @@ async function run() {
         }
         await updateTrans(keysPath, transDir, transDir, locales, validationConfig)
 
+        const keys = await (async () => {
+          const fileSet = new Set<string>(files)
+          if (fileSet.size === 0) {
+            return null
+          }
+          const keyEntries = (await readKeyEntries(keysPath))
+            .filter(keyEntry => keyEntry.references.some(ref => fileSet.has(ref.file)))
+          return EntryCollection.loadEntries(keyEntries)
+        })()
         for (const locale of locales) {
           const transPath = getTransPath(transDir, locale)
           const useUnverified = config.useUnverified(locale)
           for (const transEntry of await readTransEntries(transPath)) {
+            // keys 에 없는 엔트리는 스킵
+            if (keys != null && keys.find(transEntry.context, transEntry.key) == null) {
+              continue
+            }
             if (!checkTransEntrySpecs(transEntry, specs, useUnverified)) {
               continue
             }

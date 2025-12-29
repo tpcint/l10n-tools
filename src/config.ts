@@ -1,4 +1,4 @@
-import type { Command } from 'commander'
+import type { ProgramOptions } from './l10n.js'
 import type { SupportedPlatforms } from '@lokalise/node-api'
 import { invert } from 'lodash-es'
 
@@ -89,12 +89,11 @@ export class L10nConfig {
     return new DomainConfig(conf)
   }
 
-  getValidationConfig(program: Command): ValidationConfig {
-    const opts: ValidationConf = {
-      'base-locale': program.opts().validationBaseLocale,
-      'skip': program.opts().skipValidation,
-    }
-    return new ValidationConfig(this.rc.validation, opts)
+  getValidationConfig(opts: ProgramOptions): ValidationConfig {
+    return new ValidationConfig(this.rc.validation, {
+      'base-locale': opts.validationBaseLocale,
+      'skip': opts.skipValidation,
+    })
   }
 
   getSyncTarget(): SyncTarget {

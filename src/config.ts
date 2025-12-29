@@ -185,18 +185,6 @@ export class DomainConfig {
   }
 }
 
-export class SessionConfig {
-  constructor(private readonly keysPath: string, private readonly files: string[]) {}
-
-  getFiles(): string[] {
-    return this.files
-  }
-
-  getKeysPath(): string {
-    return this.keysPath
-  }
-}
-
 /**
  * json (vue-gettext): Single JSON all locales merged
  * json-dir: JSON file per locale (plural not supported)

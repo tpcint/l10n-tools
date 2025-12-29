@@ -3,12 +3,11 @@ import { getSrcPaths } from '../common.js'
 import { KeyExtractor } from '../key-extractor.js'
 import fsp from 'node:fs/promises'
 import * as path from 'path'
-import type { DomainConfig, SessionConfig } from '../config.js'
+import type { DomainConfig } from '../config.js'
 import { writeKeyEntries } from '../entry.js'
 
-export default async function (domainName: string, config: DomainConfig, sessionConfig: SessionConfig) {
-  const keysPath = sessionConfig.getKeysPath()
-  const srcPaths = await getSrcPaths(config, ['.js', '.ts', '.jsx', '.tsx'], sessionConfig.getFiles())
+export default async function (domainName: string, config: DomainConfig, keysPath: string) {
+  const srcPaths = await getSrcPaths(config, ['.js', '.ts', '.jsx', '.tsx'])
   const keywords = config.getKeywords()
 
   const extractor = new KeyExtractor({ keywords })

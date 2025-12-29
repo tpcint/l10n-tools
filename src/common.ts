@@ -15,7 +15,15 @@ import type { DomainConfig, ValidationConfig } from './config.js'
 import { validateMessages } from './validator.js'
 import { EntryCollection } from './entry-collection.js'
 
-export async function getSrcPaths(config: DomainConfig, exts: string[], limitFiles: string[]): Promise<string[]> {
+/**
+ * Collects source file paths from the domain configuration for the given file extensions.
+ *
+ * @param config - Domain configuration providing srcDirs, srcPatterns, and ignorePatterns
+ * @param exts - File extensions (including the leading dot, e.g. ".ts") to match
+ * @returns An array of matching source file paths
+ * @throws If the domain configuration contains neither srcDirs nor srcPatterns
+ */
+export async function getSrcPaths(config: DomainConfig, exts: string[]): Promise<string[]> {
   const srcDirs = config.getSrcDirs()
   const srcPatterns = config.getSrcPatterns()
   const ignorePatterns = config.getIgnorePatterns()
@@ -32,10 +40,6 @@ export async function getSrcPaths(config: DomainConfig, exts: string[], limitFil
   const srcPaths: string[] = []
   for (const srcPattern of srcPatterns) {
     srcPaths.push(...await glob(srcPattern, { ignore: ignorePatterns }))
-  }
-  if (limitFiles.length > 0) {
-    const limitFileSet = new Set(limitFiles)
-    return srcPaths.filter(path => limitFileSet.has(path))
   }
   return srcPaths
 }

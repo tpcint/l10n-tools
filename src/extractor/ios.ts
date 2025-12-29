@@ -6,7 +6,7 @@ import i18nStringsFiles from 'i18n-strings-files'
 import plist, { type PlistObject } from 'plist'
 import { glob } from 'tinyglobby'
 import { execWithLog, fileExists, getTempDir } from '../utils.js'
-import type { DomainConfig, SessionConfig } from '../config.js'
+import type { DomainConfig } from '../config.js'
 import PQueue from 'p-queue'
 import os from 'os'
 import { writeKeyEntries } from '../entry.js'
@@ -19,9 +19,7 @@ const infoPlistKeys = [
   'NSUserTrackingUsageDescription',
 ]
 
-export default async function (domainName: string, config: DomainConfig, sessionConfig: SessionConfig) {
-  const keysPath = sessionConfig.getKeysPath()
-  const limitFileSet = new Set(sessionConfig.getFiles())
+export default async function (domainName: string, config: DomainConfig, keysPath: string) {
   const tempDir = path.join(getTempDir(), 'extractor')
   await fsp.mkdir(tempDir, { recursive: true })
 
@@ -30,6 +28,12 @@ export default async function (domainName: string, config: DomainConfig, session
 
   log.info('extractKeys', 'extracting from .swift files')
   const swiftQueue = new PQueue({ concurrency: os.cpus().length })
+  /**
+   * Generates a Localizable.strings file for a Swift source file and returns its contents and relative path.
+   *
+   * @param swiftPath - Absolute filesystem path to the `.swift` source file to process
+   * @returns An object with `input` set to the contents of the generated `Localizable.strings` file (UTF-16LE) or `null` if no strings file was produced, and `swiftFile` set to the source file path relative to the extraction `srcDir` or `null` when no strings file exists
+   */
   async function extractFromSwift(swiftPath: string) {
     log.verbose('extractKeys', `processing '${swiftPath}'`)
     const baseName = path.basename(swiftPath, '.swift')
@@ -46,13 +50,7 @@ export default async function (domainName: string, config: DomainConfig, session
       return { input: null, swiftFile: null }
     }
   }
-  const swiftPaths = await (async () => {
-    let allFiles = await glob(`${srcDir}/**/*.swift`)
-    if (limitFileSet.size > 0) {
-      allFiles = allFiles.filter(path => limitFileSet.has(path))
-    }
-    return allFiles
-  })()
+  const swiftPaths = await glob(`${srcDir}/**/*.swift`)
   const swiftExtracted = await swiftQueue.addAll(
     swiftPaths.map(swiftPath => () => extractFromSwift(swiftPath)),
   )
@@ -64,17 +62,21 @@ export default async function (domainName: string, config: DomainConfig, session
 
   log.info('extractKeys', 'extracting from info.plist')
   const infoPlistPath = await getInfoPlistPath(srcDir)
-  if (limitFileSet.size == 0 || limitFileSet.has(infoPlistPath)) {
-    const infoPlist = plist.parse(await fsp.readFile(infoPlistPath, { encoding: 'utf-8' })) as PlistObject
-    for (const key of infoPlistKeys) {
-      if (infoPlist[key] != null) {
-        extractor.addMessage({ filename: 'info.plist', line: key }, infoPlist[key] as string, { context: key })
-      }
+  const infoPlist = plist.parse(await fsp.readFile(infoPlistPath, { encoding: 'utf-8' })) as PlistObject
+  for (const key of infoPlistKeys) {
+    if (infoPlist[key] != null) {
+      extractor.addMessage({ filename: 'info.plist', line: key }, infoPlist[key] as string, { context: key })
     }
   }
 
   log.info('extractKeys', 'extracting from .xib, .storyboard files')
   const xibQueue = new PQueue({ concurrency: os.cpus().length })
+  /**
+   * Extracts localized strings from a XIB or Storyboard file using ibtool.
+   *
+   * @param xibPath - Filesystem path to the `.xib` or `.storyboard` file to process
+   * @returns An object with `input` set to the exported `.strings` file contents (UTF-16LE) and `xibName` set to the source file's base name
+   */
   async function extractFromXib(xibPath: string): Promise<{ input: string, xibName: string }> {
     log.verbose('extractKeys', `processing '${xibPath}'`)
     const extName = path.extname(xibPath)
@@ -86,13 +88,7 @@ export default async function (domainName: string, config: DomainConfig, session
     const xibName = path.basename(xibPath)
     return { input, xibName }
   }
-  const xibPaths = await (async () => {
-    let allFiles = await getXibPaths(srcDir)
-    if (limitFileSet.size > 0) {
-      allFiles = allFiles.filter(path => limitFileSet.has(path))
-    }
-    return allFiles
-  })()
+  const xibPaths = await getXibPaths(srcDir)
   const xibExtracted = await xibQueue.addAll(
     xibPaths.map(xibPath => () => extractFromXib(xibPath)),
   )

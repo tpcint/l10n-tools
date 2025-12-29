@@ -56,11 +56,7 @@ export function isErrnoException(err: unknown, code?: string): err is NodeJS.Err
   }
 }
 
-export const requireCmd = {
-  brew: requireBrewCmd,
-}
-
-async function requireBrewCmd(cmd: string, pkg: string, needForceLink: boolean = false): Promise<void> {
+export async function requireBrewCmd(cmd: string, pkg: string, needForceLink: boolean = false): Promise<void> {
   try {
     await commandExists(cmd)
   } catch (err) {

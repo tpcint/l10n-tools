@@ -29,6 +29,12 @@ export type ProgramOptions = {
   quiet?: boolean,
 }
 
+/**
+ * Configure the CLI, register l10n commands and options, and parse process arguments.
+ *
+ * Sets up global options and commands (update, upload, sync, check and internal helpers),
+ * wires each command to its domain-aware action handlers, and invokes argument parsing.
+ */
 async function run() {
   const pkg = JSON.parse(await fsp.readFile(path.join(dirname, '..', 'package.json'), { encoding: 'utf-8' }))
   program.version(pkg.version)

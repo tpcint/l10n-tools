@@ -28,6 +28,12 @@ export default async function (domainName: string, config: DomainConfig, keysPat
 
   log.info('extractKeys', 'extracting from .swift files')
   const swiftQueue = new PQueue({ concurrency: os.cpus().length })
+  /**
+   * Generates a Localizable.strings file for a Swift source file and returns its contents and relative path.
+   *
+   * @param swiftPath - Absolute filesystem path to the `.swift` source file to process
+   * @returns An object with `input` set to the contents of the generated `Localizable.strings` file (UTF-16LE) or `null` if no strings file was produced, and `swiftFile` set to the source file path relative to the extraction `srcDir` or `null` when no strings file exists
+   */
   async function extractFromSwift(swiftPath: string) {
     log.verbose('extractKeys', `processing '${swiftPath}'`)
     const baseName = path.basename(swiftPath, '.swift')
@@ -65,6 +71,12 @@ export default async function (domainName: string, config: DomainConfig, keysPat
 
   log.info('extractKeys', 'extracting from .xib, .storyboard files')
   const xibQueue = new PQueue({ concurrency: os.cpus().length })
+  /**
+   * Extracts localized strings from a XIB or Storyboard file using ibtool.
+   *
+   * @param xibPath - Filesystem path to the `.xib` or `.storyboard` file to process
+   * @returns An object with `input` set to the exported `.strings` file contents (UTF-16LE) and `xibName` set to the source file's base name
+   */
   async function extractFromXib(xibPath: string): Promise<{ input: string, xibName: string }> {
     log.verbose('extractKeys', `processing '${xibPath}'`)
     const extName = path.extname(xibPath)

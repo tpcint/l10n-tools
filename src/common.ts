@@ -15,6 +15,14 @@ import type { DomainConfig, ValidationConfig } from './config.js'
 import { validateMessages } from './validator.js'
 import { EntryCollection } from './entry-collection.js'
 
+/**
+ * Collects source file paths from the domain configuration for the given file extensions.
+ *
+ * @param config - Domain configuration providing srcDirs, srcPatterns, and ignorePatterns
+ * @param exts - File extensions (including the leading dot, e.g. ".ts") to match
+ * @returns An array of matching source file paths
+ * @throws If the domain configuration contains neither srcDirs nor srcPatterns
+ */
 export async function getSrcPaths(config: DomainConfig, exts: string[]): Promise<string[]> {
   const srcDirs = config.getSrcDirs()
   const srcPatterns = config.getSrcPatterns()

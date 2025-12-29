@@ -8,7 +8,7 @@ import { writeKeyEntries } from '../entry.js'
 
 export default async function (domainName: string, config: DomainConfig, sessionConfig: SessionConfig) {
   const keysPath = sessionConfig.getKeysPath()
-  const srcPaths = await getSrcPaths(config, ['.js', '.ts', '.jsx', '.tsx'])
+  const srcPaths = await getSrcPaths(config, ['.js', '.ts', '.jsx', '.tsx'], sessionConfig.getFiles())
   const keywords = config.getKeywords()
 
   const extractor = new KeyExtractor({ keywords })

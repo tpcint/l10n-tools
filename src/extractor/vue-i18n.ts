@@ -8,7 +8,7 @@ import { writeKeyEntries } from '../entry.js'
 
 export default async function (domainName: string, config: DomainConfig, sessionConfig: SessionConfig) {
   const keysPath = sessionConfig.getKeysPath()
-  const srcPaths = await getSrcPaths(config, ['.vue', '.js', '.ts'])
+  const srcPaths = await getSrcPaths(config, ['.vue', '.js', '.ts'], sessionConfig.getFiles())
   const keywords = new Set(config.getKeywords())
   keywords.add('$t:0:2')
   keywords.add('t:0:2')

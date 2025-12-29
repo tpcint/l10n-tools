@@ -21,6 +21,7 @@ const infoPlistKeys = [
 
 export default async function (domainName: string, config: DomainConfig, sessionConfig: SessionConfig) {
   const keysPath = sessionConfig.getKeysPath()
+  const limitFileSet = new Set(sessionConfig.getFiles())
   const tempDir = path.join(getTempDir(), 'extractor')
   await fsp.mkdir(tempDir, { recursive: true })
 
@@ -45,7 +46,13 @@ export default async function (domainName: string, config: DomainConfig, session
       return { input: null, swiftFile: null }
     }
   }
-  const swiftPaths = await glob(`${srcDir}/**/*.swift`)
+  const swiftPaths = await (async () => {
+    let allFiles = await glob(`${srcDir}/**/*.swift`)
+    if (limitFileSet.size > 0) {
+      allFiles = allFiles.filter(path => limitFileSet.has(path))
+    }
+    return allFiles
+  })()
   const swiftExtracted = await swiftQueue.addAll(
     swiftPaths.map(swiftPath => () => extractFromSwift(swiftPath)),
   )
@@ -57,10 +64,12 @@ export default async function (domainName: string, config: DomainConfig, session
 
   log.info('extractKeys', 'extracting from info.plist')
   const infoPlistPath = await getInfoPlistPath(srcDir)
-  const infoPlist = plist.parse(await fsp.readFile(infoPlistPath, { encoding: 'utf-8' })) as PlistObject
-  for (const key of infoPlistKeys) {
-    if (infoPlist[key] != null) {
-      extractor.addMessage({ filename: 'info.plist', line: key }, infoPlist[key] as string, { context: key })
+  if (limitFileSet.size > 0 && !limitFileSet.has(infoPlistPath)) {
+    const infoPlist = plist.parse(await fsp.readFile(infoPlistPath, { encoding: 'utf-8' })) as PlistObject
+    for (const key of infoPlistKeys) {
+      if (infoPlist[key] != null) {
+        extractor.addMessage({ filename: 'info.plist', line: key }, infoPlist[key] as string, { context: key })
+      }
     }
   }
 
@@ -77,7 +86,13 @@ export default async function (domainName: string, config: DomainConfig, session
     const xibName = path.basename(xibPath)
     return { input, xibName }
   }
-  const xibPaths = await getXibPaths(srcDir)
+  const xibPaths = await (async () => {
+    let allFiles = await getXibPaths(srcDir)
+    if (limitFileSet.size > 0) {
+      allFiles = allFiles.filter(path => limitFileSet.has(path))
+    }
+    return allFiles
+  })()
   const xibExtracted = await xibQueue.addAll(
     xibPaths.map(xibPath => () => extractFromXib(xibPath)),
   )

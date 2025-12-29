@@ -1,14 +1,14 @@
 import * as path from 'path'
 import fsp from 'node:fs/promises'
-import type { DomainConfig, DomainType, SessionConfig } from '../config.js'
+import type { DomainConfig, DomainType } from '../config.js'
 
-export type ExtractorFunc = (domainName: string, domainConfig: DomainConfig, sessionConfig: SessionConfig) => Promise<void>
+export type ExtractorFunc = (domainName: string, domainConfig: DomainConfig, keysPath: string) => Promise<void>
 
-export async function extractKeys(domainName: string, domainConfig: DomainConfig, sessionConfig: SessionConfig) {
+export async function extractKeys(domainName: string, domainConfig: DomainConfig, keysPath: string) {
   const type = domainConfig.getType()
-  await fsp.mkdir(path.dirname(sessionConfig.getKeysPath()), { recursive: true })
+  await fsp.mkdir(path.dirname(keysPath), { recursive: true })
   const extractor = await loadExtractor(type)
-  await extractor(domainName, domainConfig, sessionConfig)
+  await extractor(domainName, domainConfig, keysPath)
 }
 
 async function loadExtractor(type: DomainType): Promise<ExtractorFunc> {

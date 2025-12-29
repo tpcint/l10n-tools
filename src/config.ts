@@ -1,6 +1,6 @@
 import type { ProgramOptions } from './l10n.js'
 import type { SupportedPlatforms } from '@lokalise/node-api'
-import { invert } from 'es-toolkit'
+import { invert } from 'es-toolkit/compat'
 
 type L10nConf = {
   '$schema'?: string,
@@ -365,7 +365,7 @@ export class LokaliseConfig {
       return undefined
     }
     if (inverted) {
-      return invert<string, string>(map)
+      return invert(map)
     } else {
       return map
     }

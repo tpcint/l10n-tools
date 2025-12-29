@@ -6,7 +6,7 @@ import i18nStringsFiles from 'i18n-strings-files'
 import plist, { type PlistObject } from 'plist'
 import { glob } from 'tinyglobby'
 import { execWithLog, fileExists, getTempDir } from '../utils.js'
-import type { DomainConfig } from '../config.js'
+import type { DomainConfig, SessionConfig } from '../config.js'
 import PQueue from 'p-queue'
 import os from 'os'
 import { writeKeyEntries } from '../entry.js'
@@ -19,7 +19,8 @@ const infoPlistKeys = [
   'NSUserTrackingUsageDescription',
 ]
 
-export default async function (domainName: string, config: DomainConfig, keysPath: string) {
+export default async function (domainName: string, config: DomainConfig, sessionConfig: SessionConfig) {
+  const keysPath = sessionConfig.getKeysPath()
   const tempDir = path.join(getTempDir(), 'extractor')
   await fsp.mkdir(tempDir, { recursive: true })
 

@@ -2,7 +2,7 @@ import log from 'npmlog'
 import { getLineTo, KeyExtractor } from '../key-extractor.js'
 import fsp from 'node:fs/promises'
 import path from 'node:path'
-import type { DomainConfig } from '../config.js'
+import type { DomainConfig, SessionConfig } from '../config.js'
 import { writeKeyEntries } from '../entry.js'
 import { parseDocument } from 'htmlparser2'
 import { findOne } from 'domutils'
@@ -11,7 +11,8 @@ import { getElementContent, getElementContentIndex } from '../element-utils.js'
 import { containsAndroidXmlSpecialChars, decodeAndroidStrings } from '../compiler/android-xml-utils.js'
 import he from 'he'
 
-export default async function (domainName: string, config: DomainConfig, keysPath: string) {
+export default async function (domainName: string, config: DomainConfig, sessionConfig: SessionConfig) {
+  const keysPath = sessionConfig.getKeysPath()
   const resDir = config.getResDir()
   const srcPath = path.join(resDir, 'values', 'strings.xml')
 

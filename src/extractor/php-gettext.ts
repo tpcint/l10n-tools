@@ -3,10 +3,11 @@ import log from 'npmlog'
 import * as path from 'path'
 import { getSrcPaths } from '../common.js'
 import { KeyExtractor } from '../key-extractor.js'
-import type { DomainConfig } from '../config.js'
+import type { DomainConfig, SessionConfig } from '../config.js'
 import { writeKeyEntries } from '../entry.js'
 
-export default async function (domainName: string, config: DomainConfig, keysPath: string) {
+export default async function (domainName: string, config: DomainConfig, sessionConfig: SessionConfig) {
+  const keysPath = sessionConfig.getKeysPath()
   const srcPaths = await getSrcPaths(config, ['.php'])
   const keywords = new Set(config.getKeywords())
   keywords.add('_')

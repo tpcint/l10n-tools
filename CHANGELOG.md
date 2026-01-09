@@ -1,5 +1,12 @@
 # Changelog
 
+## [6.1.2](https://github.com/tpcint/l10n-tools/compare/v6.1.1...v6.1.2) (2026-01-09)
+
+
+### Miscellaneous Chores
+
+* **deps:** bump p-queue from 9.0.1 to 9.1.0 ([#175](https://github.com/tpcint/l10n-tools/issues/175)) ([23437b1](https://github.com/tpcint/l10n-tools/commit/23437b1f0b7ba0dce49a6f7d63a7b498d8b11e23))
+
 ## [6.1.1](https://github.com/tpcint/l10n-tools/compare/v6.1.0...v6.1.1) (2025-12-29)
 
 

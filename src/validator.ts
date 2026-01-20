@@ -33,7 +33,7 @@ export function validateMsg(baseMsg: string | undefined, msg: string | undefined
   if (!msg.trim()) {
     return
   }
-  log.verbose('validate', `|${baseMsg.replace('\n', '\\n')}| vs |${msg.replace('\n', '\\n')}|`)
+  log.verbose('validate', `|${baseMsg.replace(/\n/g, '\\n')}| vs |${msg.replace(/\n/g, '\\n')}|`)
   for (const def of formatDefs) {
     validateFormat(baseMsg, msg, def)
   }
@@ -79,7 +79,7 @@ function validateMarkup(baseMsg: string, msg: string) {
         // omitting br tag is permitted
         continue
       }
-      throw new TagNotFoundError(`Expected tag \`${tag}' is not present in \`${msg.replace('\n', '\\n')}'`)
+      throw new TagNotFoundError(`Expected tag \`${tag}' is not present in \`${msg.replace(/\n/g, '\\n')}'`)
     }
     tags.splice(index, 1)
   }
@@ -88,7 +88,7 @@ function validateMarkup(baseMsg: string, msg: string) {
       // adding more br tag is permitted
       continue
     }
-    throw new UnexpectedTagError(`Tag \`${tag}' is unexpected in \`${msg.replace('\n', '\\n')}'`)
+    throw new UnexpectedTagError(`Tag \`${tag}' is unexpected in \`${msg.replace(/\n/g, '\\n')}'`)
   }
 }
 

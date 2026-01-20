@@ -44,19 +44,19 @@ function validateFormat(baseMsg: string, msg: string, def: FormatDef) {
   const baseFormats = baseMsg.match(def.regex)
   const formats = msg.match(def.regex)
   if (def.type === 'c-format' && baseFormats != null && baseFormats.length > 1) {
-    throw new NoOrdinalFormatError(`Use ordinal parameter (e.g. %$1s) in c-format for more then one formats in \`${baseMsg.replace('\n', '\\n')}'`)
+    throw new NoOrdinalFormatError(`Use ordinal parameter (e.g. %$1s) in c-format for more then one formats in \`${baseMsg.replace(/\n/g, '\\n')}'`)
   }
 
   const baseFormatSet = new Set(baseFormats)
   const formatSet = new Set(formats)
   for (const format of baseFormatSet) {
     if (!formatSet.has(format)) {
-      throw new FormatNotFoundError(`Expected placeholder \`${format}' is not present in \`${msg.replace('\n', '\\n')}'`)
+      throw new FormatNotFoundError(`Expected placeholder \`${format}' is not present in \`${msg.replace(/\n/g, '\\n')}'`)
     }
     formatSet.delete(format)
   }
   for (const format of formatSet) {
-    throw new UnexpectedFormatError(`Placeholder \`${format}' is unexpected in \`${msg.replace('\n', '\\n')}'`)
+    throw new UnexpectedFormatError(`Placeholder \`${format}' is unexpected in \`${msg.replace(/\n/g, '\\n')}'`)
   }
 }
 

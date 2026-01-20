@@ -44,7 +44,7 @@ function validateFormat(baseMsg: string, msg: string, def: FormatDef) {
   const baseFormats = baseMsg.match(def.regex)
   const formats = msg.match(def.regex)
   if (def.type === 'c-format' && baseFormats != null && baseFormats.length > 1) {
-    throw new NoOrdinalFormatError(`Use ordinal parameter (e.g. %$1s) in c-format for more then one formats in \`${baseMsg.replace('\n', '\\n')}'`)
+    throw new NoOrdinalFormatError(`Use ordinal parameter (e.g. %$1s) in c-format for more then one formats in \`${baseMsg.replace(/\n/g, '\\n')}'`)
   }
 
   const baseFormatSet = new Set(baseFormats)

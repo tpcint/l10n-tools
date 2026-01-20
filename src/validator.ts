@@ -51,12 +51,12 @@ function validateFormat(baseMsg: string, msg: string, def: FormatDef) {
   const formatSet = new Set(formats)
   for (const format of baseFormatSet) {
     if (!formatSet.has(format)) {
-      throw new FormatNotFoundError(`Expected placeholder \`${format}' is not present in \`${msg.replace('\n', '\\n')}'`)
+      throw new FormatNotFoundError(`Expected placeholder \`${format}' is not present in \`${msg.replace(/\n/g, '\\n')}'`)
     }
     formatSet.delete(format)
   }
   for (const format of formatSet) {
-    throw new UnexpectedFormatError(`Placeholder \`${format}' is unexpected in \`${msg.replace('\n', '\\n')}'`)
+    throw new UnexpectedFormatError(`Placeholder \`${format}' is unexpected in \`${msg.replace(/\n/g, '\\n')}'`)
   }
 }
 

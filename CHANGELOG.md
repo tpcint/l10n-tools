@@ -1,5 +1,23 @@
 # Changelog
 
+## [6.1.2](https://github.com/tpcint/l10n-tools/compare/v6.1.1...v6.1.2) (2026-01-20)
+
+
+### Miscellaneous Chores
+
+* **deps-dev:** bump @types/node from 22.19.3 to 22.19.6 ([#178](https://github.com/tpcint/l10n-tools/issues/178)) ([47d21a9](https://github.com/tpcint/l10n-tools/commit/47d21a97cbc12b3d534dac5201a8034e9603af1a))
+* **deps-dev:** bump the eslint group across 1 directory with 3 updates ([#176](https://github.com/tpcint/l10n-tools/issues/176)) ([af50d28](https://github.com/tpcint/l10n-tools/commit/af50d283439e5f44222f25fec960e77d0658b21c))
+* **deps:** bump p-queue from 9.0.1 to 9.1.0 ([#175](https://github.com/tpcint/l10n-tools/issues/175)) ([23437b1](https://github.com/tpcint/l10n-tools/commit/23437b1f0b7ba0dce49a6f7d63a7b498d8b11e23))
+
+
+### Bug Fixes
+
+* potential fix for code scanning alert no. 1: Workflow does not contain permissions ([#182](https://github.com/tpcint/l10n-tools/issues/182)) ([ff2599c](https://github.com/tpcint/l10n-tools/commit/ff2599c3f9d430b6cee891aab77276c3fe20cb32))
+* Potential fix for code scanning alert no. 10: Incomplete string escaping or encoding ([#179](https://github.com/tpcint/l10n-tools/issues/179)) ([17a9196](https://github.com/tpcint/l10n-tools/commit/17a91966209b61b9cf97d27af2a4ffd11da3f7af))
+* Potential fix for code scanning alert no. 3: Workflow does not contain permissions ([#183](https://github.com/tpcint/l10n-tools/issues/183)) ([8c9601c](https://github.com/tpcint/l10n-tools/commit/8c9601cca2b2268f613931cb061fffd68c1e9cc0))
+* Potential fix for code scanning alert no. 6: Incomplete string escaping or encoding ([#180](https://github.com/tpcint/l10n-tools/issues/180)) ([5ff6049](https://github.com/tpcint/l10n-tools/commit/5ff6049cb17d228276637b752130389e7809de42))
+* Potential fix for code scanning alert no. 7: Incomplete string escaping or encoding ([#181](https://github.com/tpcint/l10n-tools/issues/181)) ([e813942](https://github.com/tpcint/l10n-tools/commit/e8139425f1dd643d66ca1fe732c44b33e78e77d5))
+
 ## [6.1.1](https://github.com/tpcint/l10n-tools/compare/v6.1.0...v6.1.1) (2025-12-29)
 
 

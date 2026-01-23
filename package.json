@@ -33,7 +33,7 @@
     "cosmiconfig": "^9.0.0",
     "domhandler": "^5.0.3",
     "domutils": "^3.2.2",
-    "es-toolkit": "^1.43.0",
+    "es-toolkit": "^1.44.0",
     "fast-xml-parser": "^5.3.3",
     "gettext-parser": "^9.0.0",
     "htmlparser2": "^10.1.0",

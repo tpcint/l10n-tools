@@ -5,9 +5,6 @@ on:
     branches:
       - main
 
-permissions:
-  contents: read
-
 jobs:
   release-please:
     runs-on: ubuntu-latest
@@ -30,17 +27,18 @@ jobs:
     concurrency: publish
     needs: release-please
     if: ${{ needs.release-please.outputs.releases_created == 'true' }}
-  
+    permissions:
+      contents: read   # Required for checkout
+      id-token: write  # Required for npm trusted publishing (OIDC)
+
     steps:
     - uses: actions/checkout@v4
     - name: Setup node with cached node_modules
       uses: ./.github/actions/setup-node-cached
       with:
-        node-version: 22
+        node-version: 24
         registry-url: https://registry.npmjs.org/
     - name: Prepare
       run: npm run prepare
     - name: Publish
-      env:
-        NODE_AUTH_TOKEN: ${{ secrets.NPM_PUBLISH_TOKEN }}
-      run: npm publish
+      run: npm publish --provenance --access public

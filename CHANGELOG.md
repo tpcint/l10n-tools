@@ -1,5 +1,21 @@
 # Changelog
 
+## [6.2.0](https://github.com/tpcint/l10n-tools/compare/v6.1.2...v6.2.0) (2026-01-27)
+
+
+### Miscellaneous Chores
+
+* **deps-dev:** bump @types/node from 22.19.6 to 22.19.7 ([#186](https://github.com/tpcint/l10n-tools/issues/186)) ([c99cfd5](https://github.com/tpcint/l10n-tools/commit/c99cfd5e36ce851db494deb9f7441eb34030cfeb))
+* **deps-dev:** bump the eslint group with 2 updates ([#184](https://github.com/tpcint/l10n-tools/issues/184)) ([41c5ec9](https://github.com/tpcint/l10n-tools/commit/41c5ec98950d7f2cbb3b18f6e4f0a1f5ae5e0ce4))
+* **deps:** bump es-toolkit from 1.43.0 to 1.44.0 ([#185](https://github.com/tpcint/l10n-tools/issues/185)) ([c5a55a0](https://github.com/tpcint/l10n-tools/commit/c5a55a014f8df75aa08131a3008fbfead162302b))
+* **deps:** bump gettext-parser and @types/gettext-parser ([#187](https://github.com/tpcint/l10n-tools/issues/187)) ([a97b45b](https://github.com/tpcint/l10n-tools/commit/a97b45b60f12e83bdc18f65cc530abd4a2489521))
+* **deps:** bump htmlparser2 from 10.0.0 to 10.1.0 ([#188](https://github.com/tpcint/l10n-tools/issues/188)) ([1314ea1](https://github.com/tpcint/l10n-tools/commit/1314ea110db2e6a9e0b6f5b85cb83e6145f6c0cc))
+
+
+### Features
+
+* enable npm trusted publishing with OIDC ([#190](https://github.com/tpcint/l10n-tools/issues/190)) ([d0f742b](https://github.com/tpcint/l10n-tools/commit/d0f742b69ea9da6a1277d5338318a792888dd42e))
+
 ## [6.1.2](https://github.com/tpcint/l10n-tools/compare/v6.1.1...v6.1.2) (2026-01-20)
 
 

@@ -52,20 +52,20 @@
   "devDependencies": {
     "@eslint/js": "^9.39.2",
     "@faker-js/faker": "^10.1.0",
-    "@stylistic/eslint-plugin": "^5.7.0",
+    "@stylistic/eslint-plugin": "^5.7.1",
     "@types/command-exists": "^1.2.3",
     "@types/gettext-parser": "^9.0.0",
     "@types/he": "^1.2.3",
     "@types/node": "^22.19.7",
     "@types/npmlog": "^7.0.0",
     "@types/plist": "^3.0.5",
-    "@typescript-eslint/parser": "^8.53.1",
+    "@typescript-eslint/parser": "^8.54.0",
     "eslint": "^9.39.2",
     "eslint-import-resolver-typescript": "^4.4.4",
     "eslint-plugin-import-newlines": "^1.4.0",
     "eslint-plugin-import-x": "^4.16.1",
     "ts-json-schema-generator": "^2.4.0",
     "ts-node": "^10.9.2",
-    "typescript-eslint": "^8.53.1"
+    "typescript-eslint": "^8.54.0"
   }
 }

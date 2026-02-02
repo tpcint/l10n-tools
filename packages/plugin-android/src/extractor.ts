@@ -1,14 +1,8 @@
 import log from 'npmlog'
 import fsp from 'node:fs/promises'
 import path from 'node:path'
-import {
-  type DomainConfig,
-  getElementContent,
-  getElementContentIndex,
-  getLineTo,
-  KeyExtractor,
-  writeKeyEntries,
-} from 'l10n-tools-core'
+import { type DomainConfig, getLineTo, KeyExtractor, writeKeyEntries } from 'l10n-tools-core'
+import { getElementContent, getElementContentIndex } from './element-utils.js'
 import { parseDocument } from 'htmlparser2'
 import { findOne } from 'domutils'
 import { type Element, isTag, isText } from 'domhandler'

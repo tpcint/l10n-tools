@@ -1,7 +1,7 @@
 import { parseDocument } from 'htmlparser2'
 import { isTag } from 'domhandler'
 import { findAll } from 'domutils'
-import { getElementContent, getElementContentIndex } from 'l10n-tools-core'
+import { getElementContent, getElementContentIndex } from './element-utils.js'
 import { getLineTo, JsKeyExtractor } from 'l10n-tools-extractor-javascript'
 import log from 'npmlog'
 import * as ts from 'typescript'

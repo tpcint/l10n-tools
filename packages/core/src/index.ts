@@ -22,6 +22,7 @@ export {
   type CompilerType,
   type SyncTarget,
   type ProgramOptions,
+  type LokalisePlatform,
 } from './config.js'
 
 // Entry types and utilities
@@ -43,7 +44,6 @@ export {
 export { EntryCollection } from './entry-collection.js'
 export { KeyEntryBuilder } from './key-entry-builder.js'
 export { KeyExtractor, getLineTo } from './key-extractor.js'
-export { getElementContent, getElementContentIndex } from './element-utils.js'
 
 // Utilities
 export {

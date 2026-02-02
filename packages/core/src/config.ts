@@ -1,4 +1,4 @@
-import type { SupportedPlatforms } from '@lokalise/node-api'
+export type LokalisePlatform = 'ios' | 'android' | 'web' | 'other'
 
 export type ProgramOptions = {
   rcfile?: string,
@@ -74,7 +74,7 @@ type DomainConf = {
   /** Location of res (android only) */
   'res-dir'?: string,
   /** Lokalise platform to use */
-  'lokalise-platform'?: SupportedPlatforms,
+  'lokalise-platform'?: LokalisePlatform,
   /** List of output formats */
   'outputs': CompilerConf[],
 }
@@ -180,7 +180,7 @@ export class DomainConfig {
     return resDir
   }
 
-  getLokalisePlatform(): SupportedPlatforms {
+  getLokalisePlatform(): LokalisePlatform {
     const platform = this.dc['lokalise-platform']
     if (platform == null) {
       throw new Error('lokalise-platform is required')

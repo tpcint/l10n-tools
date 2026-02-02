@@ -1,3 +1,5 @@
+import { pathToFileURL } from 'node:url'
+import path from 'node:path'
 import log from 'npmlog'
 import type {
   L10nPlugin,
@@ -70,9 +72,35 @@ class PluginRegistry {
     for (const pluginName of KNOWN_PLUGINS) {
       try {
         await this.loadPlugin(pluginName)
-      } catch {
-        // Plugin not installed - this is expected
-        log.verbose('plugin-registry', `Plugin ${pluginName} not installed`)
+      } catch (err) {
+        // Check if this is a "module not found" error specifically for the plugin package itself
+        // We need to distinguish between:
+        // 1. Plugin not installed (expected, skip silently)
+        // 2. Plugin installed but has a missing dependency (real error, show full details)
+        const errCode = (err as NodeJS.ErrnoException).code
+        const errMessage = String(err)
+
+        // Only treat as "not installed" if the error is specifically about the plugin package
+        // Check if the error mentions the plugin name in the "not found" context
+        const isPluginNotFound = (
+          errCode === 'ERR_MODULE_NOT_FOUND' || errCode === 'MODULE_NOT_FOUND'
+        ) && (
+          errMessage.includes(`'${pluginName}'`)
+          || errMessage.includes(`"${pluginName}"`)
+        )
+
+        if (isPluginNotFound) {
+          // Plugin not installed - silently skip (this is expected)
+          log.verbose('plugin-registry', `Plugin ${pluginName} not installed`)
+        } else {
+          // Real error loading an installed plugin - show full error with stack trace
+          log.error('plugin-registry', `Failed to load plugin ${pluginName}:`)
+          if (err instanceof Error) {
+            log.error('plugin-registry', err.stack || err.message)
+          } else {
+            log.error('plugin-registry', String(err))
+          }
+        }
       }
     }
 
@@ -82,21 +110,23 @@ class PluginRegistry {
 
   /**
    * Load a plugin by package name
+   * Uses import.meta.resolve with cwd as parent to find plugins in user's project
    */
   private async loadPlugin(pluginName: string): Promise<void> {
-    try {
-      const module = await import(pluginName)
-      const factory: PluginFactory = module.default
-      if (typeof factory !== 'function') {
-        log.warn('plugin-registry', `Plugin ${pluginName} does not export a factory function`)
-        return
-      }
-      const plugin = await factory()
-      this.register(plugin)
-      log.info('plugin-registry', `Loaded plugin: ${plugin.name}`)
-    } catch (err) {
-      throw err
+    // Resolve from the user's project directory (cwd), not from core's location
+    // This allows finding plugins installed in the user's project
+    const parentUrl = pathToFileURL(path.join(process.cwd(), 'package.json')).href
+    const pluginUrl = import.meta.resolve(pluginName, parentUrl)
+
+    const module = await import(pluginUrl)
+    const factory: PluginFactory = module.default
+    if (typeof factory !== 'function') {
+      log.warn('plugin-registry', `Plugin ${pluginName} does not export a factory function`)
+      return
     }
+    const plugin = await factory()
+    this.register(plugin)
+    log.info('plugin-registry', `Loaded plugin: ${plugin.name}`)
   }
 
   /**

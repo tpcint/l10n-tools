@@ -16,7 +16,7 @@ import { addToArraySet, isPureKey, removeFromArraySet } from '../utils.js'
 import { EntryCollection } from '../entry-collection.js'
 import { addComment, containsComment } from './lokalise-comment.js'
 
-export async function syncTransToLokalise(config: L10nConfig, domainConfig: DomainConfig, tag: string, keyEntries: KeyEntry[], allTransData: { [locale: string]: TransEntry[] }, drySync: boolean) {
+export async function syncTransToLokalise(config: L10nConfig, domainConfig: DomainConfig, tag: string, keyEntries: KeyEntry[], allTransData: { [locale: string]: TransEntry[] }, drySync: boolean, additionalTags?: string[]) {
   const lokaliseConfig = config.getLokaliseConfig()
   const lokaliseApi = new LokaliseApi({ apiKey: lokaliseConfig.getToken() })
   const projectId = lokaliseConfig.getProjectId()
@@ -35,7 +35,7 @@ export async function syncTransToLokalise(config: L10nConfig, domainConfig: Doma
   const {
     creatingKeyMap,
     updatingKeyMap,
-  } = updateKeyData(platform, tag, keyEntries, allTransData, listedKeyMap)
+  } = updateKeyData(platform, tag, keyEntries, allTransData, listedKeyMap, additionalTags)
   // 3. 로컬 번역 업데이트
   updateTransEntries(tag, lokaliseConfig, keyEntries, allTransData, listedKeyMap)
   // 4. 2에서 준비한 데이터 Lokalise 에 업로드
@@ -142,12 +142,13 @@ function createUpdateKeyDataByRemoving(platform: SupportedPlatforms, tag: string
   }
 }
 
-function createNewKeyData(platform: SupportedPlatforms, tag: string, keyEntry: KeyEntry): CreateKeyData {
+/** @internal exported for testing */
+export function createNewKeyData(platform: SupportedPlatforms, tag: string, keyEntry: KeyEntry, additionalTags?: string[]): CreateKeyData {
   return {
     key_name: keyEntry.key,
     is_plural: keyEntry.isPlural,
     platforms: [platform],
-    tags: [tag],
+    tags: [tag, ...(additionalTags ?? [])],
     context: addContext(undefined, tag, keyEntry.context),
   }
 }
@@ -183,12 +184,14 @@ function createTranslationData(locale: string, isPlural: boolean, messages: Tran
   }
 }
 
-function updateKeyData(
+/** @internal exported for testing */
+export function updateKeyData(
   platform: SupportedPlatforms,
   tag: string,
   keyEntries: KeyEntry[],
   allTransEntries: { [locale: string]: TransEntry[] },
   listedKeyMap: { [keyName: string]: Key },
+  additionalTags?: string[],
 ): {
   creatingKeyMap: { [keyName: string]: CreateKeyData },
   updatingKeyMap: { [keyName: string]: UpdateKeyDataWithId },
@@ -228,7 +231,7 @@ function updateKeyData(
       }
     } else {
       // 기존 키 자체가 없으면 새로 키 만들기
-      creatingKeyMap[entryKey] = createNewKeyData(platform, tag, keyEntry)
+      creatingKeyMap[entryKey] = createNewKeyData(platform, tag, keyEntry, additionalTags)
     }
   }
 

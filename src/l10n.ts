@@ -73,7 +73,7 @@ async function run() {
   }
   program.command('upload')
     .description('Upload local changes to sync target (local files will not touched)')
-    .option('-t, --tags [tags]', 'additional tags to apply when creating keys (comma separated)')
+    .option('-t, --tags <tags>', 'additional tags to apply when creating keys (comma separated)')
     .action(async (opts: UploadOptions, cmd: Command) => {
       const additionalTags = opts.tags ? opts.tags.split(',') : undefined
       await runSubCommand(cmd.name(), async (domainName, config, domainConfig, drySync) => {
@@ -97,7 +97,7 @@ async function run() {
   }
   program.command('sync')
     .description('Synchronize local translations and sync target')
-    .option('-t, --tags [tags]', 'additional tags to apply when creating keys (comma separated)')
+    .option('-t, --tags <tags>', 'additional tags to apply when creating keys (comma separated)')
     .action(async (opts: SyncOptions, cmd: Command) => {
       const additionalTags = opts.tags ? opts.tags.split(',') : undefined
       await runSubCommand(cmd.name(), async (domainName, config, domainConfig, drySync) => {
@@ -127,7 +127,7 @@ async function run() {
     .description('Check all translated')
     .option('-l, --locales [locales]', 'locales to check, all if not specified (comma separated)')
     .option('--force-sync', 'sync even if translations are cached')
-    .option('-t, --tags [tags]', 'additional tags to apply when creating keys (comma separated)')
+    .option('-t, --tags <tags>', 'additional tags to apply when creating keys (comma separated)')
     .argument('[files...]', 'files to check, if not specified, all files will be checked')
     .action(async (files: string[], opts: CheckOptions, cmd: Command) => {
       const additionalTags = opts.tags ? opts.tags.split(',') : undefined
@@ -315,7 +315,7 @@ async function run() {
   }
   program.command('_sync')
     .description('Synchronize translations to remote target (internal use only)')
-    .option('-t, --tags [tags]', 'additional tags to apply when creating keys (comma separated)')
+    .option('-t, --tags <tags>', 'additional tags to apply when creating keys (comma separated)')
     .action(async (opts: InternalSyncOptions, cmd: Command) => {
       const additionalTags = opts.tags ? opts.tags.split(',') : undefined
       await runSubCommand(cmd.name(), async (domainName, config, domainConfig, drySync) => {

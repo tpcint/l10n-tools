@@ -7,14 +7,7 @@ import type { PlistObject } from 'plist'
 import { glob } from 'tinyglobby'
 import PQueue from 'p-queue'
 import os from 'os'
-import {
-  BaseKeyExtractor,
-  type DomainConfig,
-  execWithLog,
-  fileExists,
-  getTempDir,
-  writeKeyEntries,
-} from 'l10n-tools-core'
+import { type DomainConfig, execWithLog, fileExists, getTempDir, KeyExtractor, writeKeyEntries } from 'l10n-tools-core'
 
 const infoPlistKeys = [
   'NSCameraUsageDescription',
@@ -28,7 +21,7 @@ export async function extractIosKeys(domainName: string, config: DomainConfig, k
   const tempDir = path.join(getTempDir(), 'extractor')
   await fsp.mkdir(tempDir, { recursive: true })
 
-  const extractor = new BaseKeyExtractor()
+  const extractor = new KeyExtractor()
   const srcDir = config.getSrcDir()
 
   log.info('extractKeys', 'extracting from .swift files')
@@ -114,7 +107,7 @@ async function getXibPaths(srcDir: string) {
   return baseXibPaths
 }
 
-function extractIosStrings(extractor: BaseKeyExtractor, filename: string, src: string) {
+function extractIosStrings(extractor: KeyExtractor, filename: string, src: string) {
   const data = i18nStringsFiles.parse(src, true)
   for (const [key, value] of Object.entries(data)) {
     const { defaultValue, ignore } = parseComment(key, value.comment)

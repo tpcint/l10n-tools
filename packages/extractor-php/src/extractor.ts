@@ -2,7 +2,7 @@ import fsp from 'node:fs/promises'
 import log from 'npmlog'
 import * as path from 'path'
 import { type DomainConfig, getSrcPaths, writeKeyEntries } from 'l10n-tools-core'
-import { KeyExtractor } from './key-extractor.js'
+import { PhpKeyExtractor } from './php-key-extractor.js'
 
 export async function extractPhpKeys(domainName: string, config: DomainConfig, keysPath: string) {
   const srcPaths = await getSrcPaths(config, ['.php'])
@@ -10,7 +10,7 @@ export async function extractPhpKeys(domainName: string, config: DomainConfig, k
   keywords.add('_')
   keywords.add('gettext')
 
-  const extractor = new KeyExtractor({
+  const extractor = new PhpKeyExtractor({
     keywords: keywords,
   })
   log.info('extractKeys', 'extracting from .php files')

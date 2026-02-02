@@ -2,11 +2,11 @@ import log from 'npmlog'
 import fsp from 'node:fs/promises'
 import path from 'node:path'
 import {
-  BaseKeyExtractor,
   type DomainConfig,
   getElementContent,
   getElementContentIndex,
   getLineTo,
+  KeyExtractor,
   writeKeyEntries,
 } from 'l10n-tools-core'
 import { parseDocument } from 'htmlparser2'
@@ -19,7 +19,7 @@ export async function extractAndroidKeys(domainName: string, config: DomainConfi
   const resDir = config.getResDir()
   const srcPath = path.join(resDir, 'values', 'strings.xml')
 
-  const extractor = new BaseKeyExtractor()
+  const extractor = new KeyExtractor()
   log.info('extractKeys', 'extracting from strings.xml file')
   log.verbose('extractKeys', `processing '${srcPath}'`)
   const input = await fsp.readFile(srcPath, { encoding: 'utf-8' })
@@ -27,7 +27,7 @@ export async function extractAndroidKeys(domainName: string, config: DomainConfi
   await writeKeyEntries(keysPath, extractor.keys.toEntries())
 }
 
-export function extractAndroidStringsXml(extractor: BaseKeyExtractor, filename: string, src: string, startLine: number = 1) {
+export function extractAndroidStringsXml(extractor: KeyExtractor, filename: string, src: string, startLine: number = 1) {
   const root = parseDocument(src, { xmlMode: true, withStartIndices: true, withEndIndices: true })
   const resources = findOne(elem => elem.name == 'resources', root.children, false)
   if (resources == null) {

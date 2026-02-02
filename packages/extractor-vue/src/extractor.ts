@@ -2,7 +2,7 @@ import fsp from 'node:fs/promises'
 import log from 'npmlog'
 import * as path from 'path'
 import { type DomainConfig, getSrcPaths, writeKeyEntries } from 'l10n-tools-core'
-import { KeyExtractor } from './key-extractor.js'
+import { VueKeyExtractor } from './vue-key-extractor.js'
 
 export async function extractVueGettextKeys(domainName: string, config: DomainConfig, keysPath: string) {
   const srcPaths = await getSrcPaths(config, ['.vue', '.js'])
@@ -14,7 +14,7 @@ export async function extractVueGettextKeys(domainName: string, config: DomainCo
   keywords.add('this.$gettextInterpolate')
   keywords.add('vm.$gettextInterpolate')
 
-  const extractor = new KeyExtractor({
+  const extractor = new VueKeyExtractor({
     tagNames: ['translate'],
     attrNames: ['v-translate'],
     exprAttrs: [/^:/, /^v-bind:/],
@@ -52,7 +52,7 @@ export async function extractVueI18nKeys(domainName: string, config: DomainConfi
   keywords.add('this.$tc:0:1')
   keywords.add('app.i18n.tc:0:1')
 
-  const extractor = new KeyExtractor({
+  const extractor = new VueKeyExtractor({
     tagNames: ['i18n', 'i18n-t'],
     objectAttrs: { 'v-t': ['', 'path'] },
     exprAttrs: [/^:/, /^v-bind:/, /^v-html$/],

@@ -6,7 +6,7 @@ import type { KeyEntry } from './entry.js'
  * Base key extractor class providing core functionality for extracting translation keys.
  * Platform-specific extractors should extend this class or use it directly.
  */
-export class BaseKeyExtractor {
+export class KeyExtractor {
   public readonly keys: EntryCollection<KeyEntry>
 
   constructor() {

@@ -23,9 +23,6 @@
     "dist"
   ],
   "dependencies": {
-    "domhandler": "^5.0.3",
-    "domutils": "^3.2.2",
-    "htmlparser2": "^10.1.0",
     "npmlog": "^7.0.1",
     "typescript": "^5.9.3"
   },

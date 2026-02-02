@@ -1,7 +1,7 @@
 {
   "name": "l10n-tools-core",
   "version": "7.0.0",
-  "description": "Localization tools - Core CLI and infrastructure",
+  "description": "Localization tools - Core library and infrastructure",
   "type": "module",
   "engines": {
     "node": ">=22.19.0",
@@ -12,9 +12,6 @@
     "watch": "tsc -w",
     "test": "node --no-warnings=ExperimentalWarning --loader ts-node/esm --test \"src/**/*.test.ts\"",
     "schema": "ts-json-schema-generator -p 'src/**/*.ts' -e all -t L10nConf --no-top-ref -o l10nrc.schema.json"
-  },
-  "bin": {
-    "l10n": "dist/l10n.js"
   },
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -33,10 +30,7 @@
     "l10nrc.schema.json"
   ],
   "dependencies": {
-    "ajv": "^8.17.1",
     "command-exists": "^1.2.9",
-    "commander": "^14.0.1",
-    "cosmiconfig": "^9.0.0",
     "es-toolkit": "^1.44.0",
     "npmlog": "^7.0.1",
     "tinyglobby": "^0.2.15"
@@ -45,28 +39,6 @@
     "@types/command-exists": "^1.2.3",
     "@types/npmlog": "^7.0.0",
     "ts-json-schema-generator": "^2.4.0"
-  },
-  "peerDependencies": {
-    "l10n-tools-plugin-android": "^7.0.0",
-    "l10n-tools-plugin-ios": "^7.0.0",
-    "l10n-tools-extractor-javascript": "^7.0.0",
-    "l10n-tools-extractor-vue": "^7.0.0",
-    "l10n-tools-extractor-python": "^7.0.0",
-    "l10n-tools-extractor-php": "^7.0.0",
-    "l10n-tools-compiler-json": "^7.0.0",
-    "l10n-tools-compiler-gettext": "^7.0.0",
-    "l10n-tools-syncer-lokalise": "^7.0.0"
-  },
-  "peerDependenciesMeta": {
-    "l10n-tools-plugin-android": { "optional": true },
-    "l10n-tools-plugin-ios": { "optional": true },
-    "l10n-tools-extractor-javascript": { "optional": true },
-    "l10n-tools-extractor-vue": { "optional": true },
-    "l10n-tools-extractor-python": { "optional": true },
-    "l10n-tools-extractor-php": { "optional": true },
-    "l10n-tools-compiler-json": { "optional": true },
-    "l10n-tools-compiler-gettext": { "optional": true },
-    "l10n-tools-syncer-lokalise": { "optional": true }
   },
   "author": "Eungkyu Song <eungkyu@gmail.com>",
   "license": "MIT",

@@ -2,33 +2,31 @@
 
 import { Command } from 'commander'
 import log from 'npmlog'
-import { checkTransEntrySpecs, readKeyEntries, readTransEntries } from './entry.js'
-import { fileExists, getKeysPath, getTransPath } from './utils.js'
-import { updateTrans } from './common.js'
-import { syncTransToTarget } from './syncer/index.js'
+import {
+  checkTransEntrySpecs,
+  compileAll,
+  type DomainConfig,
+  EntryCollection,
+  extractKeys,
+  fileExists,
+  getKeysPath,
+  getTransPath,
+  L10nConfig,
+  pluginRegistry,
+  type ProgramOptions,
+  readKeyEntries,
+  readTransEntries,
+  syncTransToTarget,
+  updateTrans,
+} from 'l10n-tools-core'
 import * as path from 'path'
-import { type DomainConfig, L10nConfig } from './config.js'
-import { extractKeys } from './extractor/index.js'
-import { compileAll } from './compiler/index.js'
 import fsp from 'node:fs/promises'
 import { cosmiconfig } from 'cosmiconfig'
 import { fileURLToPath } from 'url'
 import { Ajv } from 'ajv'
-import { EntryCollection } from './entry-collection.js'
-import { pluginRegistry } from './plugin-registry.js'
 
 const program = new Command('l10n-tools')
 const dirname = path.dirname(fileURLToPath(import.meta.url))
-
-export type ProgramOptions = {
-  rcfile?: string,
-  domains?: string,
-  skipValidation?: boolean,
-  validationBaseLocale?: string,
-  drySync?: boolean,
-  verbose?: boolean,
-  quiet?: boolean,
-}
 
 /**
  * Configure the CLI, register l10n commands and options, and parse process arguments.
@@ -365,7 +363,13 @@ async function loadConfig(rcPath: string): Promise<L10nConfig> {
   const explorer = cosmiconfig('l10n')
   const rc = await explorer.load(rcPath)
   const ajv = new Ajv()
-  const schema = JSON.parse(await fsp.readFile(path.join(dirname, '..', 'l10nrc.schema.json'), { encoding: 'utf-8' }))
+
+  // Load schema from l10n-tools-core package
+  const corePackagePath = import.meta.resolve('l10n-tools-core')
+  const coreDir = path.dirname(fileURLToPath(corePackagePath))
+  const schemaPath = path.join(coreDir, '..', 'l10nrc.schema.json')
+  const schema = JSON.parse(await fsp.readFile(schemaPath, { encoding: 'utf-8' }))
+
   const validate = ajv.compile(schema)
   const valid = validate(rc?.config)
   if (!valid) {

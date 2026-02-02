@@ -1,6 +1,15 @@
-import type { ProgramOptions } from './l10n.js'
 import type { SupportedPlatforms } from '@lokalise/node-api'
 import { invert } from 'es-toolkit/compat'
+
+export type ProgramOptions = {
+  rcfile?: string,
+  domains?: string,
+  skipValidation?: boolean,
+  validationBaseLocale?: string,
+  drySync?: boolean,
+  verbose?: boolean,
+  quiet?: boolean,
+}
 
 type L10nConf = {
   '$schema'?: string,

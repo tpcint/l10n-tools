@@ -21,6 +21,7 @@ export {
   type DomainType,
   type CompilerType,
   type SyncTarget,
+  type ProgramOptions,
 } from './config.js'
 
 // Entry types and utilities

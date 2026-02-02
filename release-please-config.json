@@ -19,6 +19,9 @@
     "packages/core": {
       "component": "l10n-tools-core"
     },
+    "packages/cli": {
+      "component": "l10n-tools"
+    },
     "packages/plugin-android": {
       "component": "l10n-tools-plugin-android"
     },

@@ -2,6 +2,7 @@
   "files": [],
   "references": [
     { "path": "packages/core" },
+    { "path": "packages/cli" },
     { "path": "packages/plugin-android" },
     { "path": "packages/plugin-ios" },
     { "path": "packages/extractor-javascript" },

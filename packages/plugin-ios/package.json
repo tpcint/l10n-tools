@@ -1,0 +1,46 @@
+{
+  "name": "l10n-tools-plugin-ios",
+  "version": "7.0.0",
+  "description": "l10n-tools plugin for iOS platform",
+  "type": "module",
+  "engines": {
+    "node": ">=22.19.0",
+    "npm": ">=10.9.0"
+  },
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc -w"
+  },
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "dependencies": {
+    "i18n-strings-files": "^2.0.0",
+    "npmlog": "^7.0.1",
+    "p-queue": "^9.1.0",
+    "plist": "^3.1.0",
+    "tinyglobby": "^0.2.15"
+  },
+  "devDependencies": {
+    "@types/npmlog": "^7.0.0",
+    "@types/plist": "^3.0.5"
+  },
+  "peerDependencies": {
+    "l10n-tools-core": "^7.0.0"
+  },
+  "author": "Eungkyu Song <eungkyu@gmail.com>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tpcint/l10n-tools.git",
+    "directory": "packages/plugin-ios"
+  }
+}

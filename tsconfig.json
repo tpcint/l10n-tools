@@ -1,18 +1,15 @@
 {
-  "compilerOptions": {
-    "target": "es2024",
-    "lib": ["ES2024"],
-    "module": "NodeNext",
-    "sourceMap": true,
-    "outDir": "./dist",
-    "verbatimModuleSyntax": true,
-    "esModuleInterop": true,
-    "forceConsistentCasingInFileNames": true,
-    "strict": true,
-    "skipLibCheck": true
-  },
-  "include": [
-    "./src",
-    "./@types"
+  "files": [],
+  "references": [
+    { "path": "packages/core" },
+    { "path": "packages/plugin-android" },
+    { "path": "packages/plugin-ios" },
+    { "path": "packages/extractor-javascript" },
+    { "path": "packages/extractor-vue" },
+    { "path": "packages/extractor-python" },
+    { "path": "packages/extractor-php" },
+    { "path": "packages/compiler-json" },
+    { "path": "packages/compiler-gettext" },
+    { "path": "packages/syncer-lokalise" }
   ]
 }

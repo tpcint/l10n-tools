@@ -1,0 +1,47 @@
+{
+  "name": "l10n-tools-plugin-android",
+  "version": "7.0.0",
+  "description": "l10n-tools plugin for Android platform",
+  "type": "module",
+  "engines": {
+    "node": ">=22.19.0",
+    "npm": ">=10.9.0"
+  },
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc -w"
+  },
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "dependencies": {
+    "domhandler": "^5.0.3",
+    "domutils": "^3.2.2",
+    "fast-xml-parser": "^5.3.4",
+    "he": "^1.2.0",
+    "htmlparser2": "^10.1.0",
+    "npmlog": "^7.0.1"
+  },
+  "devDependencies": {
+    "@types/he": "^1.2.3",
+    "@types/npmlog": "^7.0.0"
+  },
+  "peerDependencies": {
+    "l10n-tools-core": "^7.0.0"
+  },
+  "author": "Eungkyu Song <eungkyu@gmail.com>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tpcint/l10n-tools.git",
+    "directory": "packages/plugin-android"
+  }
+}

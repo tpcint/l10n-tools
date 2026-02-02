@@ -1,0 +1,41 @@
+{
+  "name": "l10n-tools-compiler-json",
+  "version": "7.0.0",
+  "description": "l10n-tools compiler for JSON formats (vue-i18n, node-i18n, i18next)",
+  "type": "module",
+  "engines": {
+    "node": ">=22.19.0",
+    "npm": ">=10.9.0"
+  },
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc -w"
+  },
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "dependencies": {
+    "npmlog": "^7.0.1"
+  },
+  "devDependencies": {
+    "@types/npmlog": "^7.0.0"
+  },
+  "peerDependencies": {
+    "l10n-tools-core": "^7.0.0"
+  },
+  "author": "Eungkyu Song <eungkyu@gmail.com>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tpcint/l10n-tools.git",
+    "directory": "packages/compiler-json"
+  }
+}

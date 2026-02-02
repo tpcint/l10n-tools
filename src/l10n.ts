@@ -68,9 +68,14 @@ async function run() {
       })
     })
 
+  type UploadOptions = {
+    tags?: string,
+  }
   program.command('upload')
     .description('Upload local changes to sync target (local files will not touched)')
-    .action(async (opts, cmd: Command) => {
+    .option('-t, --tags [tags]', 'additional tags to apply when creating keys (comma separated)')
+    .action(async (opts: UploadOptions, cmd: Command) => {
+      const additionalTags = opts.tags ? opts.tags.split(',') : undefined
       await runSubCommand(cmd.name(), async (domainName, config, domainConfig, drySync) => {
         const cacheDir = domainConfig.getCacheDir()
         const locales = domainConfig.getLocales()
@@ -82,14 +87,19 @@ async function run() {
 
         await extractKeys(domainName, domainConfig, keysPath)
         await updateTrans(keysPath, transDir, transDir, locales, null)
-        await syncTransToTarget(config, domainConfig, tag, keysPath, transDir, drySync)
+        await syncTransToTarget(config, domainConfig, tag, keysPath, transDir, drySync, additionalTags)
         await updateTrans(keysPath, transDir, transDir, locales, validationConfig)
       })
     })
 
+  type SyncOptions = {
+    tags?: string,
+  }
   program.command('sync')
     .description('Synchronize local translations and sync target')
-    .action(async (opts, cmd: Command) => {
+    .option('-t, --tags [tags]', 'additional tags to apply when creating keys (comma separated)')
+    .action(async (opts: SyncOptions, cmd: Command) => {
+      const additionalTags = opts.tags ? opts.tags.split(',') : undefined
       await runSubCommand(cmd.name(), async (domainName, config, domainConfig, drySync) => {
         const cacheDir = domainConfig.getCacheDir()
         const locales = domainConfig.getLocales()
@@ -101,7 +111,7 @@ async function run() {
 
         await extractKeys(domainName, domainConfig, keysPath)
         await updateTrans(keysPath, transDir, transDir, locales, null)
-        await syncTransToTarget(config, domainConfig, tag, keysPath, transDir, drySync)
+        await syncTransToTarget(config, domainConfig, tag, keysPath, transDir, drySync, additionalTags)
         await updateTrans(keysPath, transDir, transDir, locales, validationConfig)
 
         await compileAll(domainName, domainConfig, transDir)
@@ -111,13 +121,16 @@ async function run() {
   type CheckOptions = {
     locales?: string,
     forceSync?: boolean,
+    tags?: string,
   }
   program.command('check')
     .description('Check all translated')
     .option('-l, --locales [locales]', 'locales to check, all if not specified (comma separated)')
     .option('--force-sync', 'sync even if translations are cached')
+    .option('-t, --tags [tags]', 'additional tags to apply when creating keys (comma separated)')
     .argument('[files...]', 'files to check, if not specified, all files will be checked')
     .action(async (files: string[], opts: CheckOptions, cmd: Command) => {
+      const additionalTags = opts.tags ? opts.tags.split(',') : undefined
       await runSubCommand(cmd.name(), async (domainName, config, domainConfig, drySync) => {
         const cacheDir = domainConfig.getCacheDir()
         const locales = opts['locales'] ? opts['locales'].split(',') : domainConfig.getLocales()
@@ -131,7 +144,7 @@ async function run() {
         await extractKeys(domainName, domainConfig, keysPath)
         if (opts['forceSync'] || !await fileExists(transDir)) {
           await updateTrans(keysPath, transDir, transDir, locales, null)
-          await syncTransToTarget(config, domainConfig, tag, keysPath, transDir, drySync)
+          await syncTransToTarget(config, domainConfig, tag, keysPath, transDir, drySync, additionalTags)
         }
         await updateTrans(keysPath, transDir, transDir, locales, validationConfig)
 
@@ -297,9 +310,14 @@ async function run() {
       })
     })
 
+  type InternalSyncOptions = {
+    tags?: string,
+  }
   program.command('_sync')
     .description('Synchronize translations to remote target (internal use only)')
-    .action(async (opts, cmd: Command) => {
+    .option('-t, --tags [tags]', 'additional tags to apply when creating keys (comma separated)')
+    .action(async (opts: InternalSyncOptions, cmd: Command) => {
+      const additionalTags = opts.tags ? opts.tags.split(',') : undefined
       await runSubCommand(cmd.name(), async (domainName, config, domainConfig, drySync) => {
         const tag = domainConfig.getTag()
         const cacheDir = domainConfig.getCacheDir()
@@ -307,7 +325,7 @@ async function run() {
         const transDir = path.join(cacheDir, domainName)
         const keysPath = getKeysPath(path.join(cacheDir, domainName))
 
-        await syncTransToTarget(config, domainConfig, tag, keysPath, transDir, drySync)
+        await syncTransToTarget(config, domainConfig, tag, keysPath, transDir, drySync, additionalTags)
       })
     })
 

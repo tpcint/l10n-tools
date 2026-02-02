@@ -8,14 +8,14 @@ import {
   writeKeyEntries,
 } from '../entry.js'
 
-export type SyncerFunc = (config: L10nConfig, domainConfig: DomainConfig, tag: string, keyEntries: KeyEntry[], allTransEntries: { [locale: string]: TransEntry[] }, drySync: boolean) => Promise<void>
+export type SyncerFunc = (config: L10nConfig, domainConfig: DomainConfig, tag: string, keyEntries: KeyEntry[], allTransEntries: { [locale: string]: TransEntry[] }, drySync: boolean, additionalTags?: string[]) => Promise<void>
 
-export async function syncTransToTarget(config: L10nConfig, domainConfig: DomainConfig, tag: string, keysPath: string, transDir: string, drySync: boolean) {
+export async function syncTransToTarget(config: L10nConfig, domainConfig: DomainConfig, tag: string, keysPath: string, transDir: string, drySync: boolean, additionalTags?: string[]) {
   const target = config.getSyncTarget()
   const syncer = await loadSyncer(target)
   const keyEntries = await readKeyEntries(keysPath)
   const allTransEntries = await readAllTransEntries(transDir)
-  await syncer(config, domainConfig, tag, keyEntries, allTransEntries, drySync)
+  await syncer(config, domainConfig, tag, keyEntries, allTransEntries, drySync, additionalTags)
   await writeKeyEntries(keysPath, keyEntries)
   await writeAllTransEntries(transDir, allTransEntries)
 }

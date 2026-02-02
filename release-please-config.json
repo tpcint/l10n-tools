@@ -1,4 +1,5 @@
 {
+  "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json",
   "release-type": "node",
   "changelog-sections": [
     { "type": "build", "section": "Build System", "hidden": false },
@@ -13,8 +14,37 @@
     { "type": "refactor", "section": "Code Refactoring", "hidden": false },
     { "type": "test", "section": "Tests", "hidden": false }
   ],
-  "include-component-in-tag": false,
+  "include-component-in-tag": true,
   "packages": {
-    ".": {}
+    "packages/core": {
+      "component": "l10n-tools-core"
+    },
+    "packages/plugin-android": {
+      "component": "l10n-tools-plugin-android"
+    },
+    "packages/plugin-ios": {
+      "component": "l10n-tools-plugin-ios"
+    },
+    "packages/extractor-javascript": {
+      "component": "l10n-tools-extractor-javascript"
+    },
+    "packages/extractor-vue": {
+      "component": "l10n-tools-extractor-vue"
+    },
+    "packages/extractor-python": {
+      "component": "l10n-tools-extractor-python"
+    },
+    "packages/extractor-php": {
+      "component": "l10n-tools-extractor-php"
+    },
+    "packages/compiler-json": {
+      "component": "l10n-tools-compiler-json"
+    },
+    "packages/compiler-gettext": {
+      "component": "l10n-tools-compiler-gettext"
+    },
+    "packages/syncer-lokalise": {
+      "component": "l10n-tools-syncer-lokalise"
+    }
   }
 }

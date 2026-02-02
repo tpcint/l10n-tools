@@ -10,7 +10,7 @@
   "scripts": {
     "tsc": "tsc --noEmit",
     "lint": "eslint",
-    "test": "node --no-warnings=ExperimentalWarning --loader ts-node/esm --test 'src/**/*.test.ts'",
+    "test": "node --no-warnings=ExperimentalWarning --loader ts-node/esm --test \"src/**/*.test.ts\"",
     "build": "tsc",
     "watch": "tsc -w",
     "schema": "ts-json-schema-generator -p 'src/**/*.ts,@types/*.ts' -e all -t L10nConf --no-top-ref -o l10nrc.schema.json",

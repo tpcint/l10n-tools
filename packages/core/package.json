@@ -30,12 +30,10 @@
     "l10nrc.schema.json"
   ],
   "dependencies": {
-    "command-exists": "^1.2.9",
     "npmlog": "^7.0.1",
     "tinyglobby": "^0.2.15"
   },
   "devDependencies": {
-    "@types/command-exists": "^1.2.3",
     "@types/npmlog": "^7.0.0",
     "ts-json-schema-generator": "^2.4.0"
   },

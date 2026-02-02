@@ -1,5 +1,4 @@
 import { spawn } from 'child_process'
-import commandExists from 'command-exists'
 import log from 'npmlog'
 import os from 'node:os'
 import fsp from 'node:fs/promises'
@@ -53,18 +52,6 @@ export function isErrnoException(err: unknown, code?: string): err is NodeJS.Err
     return code == null || err.code == code
   } else {
     return false
-  }
-}
-
-export async function requireBrewCmd(cmd: string, pkg: string, needForceLink: boolean = false): Promise<void> {
-  try {
-    await commandExists(cmd)
-  } catch (err) {
-    if (needForceLink) {
-      throw new Error(`install '${cmd}' by 'brew install ${pkg} && brew link --force ${pkg}' or else you like`, { cause: err })
-    } else {
-      throw new Error(`install '${cmd}' by 'brew install ${pkg}' or else you like`, { cause: err })
-    }
   }
 }
 

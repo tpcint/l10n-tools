@@ -2,7 +2,7 @@ import { glob } from 'tinyglobby'
 import log from 'npmlog'
 import * as path from 'path'
 import fsp from 'node:fs/promises'
-import { execWithLog, fileExists, getTransPath, requireBrewCmd } from './utils.js'
+import { fileExists, getTransPath } from './utils.js'
 import {
   readKeyEntries,
   readTransEntries,
@@ -42,19 +42,6 @@ export async function getSrcPaths(config: DomainConfig, exts: string[]): Promise
     srcPaths.push(...await glob(srcPattern, { ignore: ignorePatterns }))
   }
   return srcPaths
-}
-
-export async function xgettext(domainName: string, language: string, keywords: string[], potPath: string, srcPaths: string[], merge: boolean) {
-  await requireBrewCmd('xgettext', 'gettext', true)
-  log.info('xgettext', `from ${language} source`)
-  await execWithLog(
-    `xgettext --language="${language}" \
-            ${keywords.map(keyword => `--keyword="${keyword}"`).join(' ')} \
-            --from-code=UTF-8 --no-wrap \
-            ${merge ? '--join-existing' : ''} \
-            --package-name="${domainName}" \
-            --output="${potPath}" \
-            ${srcPaths.join(' ')}`, 'xgettext')
 }
 
 export async function updateTrans(keysPath: string, fromTransDir: string, transDir: string, locales: string[], validationConfig: ValidationConfig | null) {

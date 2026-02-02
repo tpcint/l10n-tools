@@ -29,9 +29,6 @@
     "npmlog": "^7.0.1",
     "typescript": "^5.9.3"
   },
-  "optionalDependencies": {
-    "php-parser": "^3.2.5"
-  },
   "devDependencies": {
     "@types/npmlog": "^7.0.0"
   },

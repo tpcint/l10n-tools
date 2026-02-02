@@ -25,10 +25,9 @@ const KNOWN_PLUGINS = [
 ] as const
 
 /**
- * Mapping from domain/compiler types to suggested plugin packages
+ * Mapping from domain types to suggested extractor plugins
  */
-const TYPE_TO_PLUGIN: Record<string, string> = {
-  // Extractors (domain types)
+const EXTRACTOR_TYPE_TO_PLUGIN: Record<string, string> = {
   'android': 'l10n-tools-plugin-android',
   'ios': 'l10n-tools-plugin-ios',
   'react': 'l10n-tools-extractor-javascript',
@@ -39,16 +38,28 @@ const TYPE_TO_PLUGIN: Record<string, string> = {
   'vue-i18n': 'l10n-tools-extractor-vue',
   'python': 'l10n-tools-extractor-python',
   'php-gettext': 'l10n-tools-extractor-php',
-  // Compilers
+}
+
+/**
+ * Mapping from compiler types to suggested compiler plugins
+ */
+const COMPILER_TYPE_TO_PLUGIN: Record<string, string> = {
+  'android': 'l10n-tools-plugin-android',
+  'ios': 'l10n-tools-plugin-ios',
   'json': 'l10n-tools-compiler-json',
   'json-dir': 'l10n-tools-compiler-json',
-  'vue-i18n-compiler': 'l10n-tools-compiler-json',
+  'vue-i18n': 'l10n-tools-compiler-json',
   'node-i18n': 'l10n-tools-compiler-json',
-  'i18next-compiler': 'l10n-tools-compiler-json',
+  'i18next': 'l10n-tools-compiler-json',
   'po-json': 'l10n-tools-compiler-gettext',
   'mo': 'l10n-tools-compiler-gettext',
   'node-gettext': 'l10n-tools-compiler-gettext',
-  // Syncers
+}
+
+/**
+ * Mapping from sync targets to suggested syncer plugins
+ */
+const SYNCER_TYPE_TO_PLUGIN: Record<string, string> = {
   'lokalise': 'l10n-tools-syncer-lokalise',
 }
 
@@ -191,10 +202,24 @@ class PluginRegistry {
   }
 
   /**
-   * Get the suggested plugin package for a type
+   * Get the suggested plugin package for an extractor (domain type)
    */
-  getSuggestedPlugin(type: string): string | undefined {
-    return TYPE_TO_PLUGIN[type]
+  getSuggestedExtractorPlugin(domainType: string): string | undefined {
+    return EXTRACTOR_TYPE_TO_PLUGIN[domainType]
+  }
+
+  /**
+   * Get the suggested plugin package for a compiler type
+   */
+  getSuggestedCompilerPlugin(compilerType: string): string | undefined {
+    return COMPILER_TYPE_TO_PLUGIN[compilerType]
+  }
+
+  /**
+   * Get the suggested plugin package for a syncer target
+   */
+  getSuggestedSyncerPlugin(syncTarget: string): string | undefined {
+    return SYNCER_TYPE_TO_PLUGIN[syncTarget]
   }
 
   /**

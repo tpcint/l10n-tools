@@ -18,7 +18,7 @@ export async function extractKeys(domainName: string, domainConfig: DomainConfig
 
   const extractor = pluginRegistry.getExtractor(type)
   if (!extractor) {
-    const suggestedPlugin = pluginRegistry.getSuggestedPlugin(type)
+    const suggestedPlugin = pluginRegistry.getSuggestedExtractorPlugin(type)
     const installHint = suggestedPlugin
       ? `\nInstall the required plugin: npm install ${suggestedPlugin}`
       : ''

@@ -17,7 +17,7 @@ export async function compileAll(domainName: string, domainConfig: DomainConfig,
 
     const compiler = pluginRegistry.getCompiler(type)
     if (!compiler) {
-      const suggestedPlugin = pluginRegistry.getSuggestedPlugin(type)
+      const suggestedPlugin = pluginRegistry.getSuggestedCompilerPlugin(type)
       const installHint = suggestedPlugin
         ? `\nInstall the required plugin: npm install ${suggestedPlugin}`
         : ''

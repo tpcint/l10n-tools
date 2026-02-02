@@ -33,7 +33,7 @@ export async function syncTransToTarget(
 
   const syncer = pluginRegistry.getSyncer(target)
   if (!syncer) {
-    const suggestedPlugin = pluginRegistry.getSuggestedPlugin(target)
+    const suggestedPlugin = pluginRegistry.getSuggestedSyncerPlugin(target)
     const installHint = suggestedPlugin
       ? `\nInstall the required plugin: npm install ${suggestedPlugin}`
       : ''

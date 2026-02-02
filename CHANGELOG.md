@@ -1,5 +1,20 @@
 # Changelog
 
+## [6.3.0](https://github.com/tpcint/l10n-tools/compare/v6.2.0...v6.3.0) (2026-02-02)
+
+
+### Miscellaneous Chores
+
+* **deps-dev:** bump the eslint group with 3 updates ([#191](https://github.com/tpcint/l10n-tools/issues/191)) ([a517955](https://github.com/tpcint/l10n-tools/commit/a5179558e7aff9c8a22d29429ad12ca5c91be2b8))
+* **deps:** bump fast-xml-parser from 5.3.3 to 5.3.4 ([#194](https://github.com/tpcint/l10n-tools/issues/194)) ([4178ec6](https://github.com/tpcint/l10n-tools/commit/4178ec62830c2572a039c5375d46be2df76ba78f))
+* relax node and npm version requirements ([#196](https://github.com/tpcint/l10n-tools/issues/196)) ([5c7785d](https://github.com/tpcint/l10n-tools/commit/5c7785d3f46a6ef0ffb50b62b76e5e18dfa36bdf))
+* relax npm version requirement from ^10.9.4 to &gt;=10.9.4 ([#192](https://github.com/tpcint/l10n-tools/issues/192)) ([e594d9c](https://github.com/tpcint/l10n-tools/commit/e594d9cfb95ad489936b30e7535f247113016f3c))
+
+
+### Features
+
+* add --tags option to apply additional tags when creating keys ([#195](https://github.com/tpcint/l10n-tools/issues/195)) ([83f9865](https://github.com/tpcint/l10n-tools/commit/83f9865390688bc4dbe4db91afaed1abbd084f6a))
+
 ## [6.2.0](https://github.com/tpcint/l10n-tools/compare/v6.1.2...v6.2.0) (2026-01-27)
 
 

@@ -4,8 +4,8 @@
   "description": "Localization tools",
   "type": "module",
   "engines": {
-    "node": ">=22.21.0",
-    "npm": ">=10.9.4"
+    "node": ">=22.19.0",
+    "npm": ">=10.9.0"
   },
   "scripts": {
     "tsc": "tsc --noEmit",

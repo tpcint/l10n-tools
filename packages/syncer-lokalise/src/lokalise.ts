@@ -1,12 +1,12 @@
 import log from 'npmlog'
 import {
   type DomainConfig,
+  EntryCollection,
+  type KeyEntry,
   type L10nConfig,
   type LokaliseConfig,
-  type KeyEntry,
   type TransEntry,
   type TransMessages,
-  EntryCollection,
 } from 'l10n-tools-core'
 import {
   type CreateKeyData,

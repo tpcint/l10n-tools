@@ -2,13 +2,13 @@ import fsp from 'node:fs/promises'
 import log from 'npmlog'
 import * as path from 'path'
 import {
-  EntryCollection,
-  readTransEntries,
-  type TransEntry,
   type CompilerConfig,
-  listTransPaths,
+  EntryCollection,
   extractLocaleFromTransPath,
   isErrnoException,
+  listTransPaths,
+  readTransEntries,
+  type TransEntry,
 } from 'l10n-tools-core'
 import {
   buildAndroidXml,

@@ -3,10 +3,10 @@ import path from 'path'
 import fsp from 'node:fs/promises'
 import {
   type CompilerConfig,
-  getPluralKeys,
-  readTransEntries,
-  listTransPaths,
   extractLocaleFromTransPath,
+  getPluralKeys,
+  listTransPaths,
+  readTransEntries,
 } from 'l10n-tools-core'
 
 export async function compileToJson(domainName: string, config: CompilerConfig, transDir: string) {
@@ -47,7 +47,7 @@ export function compileToJsonDir(pluralType?: JsonPluralType) {
 
 type JsonTransValue = string | { [transKey: string]: string }
 type JsonTrans = {
-  [key: string]: JsonTransValue
+  [key: string]: JsonTransValue,
 }
 
 async function exportTransToJson(locale: string, transPath: string, pluralType?: JsonPluralType): Promise<JsonTrans> {

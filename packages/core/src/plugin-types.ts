@@ -1,4 +1,4 @@
-import type { DomainConfig, CompilerConfig, L10nConfig } from './config.js'
+import type { CompilerConfig, DomainConfig, L10nConfig } from './config.js'
 import type { KeyEntry, TransEntry } from './entry.js'
 
 /**
@@ -8,7 +8,7 @@ import type { KeyEntry, TransEntry } from './entry.js'
 export type ExtractorFunc = (
   domainName: string,
   domainConfig: DomainConfig,
-  keysPath: string
+  keysPath: string,
 ) => Promise<void>
 
 /**
@@ -16,9 +16,9 @@ export type ExtractorFunc = (
  */
 export interface ExtractorPlugin {
   /** Domain types this extractor supports (e.g., 'android', 'ios', 'vue-gettext') */
-  domainTypes: string[]
+  domainTypes: string[],
   /** The extractor function */
-  extractor: ExtractorFunc
+  extractor: ExtractorFunc,
 }
 
 /**
@@ -28,7 +28,7 @@ export interface ExtractorPlugin {
 export type CompilerFunc = (
   domainName: string,
   config: CompilerConfig,
-  transDir: string
+  transDir: string,
 ) => Promise<void>
 
 /**
@@ -36,9 +36,9 @@ export type CompilerFunc = (
  */
 export interface CompilerPlugin {
   /** Compiler types this plugin supports (e.g., 'android', 'json', 'mo') */
-  compilerTypes: string[]
+  compilerTypes: string[],
   /** Map of compiler type to function */
-  compilers: Record<string, CompilerFunc>
+  compilers: Record<string, CompilerFunc>,
 }
 
 /**
@@ -52,7 +52,7 @@ export type SyncerFunc = (
   keyEntries: KeyEntry[],
   allTransEntries: Record<string, TransEntry[]>,
   drySync: boolean,
-  additionalTags?: string[]
+  additionalTags?: string[],
 ) => Promise<void>
 
 /**
@@ -60,9 +60,9 @@ export type SyncerFunc = (
  */
 export interface SyncerPlugin {
   /** Sync target name (e.g., 'lokalise') */
-  syncTarget: string
+  syncTarget: string,
   /** The syncer function */
-  syncer: SyncerFunc
+  syncer: SyncerFunc,
 }
 
 /**
@@ -71,13 +71,13 @@ export interface SyncerPlugin {
  */
 export interface L10nPlugin {
   /** Plugin name for identification */
-  name: string
+  name: string,
   /** Extractors provided by this plugin */
-  extractors?: ExtractorPlugin[]
+  extractors?: ExtractorPlugin[],
   /** Compilers provided by this plugin */
-  compilers?: CompilerPlugin[]
+  compilers?: CompilerPlugin[],
   /** Syncers provided by this plugin */
-  syncers?: SyncerPlugin[]
+  syncers?: SyncerPlugin[],
 }
 
 /**

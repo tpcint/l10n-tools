@@ -6,7 +6,7 @@ import newLines from 'eslint-plugin-import-newlines'
 
 export default [
   {
-    ignores: ['dist'],
+    ignores: ['**/dist'],
   },
   js.configs.recommended,
   stylistic.configs.customize({

@@ -1,5 +1,5 @@
 import type { L10nPlugin } from 'l10n-tools-core'
-import { compileToPoJson, compileToMo } from './compiler.js'
+import { compileToMo, compileToPoJson } from './compiler.js'
 
 const plugin: L10nPlugin = {
   name: 'l10n-tools-compiler-gettext',

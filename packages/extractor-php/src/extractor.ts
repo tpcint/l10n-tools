@@ -1,11 +1,7 @@
 import fsp from 'node:fs/promises'
 import log from 'npmlog'
 import * as path from 'path'
-import {
-  type DomainConfig,
-  writeKeyEntries,
-  getSrcPaths,
-} from 'l10n-tools-core'
+import { type DomainConfig, getSrcPaths, writeKeyEntries } from 'l10n-tools-core'
 import { KeyExtractor } from './key-extractor.js'
 
 export async function extractPhpKeys(domainName: string, config: DomainConfig, keysPath: string) {

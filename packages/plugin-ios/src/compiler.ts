@@ -5,17 +5,17 @@ import * as path from 'path'
 import i18nStringsFiles, { type CommentedI18nStringsMsg, type I18nStringsMsg } from 'i18n-strings-files'
 import PQueue from 'p-queue'
 import os from 'os'
-import plist from 'plist'
+import * as plist from 'plist'
 import {
-  EntryCollection,
-  readTransEntries,
-  type TransMessages,
   type CompilerConfig,
-  listTransPaths,
-  extractLocaleFromTransPath,
+  EntryCollection,
   execWithLog,
+  extractLocaleFromTransPath,
   fileExists,
   getTempDir,
+  listTransPaths,
+  readTransEntries,
+  type TransMessages,
 } from 'l10n-tools-core'
 
 const infoPlistKeys = [
@@ -27,11 +27,11 @@ const infoPlistKeys = [
 ]
 
 type StringsDictValue = {
-  NSStringLocalizedFormatKey: '%#@format@'
+  NSStringLocalizedFormatKey: '%#@format@',
   format: {
-    NSStringFormatSpecTypeKey: 'NSStringPluralRuleType'
-    NSStringFormatValueTypeKey: 'li'
-  } & TransMessages
+    NSStringFormatSpecTypeKey: 'NSStringPluralRuleType',
+    NSStringFormatValueTypeKey: 'li',
+  } & TransMessages,
 }
 
 export async function compileToIosStrings(domainName: string, config: CompilerConfig, transDir: string) {

@@ -1,13 +1,7 @@
 import { pathToFileURL } from 'node:url'
 import path from 'node:path'
 import log from 'npmlog'
-import type {
-  L10nPlugin,
-  PluginFactory,
-  ExtractorFunc,
-  CompilerFunc,
-  SyncerFunc,
-} from './plugin-types.js'
+import type { CompilerFunc, ExtractorFunc, L10nPlugin, PluginFactory, SyncerFunc } from './plugin-types.js'
 
 /**
  * Known plugin packages for auto-discovery
@@ -60,7 +54,7 @@ const COMPILER_TYPE_TO_PLUGIN: Record<string, string> = {
  * Mapping from sync targets to suggested syncer plugins
  */
 const SYNCER_TYPE_TO_PLUGIN: Record<string, string> = {
-  'lokalise': 'l10n-tools-syncer-lokalise',
+  lokalise: 'l10n-tools-syncer-lokalise',
 }
 
 /**

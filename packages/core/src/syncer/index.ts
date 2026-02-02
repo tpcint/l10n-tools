@@ -1,10 +1,5 @@
 import type { DomainConfig, L10nConfig } from '../config.js'
-import {
-  readAllTransEntries,
-  readKeyEntries,
-  writeAllTransEntries,
-  writeKeyEntries,
-} from '../entry.js'
+import { readAllTransEntries, readKeyEntries, writeAllTransEntries, writeKeyEntries } from '../entry.js'
 import { pluginRegistry } from '../plugin-registry.js'
 
 export type { SyncerFunc } from '../plugin-types.js'
@@ -27,7 +22,7 @@ export async function syncTransToTarget(
   keysPath: string,
   transDir: string,
   drySync: boolean,
-  additionalTags?: string[]
+  additionalTags?: string[],
 ) {
   const target = config.getSyncTarget()
 

@@ -17,9 +17,9 @@ export class BaseKeyExtractor {
    * Add a translation message/key to the collection
    */
   addMessage(
-    { filename, line }: { filename: string; line?: string | number },
+    { filename, line }: { filename: string, line?: string | number },
     key: string,
-    options?: { isPlural?: boolean; comment?: string | null; context?: string | null }
+    options?: { isPlural?: boolean, comment?: string | null, context?: string | null },
   ) {
     const { isPlural = false, comment = null, context = null } = options ?? {}
     if (context != null) {

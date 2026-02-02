@@ -2,14 +2,14 @@ import { parseDocument } from 'htmlparser2'
 import { isTag } from 'domhandler'
 import { findAll } from 'domutils'
 import {
+  EntryCollection,
   getElementContent,
   getElementContentIndex,
-  KeyEntryBuilder,
-  EntryCollection,
   type KeyEntry,
+  KeyEntryBuilder,
 } from 'l10n-tools-core'
 import log from 'npmlog'
-import ts from 'typescript'
+import * as ts from 'typescript'
 
 export type TemplateMarker = {
   start: string,

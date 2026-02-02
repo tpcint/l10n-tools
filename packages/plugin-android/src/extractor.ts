@@ -2,18 +2,18 @@ import log from 'npmlog'
 import fsp from 'node:fs/promises'
 import path from 'node:path'
 import {
-  type DomainConfig,
-  writeKeyEntries,
   BaseKeyExtractor,
-  getLineTo,
+  type DomainConfig,
   getElementContent,
   getElementContentIndex,
+  getLineTo,
+  writeKeyEntries,
 } from 'l10n-tools-core'
 import { parseDocument } from 'htmlparser2'
 import { findOne } from 'domutils'
 import { type Element, isTag, isText } from 'domhandler'
 import { containsAndroidXmlSpecialChars, decodeAndroidStrings } from './android-xml-utils.js'
-import he from 'he'
+import * as he from 'he'
 
 export async function extractAndroidKeys(domainName: string, config: DomainConfig, keysPath: string) {
   const resDir = config.getResDir()

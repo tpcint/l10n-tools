@@ -6,11 +6,11 @@ import fsp from 'node:fs/promises'
 import { fileURLToPath } from 'url'
 import {
   type CompilerConfig,
-  type TransEntry,
-  getPluralKeys,
-  readTransEntries,
-  listTransPaths,
   extractLocaleFromTransPath,
+  getPluralKeys,
+  listTransPaths,
+  readTransEntries,
+  type TransEntry,
 } from 'l10n-tools-core'
 
 export async function compileToPoJson(domainName: string, config: CompilerConfig, transDir: string) {

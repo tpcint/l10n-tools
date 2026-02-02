@@ -2,17 +2,18 @@ import log from 'npmlog'
 import fsp from 'node:fs/promises'
 import * as path from 'path'
 import i18nStringsFiles from 'i18n-strings-files'
-import plist, { type PlistObject } from 'plist'
+import * as plist from 'plist'
+import type { PlistObject } from 'plist'
 import { glob } from 'tinyglobby'
 import PQueue from 'p-queue'
 import os from 'os'
 import {
-  type DomainConfig,
-  writeKeyEntries,
   BaseKeyExtractor,
+  type DomainConfig,
   execWithLog,
   fileExists,
   getTempDir,
+  writeKeyEntries,
 } from 'l10n-tools-core'
 
 const infoPlistKeys = [
@@ -72,7 +73,7 @@ export async function extractIosKeys(domainName: string, config: DomainConfig, k
   log.info('extractKeys', 'extracting from .xib, .storyboard files')
   const xibQueue = new PQueue({ concurrency: os.cpus().length })
 
-  async function extractFromXib(xibPath: string): Promise<{ input: string; xibName: string }> {
+  async function extractFromXib(xibPath: string): Promise<{ input: string, xibName: string }> {
     log.verbose('extractKeys', `processing '${xibPath}'`)
     const extName = path.extname(xibPath)
     const baseName = path.basename(xibPath, extName)

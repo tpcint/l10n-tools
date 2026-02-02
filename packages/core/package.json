@@ -31,7 +31,6 @@
   ],
   "dependencies": {
     "command-exists": "^1.2.9",
-    "es-toolkit": "^1.44.0",
     "npmlog": "^7.0.1",
     "tinyglobby": "^0.2.15"
   },

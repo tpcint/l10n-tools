@@ -16,7 +16,7 @@ import {
   type TranslationData,
   type UpdateKeyDataWithId,
 } from '@lokalise/node-api'
-import { chunk, isEqual, pickBy } from 'es-toolkit/compat'
+import { chunk, invert, isEqual, pickBy } from 'es-toolkit/compat'
 import PQueue from 'p-queue'
 import { addContext, containsContext, getContexts, removeContext } from './lokalise-context.js'
 import { addComment, containsComment } from './lokalise-comment.js'
@@ -66,7 +66,8 @@ export async function syncTransToLokalise(config: L10nConfig, domainConfig: Doma
 
 async function listLokaliseKeys(lokaliseApi: LokaliseApi, projectId: string, config: LokaliseConfig) {
   log.info('lokaliseApi', 'listing keys')
-  const invertedSyncMap = config.getLocaleSyncMap(true)
+  const localeSyncMap = config.getLocaleSyncMap()
+  const invertedSyncMap = localeSyncMap ? invert(localeSyncMap) : undefined
 
   const totalCount = await getTotalKeyCount(lokaliseApi, projectId)
   const numPages = Math.ceil(totalCount / 500)
@@ -380,7 +381,7 @@ async function uploadToLokalise(
   updatingKeyMap: { [keyName: string]: UpdateKeyDataWithId },
   drySync: boolean,
 ) {
-  const localeSyncMap = config.getLocaleSyncMap(false)
+  const localeSyncMap = config.getLocaleSyncMap()
   const prefixes = config.getPureKeyPrefixes()
   for (let keys of chunk(Object.values(creatingKeyMap), 500)) {
     try {

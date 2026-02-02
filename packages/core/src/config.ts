@@ -1,5 +1,4 @@
 import type { SupportedPlatforms } from '@lokalise/node-api'
-import { invert } from 'es-toolkit/compat'
 
 export type ProgramOptions = {
   rcfile?: string,
@@ -356,15 +355,7 @@ export class LokaliseConfig {
     return this.lc['pure-key-prefixes'] ?? []
   }
 
-  getLocaleSyncMap(inverted: boolean): { [locale: string]: string } | undefined {
-    const map = this.lc['locale-sync-map']
-    if (map == null) {
-      return undefined
-    }
-    if (inverted) {
-      return invert(map)
-    } else {
-      return map
-    }
+  getLocaleSyncMap(): { [locale: string]: string } | undefined {
+    return this.lc['locale-sync-map']
   }
 }

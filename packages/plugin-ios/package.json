@@ -1,6 +1,6 @@
 {
   "name": "l10n-tools-plugin-ios",
-  "version": "7.0.0",
+  "version": "6.3.0",
   "description": "l10n-tools plugin for iOS platform",
   "type": "module",
   "engines": {
@@ -34,7 +34,7 @@
     "@types/plist": "^3.0.5"
   },
   "peerDependencies": {
-    "l10n-tools-core": "^7.0.0"
+    "l10n-tools-core": "^6.3.0"
   },
   "author": "Eungkyu Song <eungkyu@gmail.com>",
   "license": "MIT",

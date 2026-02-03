@@ -1,13 +1,13 @@
 {
-  "packages/core": "7.0.0",
-  "packages/cli": "7.0.0",
-  "packages/plugin-android": "7.0.0",
-  "packages/plugin-ios": "7.0.0",
-  "packages/extractor-javascript": "7.0.0",
-  "packages/extractor-vue": "7.0.0",
-  "packages/extractor-python": "7.0.0",
-  "packages/extractor-php": "7.0.0",
-  "packages/compiler-json": "7.0.0",
-  "packages/compiler-gettext": "7.0.0",
-  "packages/syncer-lokalise": "7.0.0"
+  "packages/core": "6.3.0",
+  "packages/cli": "6.3.0",
+  "packages/plugin-android": "6.3.0",
+  "packages/plugin-ios": "6.3.0",
+  "packages/extractor-javascript": "6.3.0",
+  "packages/extractor-vue": "6.3.0",
+  "packages/extractor-python": "6.3.0",
+  "packages/extractor-php": "6.3.0",
+  "packages/compiler-json": "6.3.0",
+  "packages/compiler-gettext": "6.3.0",
+  "packages/syncer-lokalise": "6.3.0"
 }

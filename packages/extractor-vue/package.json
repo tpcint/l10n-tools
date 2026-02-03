@@ -1,6 +1,6 @@
 {
   "name": "l10n-tools-extractor-vue",
-  "version": "7.0.0",
+  "version": "6.3.0",
   "description": "l10n-tools extractor for Vue.js (vue-gettext, vue-i18n)",
   "type": "module",
   "engines": {
@@ -27,7 +27,7 @@
     "domhandler": "^5.0.3",
     "domutils": "^3.2.2",
     "htmlparser2": "^10.1.0",
-    "l10n-tools-extractor-javascript": "^7.0.0",
+    "l10n-tools-extractor-javascript": "^6.3.0",
     "npmlog": "^7.0.1",
     "typescript": "^5.9.3"
   },
@@ -35,7 +35,7 @@
     "@types/npmlog": "^7.0.0"
   },
   "peerDependencies": {
-    "l10n-tools-core": "^7.0.0"
+    "l10n-tools-core": "^6.3.0"
   },
   "author": "Eungkyu Song <eungkyu@gmail.com>",
   "license": "MIT",

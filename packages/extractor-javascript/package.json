@@ -1,6 +1,6 @@
 {
   "name": "l10n-tools-extractor-javascript",
-  "version": "7.0.0",
+  "version": "6.3.0",
   "description": "l10n-tools extractor for JavaScript/TypeScript (react, i18next)",
   "type": "module",
   "engines": {
@@ -31,7 +31,7 @@
     "@types/npmlog": "^7.0.0"
   },
   "peerDependencies": {
-    "l10n-tools-core": "^7.0.0"
+    "l10n-tools-core": "^6.3.0"
   },
   "author": "Eungkyu Song <eungkyu@gmail.com>",
   "license": "MIT",

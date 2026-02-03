@@ -1,7 +1,7 @@
-import type { DomainConfig } from '../config.js'
-import { pluginRegistry } from '../plugin-registry.js'
+import type { DomainConfig } from './config.js'
+import { pluginRegistry } from './plugin-registry.js'
 
-export type { CompilerFunc } from '../plugin-types.js'
+export type { CompilerFunc } from './plugin-types.js'
 
 /**
  * Compile translations for all configured output formats.

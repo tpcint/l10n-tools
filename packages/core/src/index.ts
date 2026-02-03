@@ -60,6 +60,6 @@ export {
 export { updateTrans, getSrcPaths } from './common.js'
 
 // Extractor, compiler, syncer functions
-export { extractKeys } from './extractor/index.js'
-export { compileAll } from './compiler/index.js'
-export { syncTransToTarget } from './syncer/index.js'
+export { extractKeys } from './extractor.js'
+export { compileAll } from './compiler.js'
+export { syncTransToTarget } from './syncer.js'

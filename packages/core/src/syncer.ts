@@ -1,8 +1,8 @@
-import type { DomainConfig, L10nConfig } from '../config.js'
-import { readAllTransEntries, readKeyEntries, writeAllTransEntries, writeKeyEntries } from '../entry.js'
-import { pluginRegistry } from '../plugin-registry.js'
+import type { DomainConfig, L10nConfig } from './config.js'
+import { readAllTransEntries, readKeyEntries, writeAllTransEntries, writeKeyEntries } from './entry.js'
+import { pluginRegistry } from './plugin-registry.js'
 
-export type { SyncerFunc } from '../plugin-types.js'
+export type { SyncerFunc } from './plugin-types.js'
 
 /**
  * Synchronize translations with the configured sync target.

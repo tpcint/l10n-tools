@@ -1,9 +1,9 @@
 import * as path from 'path'
 import fsp from 'node:fs/promises'
-import type { DomainConfig } from '../config.js'
-import { pluginRegistry } from '../plugin-registry.js'
+import type { DomainConfig } from './config.js'
+import { pluginRegistry } from './plugin-registry.js'
 
-export type { ExtractorFunc } from '../plugin-types.js'
+export type { ExtractorFunc } from './plugin-types.js'
 
 /**
  * Extracts translation keys for the specified domain and writes them to the provided keys path.

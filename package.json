@@ -1,21 +1,19 @@
 {
-  "name": "l10n-tools",
-  "version": "6.3.0",
-  "description": "Localization tools",
+  "name": "l10n-tools-monorepo",
+  "private": true,
   "type": "module",
   "engines": {
     "node": ">=22.19.0",
     "npm": ">=10.9.0"
   },
+  "workspaces": [
+    "packages/*"
+  ],
   "scripts": {
-    "tsc": "tsc --noEmit",
-    "lint": "eslint",
-    "test": "node --no-warnings=ExperimentalWarning --loader ts-node/esm --test \"src/**/*.test.ts\"",
-    "build": "tsc",
-    "watch": "tsc -w",
-    "schema": "ts-json-schema-generator -p 'src/**/*.ts,@types/*.ts' -e all -t L10nConf --no-top-ref -o l10nrc.schema.json",
-    "prepare": "npm run build",
-    "prepublishOnly": "npm run tsc && npm run lint && npm test"
+    "build": "tsc -b",
+    "clean": "tsc -b --clean",
+    "test": "npm run test --workspaces --if-present",
+    "lint": "eslint"
   },
   "author": "Eungkyu Song <eungkyu@gmail.com>",
   "license": "MIT",
@@ -23,49 +21,18 @@
     "type": "git",
     "url": "git+https://github.com/tpcint/l10n-tools.git"
   },
-  "bin": {
-    "l10n": "dist/l10n.js"
-  },
-  "dependencies": {
-    "ajv": "^8.17.1",
-    "command-exists": "^1.2.9",
-    "commander": "^14.0.1",
-    "cosmiconfig": "^9.0.0",
-    "domhandler": "^5.0.3",
-    "domutils": "^3.2.2",
-    "es-toolkit": "^1.44.0",
-    "fast-xml-parser": "^5.3.4",
-    "gettext-parser": "^9.0.1",
-    "htmlparser2": "^10.1.0",
-    "npmlog": "^7.0.1",
-    "p-queue": "^9.1.0",
-    "tinyglobby": "^0.2.15",
-    "typescript": "^5.9.3"
-  },
-  "optionalDependencies": {
-    "@lokalise/node-api": "^15.3.1",
-    "he": "^1.2.0",
-    "i18n-strings-files": "^2.0.0",
-    "php-parser": "^3.2.5",
-    "plist": "^3.1.0"
-  },
   "devDependencies": {
     "@eslint/js": "^9.39.2",
     "@faker-js/faker": "^10.1.0",
     "@stylistic/eslint-plugin": "^5.7.1",
-    "@types/command-exists": "^1.2.3",
-    "@types/gettext-parser": "^9.0.0",
-    "@types/he": "^1.2.3",
     "@types/node": "^22.19.7",
-    "@types/npmlog": "^7.0.0",
-    "@types/plist": "^3.0.5",
     "@typescript-eslint/parser": "^8.54.0",
     "eslint": "^9.39.2",
     "eslint-import-resolver-typescript": "^4.4.4",
     "eslint-plugin-import-newlines": "^1.4.0",
     "eslint-plugin-import-x": "^4.16.1",
-    "ts-json-schema-generator": "^2.4.0",
     "ts-node": "^10.9.2",
+    "typescript": "^5.9.3",
     "typescript-eslint": "^8.54.0"
   }
 }

@@ -14,31 +14,40 @@ jobs:
       pull-requests: write
     outputs:
       releases_created: ${{ steps.release.outputs.releases_created }}
-      tag_name: ${{ steps.release.outputs.tag_name }}
+      paths_released: ${{ steps.release.outputs.paths_released }}
     steps:
       - uses: googleapis/release-please-action@v4
         id: release
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           target-branch: ${{ github.ref_name }}
-  
+
   publish:
     runs-on: ubuntu-latest
-    concurrency: publish
+    concurrency: publish-${{ matrix.path }}
     needs: release-please
     if: ${{ needs.release-please.outputs.releases_created == 'true' }}
     permissions:
-      contents: read   # Required for checkout
-      id-token: write  # Required for npm trusted publishing (OIDC)
+      contents: read
+      id-token: write
+
+    strategy:
+      fail-fast: false
+      matrix:
+        path: ${{ fromJson(needs.release-please.outputs.paths_released) }}
 
     steps:
-    - uses: actions/checkout@v4
-    - name: Setup node with cached node_modules
-      uses: ./.github/actions/setup-node-cached
-      with:
-        node-version: 24
-        registry-url: https://registry.npmjs.org/
-    - name: Prepare
-      run: npm run prepare
-    - name: Publish
-      run: npm publish --provenance --access public
+      - uses: actions/checkout@v4
+
+      - name: Setup node with cached node_modules
+        uses: ./.github/actions/setup-node-cached
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org/
+
+      - name: Build
+        run: npm run build
+
+      - name: Publish ${{ matrix.path }}
+        working-directory: ${{ matrix.path }}
+        run: npm publish --provenance --access public

@@ -1,8 +1,0 @@
-.github
-.release-please-manifest.json
-.swcrc
-@types/
-src
-eslint.config.js
-tsconfig.json
-release-please-config.json

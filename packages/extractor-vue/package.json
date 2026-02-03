@@ -1,0 +1,47 @@
+{
+  "name": "l10n-tools-extractor-vue",
+  "version": "7.0.0",
+  "description": "l10n-tools extractor for Vue.js (vue-gettext, vue-i18n)",
+  "type": "module",
+  "engines": {
+    "node": ">=22.19.0",
+    "npm": ">=10.9.0"
+  },
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc -w",
+    "test": "node --no-warnings=ExperimentalWarning --loader ts-node/esm --test \"src/**/*.test.ts\""
+  },
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "dependencies": {
+    "domhandler": "^5.0.3",
+    "domutils": "^3.2.2",
+    "htmlparser2": "^10.1.0",
+    "l10n-tools-extractor-javascript": "^7.0.0",
+    "npmlog": "^7.0.1",
+    "typescript": "^5.9.3"
+  },
+  "devDependencies": {
+    "@types/npmlog": "^7.0.0"
+  },
+  "peerDependencies": {
+    "l10n-tools-core": "^7.0.0"
+  },
+  "author": "Eungkyu Song <eungkyu@gmail.com>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tpcint/l10n-tools.git",
+    "directory": "packages/extractor-vue"
+  }
+}

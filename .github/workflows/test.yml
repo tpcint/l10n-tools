@@ -26,8 +26,8 @@ jobs:
         uses: ./.github/actions/setup-node-cached
         with:
           node-version: ${{ matrix.version }}
-      - name: Tsc
-        run: npm run tsc
+      - name: Build
+        run: npm run build
       - name: Lint
         run: npm run lint
       - name: Test

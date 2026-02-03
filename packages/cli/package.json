@@ -1,0 +1,37 @@
+{
+  "name": "l10n-tools",
+  "version": "7.0.0",
+  "description": "Localization tools - CLI for managing translations",
+  "type": "module",
+  "engines": {
+    "node": ">=22.19.0",
+    "npm": ">=10.9.0"
+  },
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc -w"
+  },
+  "bin": {
+    "l10n": "dist/l10n.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "dependencies": {
+    "ajv": "^8.17.1",
+    "commander": "^14.0.1",
+    "cosmiconfig": "^9.0.0",
+    "l10n-tools-core": "^7.0.0",
+    "npmlog": "^7.0.1"
+  },
+  "devDependencies": {
+    "@types/npmlog": "^7.0.0"
+  },
+  "author": "Eungkyu Song <eungkyu@gmail.com>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tpcint/l10n-tools.git",
+    "directory": "packages/cli"
+  }
+}

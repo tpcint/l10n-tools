@@ -1,0 +1,45 @@
+{
+  "name": "l10n-tools-syncer-lokalise",
+  "version": "7.0.0",
+  "description": "l10n-tools syncer for Lokalise translation service",
+  "type": "module",
+  "engines": {
+    "node": ">=22.19.0",
+    "npm": ">=10.9.0"
+  },
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc -w",
+    "test": "node --no-warnings=ExperimentalWarning --loader ts-node/esm --test \"src/**/*.test.ts\""
+  },
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "dependencies": {
+    "@lokalise/node-api": "^15.3.1",
+    "es-toolkit": "^1.44.0",
+    "npmlog": "^7.0.1",
+    "p-queue": "^9.1.0"
+  },
+  "devDependencies": {
+    "@types/npmlog": "^7.0.0"
+  },
+  "peerDependencies": {
+    "l10n-tools-core": "^7.0.0"
+  },
+  "author": "Eungkyu Song <eungkyu@gmail.com>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tpcint/l10n-tools.git",
+    "directory": "packages/syncer-lokalise"
+  }
+}

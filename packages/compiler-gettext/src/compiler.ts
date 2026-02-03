@@ -3,7 +3,6 @@ import * as path from 'path'
 import * as gettextParser from 'gettext-parser'
 import type { GetTextTranslation, GetTextTranslations } from 'gettext-parser'
 import fsp from 'node:fs/promises'
-import { fileURLToPath } from 'url'
 import {
   type CompilerConfig,
   extractLocaleFromTransPath,
@@ -21,7 +20,7 @@ export async function compileToPoJson(domainName: string, config: CompilerConfig
   for (const transPath of transPaths) {
     const locale = extractLocaleFromTransPath(transPath)
     const jsonPath = path.join(targetDir, locale + '.json')
-    const po = await createPo(domainName, locale, await readTransEntries(transPath))
+    const po = createPo(domainName, locale, await readTransEntries(transPath))
 
     await fsp.mkdir(targetDir, { recursive: true })
     await fsp.writeFile(jsonPath, JSON.stringify(po, null, 2))
@@ -38,7 +37,7 @@ export async function compileToMo(domainName: string, config: CompilerConfig, tr
     const moDir = path.join(targetDir, locale, 'LC_MESSAGES')
     const moPath = path.join(moDir, domainName + '.mo')
 
-    const po = await createPo(domainName, locale, await readTransEntries(transPath))
+    const po = createPo(domainName, locale, await readTransEntries(transPath))
     const output = gettextParser.mo.compile(po)
 
     await fsp.mkdir(moDir, { recursive: true })
@@ -46,15 +45,7 @@ export async function compileToMo(domainName: string, config: CompilerConfig, tr
   }
 }
 
-async function createPo(domainName: string, locale: string, transEntries: TransEntry[]): Promise<GetTextTranslations> {
-  const dirname = path.dirname(fileURLToPath(import.meta.url))
-  let version = 'unknown'
-  try {
-    const pkg = JSON.parse(await fsp.readFile(path.join(dirname, '../..', 'package.json'), { encoding: 'utf-8' }))
-    version = pkg.version
-  } catch {
-    // ignore
-  }
+function createPo(domainName: string, locale: string, transEntries: TransEntry[]): GetTextTranslations {
   const po: GetTextTranslations = {
     charset: 'utf-8',
     headers: {
@@ -62,7 +53,7 @@ async function createPo(domainName: string, locale: string, transEntries: TransE
       'Mime-Version': '1.0',
       'Content-Type': 'text/plain; charset=UTF-8',
       'Content-Transfer-Encoding': '8bit',
-      'X-Generator': `l10n-tools ${version}`,
+      'X-Generator': 'l10n-tools',
       'Language': locale,
     },
     translations: {},

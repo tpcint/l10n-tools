@@ -68,7 +68,8 @@ export class JsKeyExtractor extends KeyExtractor {
   protected extractTsNode(filename: string, src: string, ast: ts.SourceFile, startLine: number = 1) {
     const visit = (node: ts.Node) => {
       if (ts.isCallExpression(node)) {
-        const pos = findNonSpace(src, node.pos)
+        // Use getStart(ast) to skip leading trivia (comments/whitespace) for accurate line numbers
+        const pos = node.getStart(ast)
         const calleeName = this.getTsCalleeName(node.expression)
         if (calleeName != null && this.keywordMap[calleeName]) {
           try {
@@ -216,13 +217,4 @@ function buildKeywordMap(keywords: string[] | Set<string>): { [keyword: string]:
     keywordMap[name] = { key, pluralCount }
   }
   return keywordMap
-}
-
-function findNonSpace(src: string, index: number): number {
-  const match = /^(\s*)\S/.exec(src.substring(index))
-  if (match) {
-    return index + match[1].length
-  } else {
-    return index
-  }
 }

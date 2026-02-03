@@ -247,7 +247,7 @@ export class VueKeyExtractor extends JsKeyExtractor {
     options?: { isPlural?: boolean, comment?: string | null, context?: string | null }) {
     const visit = (node: ts.Node) => {
       if (ts.isExpressionStatement(node)) {
-        const pos = findNonSpace(src, node.pos)
+        const pos = node.getStart(ast)
         try {
           const keys = this.evaluateTsArgumentValues(node.expression)
           for (const key of keys) {
@@ -276,7 +276,7 @@ export class VueKeyExtractor extends JsKeyExtractor {
   private extractJsObjectNode(filename: string, src: string, ast: ts.SourceFile, paths: string[], startLine: number = 1) {
     const visit = (node: ts.Node) => {
       if (ts.isExpressionStatement(node)) {
-        const pos = findNonSpace(src, node.pos)
+        const pos = node.getStart(ast)
         const errs: any[] = []
         for (const path of paths) {
           try {
@@ -299,14 +299,5 @@ export class VueKeyExtractor extends JsKeyExtractor {
       ts.forEachChild(node, visit)
     }
     visit(ast)
-  }
-}
-
-function findNonSpace(src: string, index: number): number {
-  const match = /^(\s*)\S/.exec(src.substring(index))
-  if (match) {
-    return index + match[1].length
-  } else {
-    return index
   }
 }

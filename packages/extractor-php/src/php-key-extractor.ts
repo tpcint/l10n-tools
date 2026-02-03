@@ -30,7 +30,7 @@ export class PhpKeyExtractor extends KeyExtractor {
       throw new Error('cannot extract translations from variable, use string literal directly')
     } else if (node instanceof php.PropertyLookup) {
       throw new Error('cannot extract translations from variable, use string literal directly')
-    } else if (node instanceof php.Bin && node.type === '+') {
+    } else if (node instanceof php.Bin && node.type === '.') {
       const values = []
       for (const leftValue of this.evaluatePhpArgumentValues(node.left)) {
         for (const rightValue of this.evaluatePhpArgumentValues(node.right)) {
@@ -49,19 +49,51 @@ export class PhpKeyExtractor extends KeyExtractor {
   private extractPhpNode(filename: string, src: string, ast: php.Program) {
     const visit = (node: php.Node) => {
       if (node instanceof php.Call) {
-        for (const { propName, position } of this.keywordDefs) {
-          if (node.what.kind === 'classreference') {
-            if (node.what.name === propName) {
-              const startOffset = src.substr(0, node.loc!.start.offset).lastIndexOf(propName)
-              try {
-                const keys = this.evaluatePhpArgumentValues(node.arguments[position])
-                for (const key of keys) {
-                  this.addMessage({ filename, line: node.loc!.start.line }, key)
-                }
-              } catch (err: any) {
-                log.warn('extractPhpNode', err.message)
-                log.warn('extractPhpNode', `'${src.substring(startOffset, node.loc!.end.offset)}': (${filename}:${node.loc!.start.line})`)
+        for (const { propName, position, objectName } of this.keywordDefs) {
+          let matched = false
+
+          if (node.what.kind === 'identifier' || node.what.kind === 'name') {
+            // Plain function call: _(), gettext(), etc.
+            if (objectName === null && (node.what as php.Identifier).name === propName) {
+              matched = true
+            }
+          } else if (node.what.kind === 'staticlookup' || node.what.kind === 'classreference') {
+            // Static method call: Class::method()
+            const what = node.what as unknown as php.StaticLookup
+            if (what.what?.kind === 'name' || what.what?.kind === 'identifier') {
+              const whatName = (what.what as php.Identifier).name
+              const offsetName = typeof what.offset === 'object' && 'name' in what.offset ? what.offset.name : null
+              if (objectName === whatName && offsetName === propName) {
+                matched = true
               }
+            }
+            // Legacy classreference handling
+            if (node.what.kind === 'classreference' && objectName === null) {
+              if ((node.what as any).name === propName) {
+                matched = true
+              }
+            }
+          } else if (node.what.kind === 'propertylookup') {
+            // Instance method call: $obj->method()
+            const what = node.what as unknown as php.PropertyLookup
+            if (what.offset?.kind === 'identifier') {
+              const offsetName = (what.offset as php.Identifier).name
+              if (offsetName === propName) {
+                matched = true
+              }
+            }
+          }
+
+          if (matched) {
+            const startOffset = src.substr(0, node.loc!.start.offset).lastIndexOf(propName)
+            try {
+              const keys = this.evaluatePhpArgumentValues(node.arguments[position])
+              for (const key of keys) {
+                this.addMessage({ filename, line: node.loc!.start.line }, key)
+              }
+            } catch (err: any) {
+              log.warn('extractPhpNode', err.message)
+              log.warn('extractPhpNode', `'${src.substring(startOffset, node.loc!.end.offset)}': (${filename}:${node.loc!.start.line})`)
             }
           }
         }

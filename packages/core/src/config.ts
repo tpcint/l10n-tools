@@ -2,7 +2,7 @@ export type LokalisePlatform = 'ios' | 'android' | 'web' | 'other'
 
 export type ProgramOptions = {
   rcfile?: string,
-  domains?: string,
+  domains?: string[],
   skipValidation?: boolean,
   validationBaseLocale?: string,
   drySync?: boolean,

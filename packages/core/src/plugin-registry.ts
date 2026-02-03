@@ -66,13 +66,20 @@ class PluginRegistry {
   private compilers = new Map<string, CompilerFunc>()
   private syncers = new Map<string, SyncerFunc>()
   private initialized = false
+  private initPromise: Promise<void> | null = null
 
   /**
    * Initialize the registry by discovering and loading plugins
    */
   async initialize(): Promise<void> {
     if (this.initialized) return
+    if (this.initPromise) return this.initPromise
 
+    this.initPromise = this.doInitialize()
+    return this.initPromise
+  }
+
+  private async doInitialize(): Promise<void> {
     // Auto-discover known plugins
     for (const pluginName of KNOWN_PLUGINS) {
       try {

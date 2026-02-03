@@ -42,6 +42,14 @@ let newline = "Line1\\nLine2".localized
       expectKeyEntry(extractor, 'Line1\nLine2')
     })
 
+    it('handles literal backslash correctly', () => {
+      const extractor = new KeyExtractor()
+      // Swift: "text\\nmore" means backslash followed by 'n', not newline
+      const src = 'let message = "text\\\\nmore".localized'
+      extractSwiftPropertyAccess(extractor, 'test.swift', src, ['localized'])
+      expectKeyEntry(extractor, 'text\\nmore')
+    })
+
     it('extracts with multiple keywords', () => {
       const extractor = new KeyExtractor()
       const src = `

@@ -251,14 +251,18 @@ export function extractSwiftPropertyAccess(
 }
 
 function unescapeSwiftString(str: string): string {
-  return str
-    .replace(/\\"/g, '"')
-    .replace(/\\'/g, "'")
-    .replace(/\\n/g, '\n')
-    .replace(/\\r/g, '\r')
-    .replace(/\\t/g, '\t')
-    .replace(/\\0/g, '\0')
-    .replace(/\\\\/g, '\\')
+  return str.replace(/\\(\\|"|'|n|r|t|0)/g, (_match, esc) => {
+    switch (esc) {
+      case '\\': return '\\'
+      case '"': return '"'
+      case "'": return "'"
+      case 'n': return '\n'
+      case 'r': return '\r'
+      case 't': return '\t'
+      case '0': return '\0'
+      default: return esc
+    }
+  })
 }
 
 function processMultiLineString(str: string): string {

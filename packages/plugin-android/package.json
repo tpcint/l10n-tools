@@ -1,6 +1,6 @@
 {
   "name": "l10n-tools-plugin-android",
-  "version": "6.3.0",
+  "version": "7.0.0",
   "description": "l10n-tools plugin for Android platform",
   "type": "module",
   "engines": {

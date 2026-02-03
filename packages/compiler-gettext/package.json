@@ -1,6 +1,6 @@
 {
   "name": "l10n-tools-compiler-gettext",
-  "version": "6.3.0",
+  "version": "7.0.0",
   "description": "l10n-tools compiler for gettext formats (PO/MO)",
   "type": "module",
   "engines": {

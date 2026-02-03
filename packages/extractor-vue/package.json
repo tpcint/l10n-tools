@@ -1,6 +1,6 @@
 {
   "name": "l10n-tools-extractor-vue",
-  "version": "6.3.0",
+  "version": "7.0.0",
   "description": "l10n-tools extractor for Vue.js (vue-gettext, vue-i18n)",
   "type": "module",
   "engines": {

@@ -1,6 +1,6 @@
 {
   "name": "l10n-tools-compiler-json",
-  "version": "7.0.0",
+  "version": "7.0.1",
   "description": "l10n-tools compiler for JSON formats (vue-i18n, node-i18n, i18next)",
   "type": "module",
   "engines": {

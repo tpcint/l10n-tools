@@ -1,6 +1,6 @@
 {
   "name": "l10n-tools-extractor-python",
-  "version": "7.0.0",
+  "version": "7.0.1",
   "description": "l10n-tools extractor for Python",
   "type": "module",
   "engines": {

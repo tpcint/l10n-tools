@@ -1,5 +1,12 @@
 # Changelog
 
+## [7.0.1](https://github.com/tpcint/l10n-tools/compare/l10n-tools-syncer-lokalise-v7.0.0...l10n-tools-syncer-lokalise-v7.0.1) (2026-02-03)
+
+
+### Miscellaneous Chores
+
+* **deps:** fix dependent version ([#201](https://github.com/tpcint/l10n-tools/issues/201)) ([72df405](https://github.com/tpcint/l10n-tools/commit/72df405c53abdb1bfcbfcc120af3b80f68e14bb3))
+
 ## [7.0.0](https://github.com/tpcint/l10n-tools/compare/l10n-tools-syncer-lokalise-v6.3.0...l10n-tools-syncer-lokalise-v7.0.0) (2026-02-03)
 
 

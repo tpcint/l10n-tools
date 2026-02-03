@@ -96,6 +96,41 @@ Create a `.l10nrc` file in your project root:
 | `android` | Android strings.xml |
 | `ios` | iOS .strings files |
 
+### iOS Property Access Patterns
+
+For Swift code using extension-based localization like `"string".localized`:
+
+```swift
+extension String {
+  var localized: String {
+    return NSLocalizedString(self, comment: "")
+  }
+}
+
+let message = "Hello, World!".localized
+```
+
+Add the property name with a `.` prefix to the `keywords` option:
+
+```json
+{
+  "type": "ios",
+  "keywords": [".localized", ".localizedFormat"],
+  "src-dir": "MyApp",
+  ...
+}
+```
+
+This extracts keys from both single-line and multi-line string literals:
+
+```swift
+"Hello".localized
+"""
+Multi-line
+string
+""".localized
+```
+
 ## Usage
 
 ### Update local translations

@@ -44,6 +44,7 @@ export default [
       '@typescript-eslint/no-non-null-assertion': 'off',
       '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_', varsIgnorePattern: '^_', caughtErrorsIgnorePattern: '^ignore' }],
       'import-newlines/enforce': ['error', 20, 120],
+      'import-x/default': 'off',
       'import-x/no-duplicates': ['error', { 'prefer-inline': true }],
       'import-x/no-named-as-default-member': 'off',
       'prefer-const': ['error', { destructuring: 'all' }],

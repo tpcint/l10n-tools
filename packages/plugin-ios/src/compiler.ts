@@ -5,7 +5,7 @@ import * as path from 'path'
 import i18nStringsFiles, { type CommentedI18nStringsMsg, type I18nStringsMsg } from 'i18n-strings-files'
 import PQueue from 'p-queue'
 import os from 'os'
-import * as plist from 'plist'
+import plist from 'plist'
 import {
   type CompilerConfig,
   EntryCollection,

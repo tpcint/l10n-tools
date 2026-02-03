@@ -1,5 +1,12 @@
 # Changelog
 
+## [7.0.2](https://github.com/tpcint/l10n-tools/compare/l10n-tools-plugin-ios-v7.0.1...l10n-tools-plugin-ios-v7.0.2) (2026-02-03)
+
+
+### Bug Fixes
+
+* **plugin-ios:** use default import for plist module ([#203](https://github.com/tpcint/l10n-tools/issues/203)) ([98d7fa4](https://github.com/tpcint/l10n-tools/commit/98d7fa4012405d5707c0dc7c5138b992e97fedfa))
+
 ## [7.0.1](https://github.com/tpcint/l10n-tools/compare/l10n-tools-plugin-ios-v7.0.0...l10n-tools-plugin-ios-v7.0.1) (2026-02-03)
 
 

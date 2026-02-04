@@ -1,8 +1,8 @@
 {
-  "packages/core": "7.1.0",
-  "packages/cli": "7.0.1",
-  "packages/plugin-android": "7.1.0",
-  "packages/plugin-ios": "7.2.0",
+  "packages/core": "7.2.0",
+  "packages/cli": "7.0.2",
+  "packages/plugin-android": "7.2.0",
+  "packages/plugin-ios": "7.2.1",
   "packages/extractor-javascript": "7.1.0",
   "packages/extractor-vue": "7.1.0",
   "packages/extractor-python": "7.0.1",

@@ -50,6 +50,16 @@ let newline = "Line1\\nLine2".localized
       expectKeyEntry(extractor, 'text\\nmore')
     })
 
+    it('handles Unicode escape sequences', () => {
+      const extractor = new KeyExtractor()
+      // Swift: \u{...} for Unicode scalars (1-8 hex digits)
+      const src = String.raw`let emoji = "Hello \u{1F600}".localized
+let heart = "\u{2764}\u{FE0F}".localized`
+      extractSwiftPropertyAccess(extractor, 'test.swift', src, ['localized'])
+      expectKeyEntry(extractor, 'Hello 😀')
+      expectKeyEntry(extractor, '❤️')
+    })
+
     it('extracts with multiple keywords', () => {
       const extractor = new KeyExtractor()
       const src = `

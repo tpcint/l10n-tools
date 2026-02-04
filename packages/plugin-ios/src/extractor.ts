@@ -253,7 +253,14 @@ export function extractSwiftPropertyAccess(
 }
 
 function unescapeSwiftString(str: string): string {
-  return str.replace(/\\(\\|"|'|n|r|t|0)/g, (_match, esc) => {
+  return str.replace(/\\(\\|"|'|n|r|t|0|u\{([0-9A-Fa-f]{1,8})\})/g, (_match, esc, unicode) => {
+    if (unicode) {
+      const codePoint = parseInt(unicode, 16)
+      if (codePoint > 0x10FFFF) {
+        return `\\u{${unicode}}`
+      }
+      return String.fromCodePoint(codePoint)
+    }
     switch (esc) {
       case '\\': return '\\'
       case '"': return '"'

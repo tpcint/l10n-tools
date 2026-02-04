@@ -6,7 +6,7 @@ import { VueKeyExtractor } from './vue-key-extractor.js'
 
 export async function extractVueGettextKeys(domainName: string, config: DomainConfig, keysPath: string) {
   const srcPaths = await getSrcPaths(config, ['.vue', '.js'])
-  const keywords = new Set(config.getKeywords())
+  const keywords = new Set(config.getKeywordsAsStrings())
   keywords.add('$gettext')
   keywords.add('this.$gettext')
   keywords.add('vm.$gettext')
@@ -40,7 +40,7 @@ export async function extractVueGettextKeys(domainName: string, config: DomainCo
 
 export async function extractVueI18nKeys(domainName: string, config: DomainConfig, keysPath: string) {
   const srcPaths = await getSrcPaths(config, ['.vue', '.js', '.ts'])
-  const keywords = new Set(config.getKeywords())
+  const keywords = new Set(config.getKeywordsAsStrings())
   keywords.add('$t:0:2')
   keywords.add('t:0:2')
   keywords.add('vm.$t:0:2')

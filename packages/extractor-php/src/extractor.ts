@@ -6,7 +6,7 @@ import { PhpKeyExtractor } from './php-key-extractor.js'
 
 export async function extractPhpKeys(domainName: string, config: DomainConfig, keysPath: string) {
   const srcPaths = await getSrcPaths(config, ['.php'])
-  const keywords = new Set(config.getKeywords())
+  const keywords = new Set(config.getKeywordsAsStrings())
   keywords.add('_')
   keywords.add('gettext')
 

@@ -73,6 +73,26 @@ describe('lokalise', () => {
       assert.equal(result.is_plural, true)
       assert.deepEqual(result.platforms, ['ios'])
     })
+
+    it('should include description from comments', () => {
+      const keyEntry: KeyEntry = {
+        key: 'test.key',
+        isPlural: false,
+        context: null,
+        references: [],
+        comments: ['This is a comment', 'Another comment'],
+      }
+      const result = createNewKeyData('web', 'domain-tag', keyEntry, undefined)
+
+      assert.equal(result.description, 'domain-tag: Another comment\ndomain-tag: This is a comment')
+    })
+
+    it('should have empty description when no comments', () => {
+      const keyEntry = createKeyEntry('test.key')
+      const result = createNewKeyData('web', 'domain-tag', keyEntry, undefined)
+
+      assert.equal(result.description, '')
+    })
   })
 
   describe('updateKeyData', () => {

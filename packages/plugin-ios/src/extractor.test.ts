@@ -1,7 +1,7 @@
 import { describe, it } from 'node:test'
 import assert from 'node:assert/strict'
 import { KeyExtractor } from 'l10n-tools-core'
-import { extractSwiftPropertyAccess } from './extractor.js'
+import { extractSwiftPropertyAccess, type PropertyKeywordConfig } from './extractor.js'
 
 function expectKeyEntry(
   extractor: KeyExtractor,
@@ -16,6 +16,11 @@ function expectKeyEntry(
   }
 }
 
+/** Helper to create PropertyKeywordConfig from simple keyword strings */
+function toConfigs(keywords: string[]): PropertyKeywordConfig[] {
+  return keywords.map(k => ({ keyword: k, commentParam: null }))
+}
+
 describe('extractSwiftPropertyAccess', () => {
   describe('single-line strings', () => {
     it('extracts "string".localized pattern', () => {
@@ -24,7 +29,7 @@ describe('extractSwiftPropertyAccess', () => {
 let message = "Hello, World!".localized
 let greeting = "Welcome".localized
 `
-      extractSwiftPropertyAccess(extractor, 'test.swift', src, ['localized'])
+      extractSwiftPropertyAccess(extractor, 'test.swift', src, toConfigs(['localized']))
       expectKeyEntry(extractor, 'Hello, World!', 'test.swift', '2')
       expectKeyEntry(extractor, 'Welcome', 'test.swift', '3')
     })
@@ -36,7 +41,7 @@ let message = "Hello, \\"World\\"!".localized
 let tab = "Tab\\there".localized
 let newline = "Line1\\nLine2".localized
 `
-      extractSwiftPropertyAccess(extractor, 'test.swift', src, ['localized'])
+      extractSwiftPropertyAccess(extractor, 'test.swift', src, toConfigs(['localized']))
       expectKeyEntry(extractor, 'Hello, "World"!')
       expectKeyEntry(extractor, 'Tab\there')
       expectKeyEntry(extractor, 'Line1\nLine2')
@@ -46,7 +51,7 @@ let newline = "Line1\\nLine2".localized
       const extractor = new KeyExtractor()
       // Swift: "text\\nmore" means backslash followed by 'n', not newline
       const src = 'let message = "text\\\\nmore".localized'
-      extractSwiftPropertyAccess(extractor, 'test.swift', src, ['localized'])
+      extractSwiftPropertyAccess(extractor, 'test.swift', src, toConfigs(['localized']))
       expectKeyEntry(extractor, 'text\\nmore')
     })
 
@@ -55,7 +60,7 @@ let newline = "Line1\\nLine2".localized
       // Swift: \u{...} for Unicode scalars (1-8 hex digits)
       const src = String.raw`let emoji = "Hello \u{1F600}".localized
 let heart = "\u{2764}\u{FE0F}".localized`
-      extractSwiftPropertyAccess(extractor, 'test.swift', src, ['localized'])
+      extractSwiftPropertyAccess(extractor, 'test.swift', src, toConfigs(['localized']))
       expectKeyEntry(extractor, 'Hello 😀')
       expectKeyEntry(extractor, '❤️')
     })
@@ -66,7 +71,7 @@ let heart = "\u{2764}\u{FE0F}".localized`
 let message = "Hello".localized
 let formatted = "Hello %@".localizedFormat
 `
-      extractSwiftPropertyAccess(extractor, 'test.swift', src, ['localized', 'localizedFormat'])
+      extractSwiftPropertyAccess(extractor, 'test.swift', src, toConfigs(['localized', 'localizedFormat']))
       expectKeyEntry(extractor, 'Hello')
       expectKeyEntry(extractor, 'Hello %@')
     })
@@ -78,7 +83,7 @@ let message = "Hello"  .  localized
 let another = "World"
     .localized
 `
-      extractSwiftPropertyAccess(extractor, 'test.swift', src, ['localized'])
+      extractSwiftPropertyAccess(extractor, 'test.swift', src, toConfigs(['localized']))
       expectKeyEntry(extractor, 'Hello')
       expectKeyEntry(extractor, 'World')
     })
@@ -90,7 +95,7 @@ let message = "Hello".localized()
 let greeting = "Welcome".localized(comment: "greeting message")
 let formatted = "Hello %@".localized(comment: "greeting", args: name)
 `
-      extractSwiftPropertyAccess(extractor, 'test.swift', src, ['localized'])
+      extractSwiftPropertyAccess(extractor, 'test.swift', src, toConfigs(['localized']))
       expectKeyEntry(extractor, 'Hello', 'test.swift', '2')
       expectKeyEntry(extractor, 'Welcome', 'test.swift', '3')
       expectKeyEntry(extractor, 'Hello %@', 'test.swift', '4')
@@ -106,7 +111,7 @@ Hello, World!
 This is a multi-line string.
 """.localized
 `
-      extractSwiftPropertyAccess(extractor, 'test.swift', src, ['localized'])
+      extractSwiftPropertyAccess(extractor, 'test.swift', src, toConfigs(['localized']))
       expectKeyEntry(extractor, 'Hello, World!\nThis is a multi-line string.')
     })
 
@@ -120,7 +125,7 @@ Line 1
 Line 2
 """.localized
 `
-      extractSwiftPropertyAccess(extractor, 'test.swift', src, ['localized'])
+      extractSwiftPropertyAccess(extractor, 'test.swift', src, toConfigs(['localized']))
       expectKeyEntry(extractor, 'Line 1\nLine 2')
     })
 
@@ -132,7 +137,7 @@ let message = """
     Line 2
 """.localized
 `
-      extractSwiftPropertyAccess(extractor, 'test.swift', src, ['localized'])
+      extractSwiftPropertyAccess(extractor, 'test.swift', src, toConfigs(['localized']))
       expectKeyEntry(extractor, 'Line 1\nLine 2')
     })
 
@@ -142,7 +147,7 @@ let message = """
 let message = """
 """.localized
 `
-      extractSwiftPropertyAccess(extractor, 'test.swift', src, ['localized'])
+      extractSwiftPropertyAccess(extractor, 'test.swift', src, toConfigs(['localized']))
       // Empty strings are skipped
       assert.equal(extractor.keys.toEntries().length, 0)
     })
@@ -155,7 +160,7 @@ Hello\\tWorld
 Line1\\nLine2
 """.localized
 `
-      extractSwiftPropertyAccess(extractor, 'test.swift', src, ['localized'])
+      extractSwiftPropertyAccess(extractor, 'test.swift', src, toConfigs(['localized']))
       expectKeyEntry(extractor, 'Hello\tWorld\nLine1\nLine2')
     })
   })
@@ -164,7 +169,7 @@ Line1\\nLine2
     it('does not extract when no keywords provided', () => {
       const extractor = new KeyExtractor()
       const src = 'let message = "Hello".localized'
-      extractSwiftPropertyAccess(extractor, 'test.swift', src, [])
+      extractSwiftPropertyAccess(extractor, 'test.swift', src, toConfigs([]))
       assert.equal(extractor.keys.toEntries().length, 0)
     })
 
@@ -174,7 +179,7 @@ Line1\\nLine2
 let message = "Hello".uppercased
 let another = "World".count
 `
-      extractSwiftPropertyAccess(extractor, 'test.swift', src, ['localized'])
+      extractSwiftPropertyAccess(extractor, 'test.swift', src, toConfigs(['localized']))
       assert.equal(extractor.keys.toEntries().length, 0)
     })
 
@@ -184,15 +189,175 @@ let another = "World".count
 let message = "Hello".localizedValue
 let another = "World".unlocalizedString
 `
-      extractSwiftPropertyAccess(extractor, 'test.swift', src, ['localized'])
+      extractSwiftPropertyAccess(extractor, 'test.swift', src, toConfigs(['localized']))
       assert.equal(extractor.keys.toEntries().length, 0)
     })
 
     it('escapes special regex characters in keywords', () => {
       const extractor = new KeyExtractor()
       const src = 'let message = "Hello".l10n'
-      extractSwiftPropertyAccess(extractor, 'test.swift', src, ['l10n'])
+      extractSwiftPropertyAccess(extractor, 'test.swift', src, toConfigs(['l10n']))
       expectKeyEntry(extractor, 'Hello')
+    })
+  })
+
+  describe('comment extraction', () => {
+    it('extracts comment from named parameter', () => {
+      const extractor = new KeyExtractor()
+      const src = `
+let message = "Hello".localized(comment: "Greeting message")
+let farewell = "Goodbye".localized(comment: "Farewell message")
+`
+      extractSwiftPropertyAccess(extractor, 'test.swift', src, [
+        { keyword: 'localized', commentParam: 'comment' },
+      ])
+
+      const hello = extractor.keys.find(null, 'Hello')
+      assert.notEqual(hello, null)
+      assert.deepEqual(hello!.comments, ['Greeting message'])
+
+      const goodbye = extractor.keys.find(null, 'Goodbye')
+      assert.notEqual(goodbye, null)
+      assert.deepEqual(goodbye!.comments, ['Farewell message'])
+    })
+
+    it('works without comment when commentParam not specified', () => {
+      const extractor = new KeyExtractor()
+      const src = 'let message = "Hello".localized(comment: "Greeting")'
+      extractSwiftPropertyAccess(extractor, 'test.swift', src, [
+        { keyword: 'localized', commentParam: null },
+      ])
+
+      const hello = extractor.keys.find(null, 'Hello')
+      assert.notEqual(hello, null)
+      assert.deepEqual(hello!.comments, [])
+    })
+
+    it('extracts key even when comment param is missing', () => {
+      const extractor = new KeyExtractor()
+      const src = 'let message = "Hello".localized()'
+      extractSwiftPropertyAccess(extractor, 'test.swift', src, [
+        { keyword: 'localized', commentParam: 'comment' },
+      ])
+
+      const hello = extractor.keys.find(null, 'Hello')
+      assert.notEqual(hello, null)
+      assert.deepEqual(hello!.comments, [])
+    })
+
+    it('handles escaped characters in comment', () => {
+      const extractor = new KeyExtractor()
+      const src = String.raw`let message = "Hello".localized(comment: "Say \"Hello\"")`
+      extractSwiftPropertyAccess(extractor, 'test.swift', src, [
+        { keyword: 'localized', commentParam: 'comment' },
+      ])
+
+      const hello = extractor.keys.find(null, 'Hello')
+      assert.notEqual(hello, null)
+      assert.deepEqual(hello!.comments, ['Say "Hello"'])
+    })
+
+    it('handles multiple arguments', () => {
+      const extractor = new KeyExtractor()
+      const src = 'let message = "Hello %@".localized(comment: "Greeting with name", args: userName)'
+      extractSwiftPropertyAccess(extractor, 'test.swift', src, [
+        { keyword: 'localized', commentParam: 'comment' },
+      ])
+
+      const hello = extractor.keys.find(null, 'Hello %@')
+      assert.notEqual(hello, null)
+      assert.deepEqual(hello!.comments, ['Greeting with name'])
+    })
+
+    it('extracts comment from multi-line string key', () => {
+      const extractor = new KeyExtractor()
+      const src = `
+let message = """
+Hello, World!
+""".localized(comment: "Multi-line greeting")
+`
+      extractSwiftPropertyAccess(extractor, 'test.swift', src, [
+        { keyword: 'localized', commentParam: 'comment' },
+      ])
+
+      const hello = extractor.keys.find(null, 'Hello, World!')
+      assert.notEqual(hello, null)
+      assert.deepEqual(hello!.comments, ['Multi-line greeting'])
+    })
+
+    it('extracts property access without parentheses when commentParam is set', () => {
+      const extractor = new KeyExtractor()
+      const src = 'let message = "Hello".localized'
+      extractSwiftPropertyAccess(extractor, 'test.swift', src, [
+        { keyword: 'localized', commentParam: 'comment' },
+      ])
+
+      const hello = extractor.keys.find(null, 'Hello')
+      assert.notEqual(hello, null)
+      assert.deepEqual(hello!.comments, [])
+    })
+  })
+
+  describe('positional comment extraction', () => {
+    it('extracts comment from positional parameter (index 0)', () => {
+      const extractor = new KeyExtractor()
+      const src = 'let message = "Hello".localized("Greeting message")'
+      extractSwiftPropertyAccess(extractor, 'test.swift', src, [
+        { keyword: 'localized', commentParam: 0 },
+      ])
+
+      const hello = extractor.keys.find(null, 'Hello')
+      assert.notEqual(hello, null)
+      assert.deepEqual(hello!.comments, ['Greeting message'])
+    })
+
+    it('extracts comment from positional parameter (index 1)', () => {
+      const extractor = new KeyExtractor()
+      const src = 'let message = "Hello %@".localized(name, "Greeting with name")'
+      extractSwiftPropertyAccess(extractor, 'test.swift', src, [
+        { keyword: 'localized', commentParam: 1 },
+      ])
+
+      const hello = extractor.keys.find(null, 'Hello %@')
+      assert.notEqual(hello, null)
+      assert.deepEqual(hello!.comments, ['Greeting with name'])
+    })
+
+    it('handles escaped characters in positional comment', () => {
+      const extractor = new KeyExtractor()
+      const src = String.raw`let message = "Hello".localized("Say \"Hello\"")`
+      extractSwiftPropertyAccess(extractor, 'test.swift', src, [
+        { keyword: 'localized', commentParam: 0 },
+      ])
+
+      const hello = extractor.keys.find(null, 'Hello')
+      assert.notEqual(hello, null)
+      assert.deepEqual(hello!.comments, ['Say "Hello"'])
+    })
+
+    it('returns no comment when positional index is out of bounds', () => {
+      const extractor = new KeyExtractor()
+      const src = 'let message = "Hello".localized()'
+      extractSwiftPropertyAccess(extractor, 'test.swift', src, [
+        { keyword: 'localized', commentParam: 0 },
+      ])
+
+      const hello = extractor.keys.find(null, 'Hello')
+      assert.notEqual(hello, null)
+      assert.deepEqual(hello!.comments, [])
+    })
+
+    it('handles mixed named and positional arguments', () => {
+      const extractor = new KeyExtractor()
+      // Positional first, then named
+      const src = 'let message = "Hello".localized("Comment", tableName: "Main")'
+      extractSwiftPropertyAccess(extractor, 'test.swift', src, [
+        { keyword: 'localized', commentParam: 0 },
+      ])
+
+      const hello = extractor.keys.find(null, 'Hello')
+      assert.notEqual(hello, null)
+      assert.deepEqual(hello!.comments, ['Comment'])
     })
   })
 })

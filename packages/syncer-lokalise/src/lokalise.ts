@@ -173,6 +173,7 @@ export function createNewKeyData(platform: SupportedPlatforms, tag: string, keyE
     platforms: [platform],
     tags: [tag, ...(additionalTags ?? [])],
     context: addContext(undefined, tag, keyEntry.context),
+    description: addComment(undefined, tag, keyEntry.comments),
   }
 }
 

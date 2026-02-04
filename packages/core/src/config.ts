@@ -42,13 +42,29 @@ export type DomainType =
   'ios' |
   'php-gettext'
 
+/**
+ * Keyword configuration for extraction
+ * - string: Simple keyword name (e.g., ".localized", "translate:1")
+ * - object: Detailed configuration with parameter mapping
+ */
+export type KeywordConfig = string | {
+  /** Keyword name (e.g., ".localized") */
+  name: string,
+  /**
+   * Comment parameter specification
+   * - string: Named parameter name (e.g., "comment" for `localized(comment: "...")`)
+   * - number: Positional index (e.g., 0 for `localized("...")`)
+   */
+  comment?: string | number,
+}
+
 type DomainConf = {
   'type': DomainType,
   /**
      * Extracting function name and index of key argument list
-     * @examples ["translate:1", "translateAll:0"]
+     * @examples ["translate:1", "translateAll:0", { "name": ".localized", "comment": "comment" }]
      */
-  'keywords'?: string[],
+  'keywords'?: KeywordConfig[],
   /** Tag name for upload and download */
   'tag': string,
   /** Locales to translate */
@@ -142,8 +158,16 @@ export class DomainConfig {
     return this.dc['locales']
   }
 
-  getKeywords(): string[] {
+  getKeywords(): KeywordConfig[] {
     return this.dc['keywords'] ?? []
+  }
+
+  /**
+   * Get keywords as simple string array (for backward compatibility)
+   * Object keywords are converted to their name property
+   */
+  getKeywordsAsStrings(): string[] {
+    return this.getKeywords().map(k => typeof k === 'string' ? k : k.name)
   }
 
   getCacheDir(): string {

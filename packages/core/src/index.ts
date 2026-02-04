@@ -23,6 +23,7 @@ export {
   type SyncTarget,
   type ProgramOptions,
   type LokalisePlatform,
+  type KeywordConfig,
 } from './config.js'
 
 // Entry types and utilities

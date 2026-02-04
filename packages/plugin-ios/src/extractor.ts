@@ -13,6 +13,7 @@ import {
   getLineTo,
   getTempDir,
   KeyExtractor,
+  type KeywordConfig,
   writeKeyEntries,
 } from 'l10n-tools-core'
 
@@ -23,6 +24,12 @@ const infoPlistKeys = [
   'NSLocationWhenInUseUsageDescription',
   'NSUserTrackingUsageDescription',
 ]
+
+export type PropertyKeywordConfig = {
+  keyword: string,
+  /** string: named parameter name, number: positional index, null: no comment extraction */
+  commentParam: string | number | null,
+}
 
 export async function extractIosKeys(domainName: string, config: DomainConfig, keysPath: string) {
   const tempDir = path.join(getTempDir(), 'extractor')
@@ -63,17 +70,32 @@ export async function extractIosKeys(domainName: string, config: DomainConfig, k
 
   // Extract from property access patterns like "string".localized
   // Keywords starting with '.' are treated as property access patterns
+  // Format: ".keyword" (string) or { name: ".keyword", comment: "paramName" | 0 } (object)
   const keywords = config.getKeywords()
-  const propertyKeywords = keywords
-    .filter(k => k.startsWith('.'))
-    .map(k => k.substring(1)) // Remove leading '.'
+  const propertyKeywordConfigs: PropertyKeywordConfig[] = keywords
+    .filter((k: KeywordConfig) => {
+      const name = typeof k === 'string' ? k : k.name
+      return name.startsWith('.')
+    })
+    .map((k: KeywordConfig) => {
+      if (typeof k === 'string') {
+        // Simple string format: ".localized"
+        return { keyword: k.substring(1), commentParam: null }
+      }
+      // Object format: { name: ".localized", comment: "comment" | 0 }
+      return {
+        keyword: k.name.substring(1),
+        commentParam: k.comment ?? null,
+      }
+    })
 
-  if (propertyKeywords.length > 0) {
-    log.info('extractKeys', `extracting property access patterns: ${propertyKeywords.join(', ')}`)
+  if (propertyKeywordConfigs.length > 0) {
+    const keywordsStr = propertyKeywordConfigs.map(c => c.keyword).join(', ')
+    log.info('extractKeys', `extracting property access patterns: ${keywordsStr}`)
     for (const swiftPath of swiftPaths) {
       const src = await fsp.readFile(swiftPath, { encoding: 'utf-8' })
       const swiftFile = swiftPath.substring(srcDir.length + 1)
-      extractSwiftPropertyAccess(extractor, swiftFile, src, propertyKeywords)
+      extractSwiftPropertyAccess(extractor, swiftFile, src, propertyKeywordConfigs)
     }
   }
 
@@ -194,32 +216,34 @@ function parseComment(key: string, commentText: string | undefined) {
 /**
  * Extract keys from Swift files using property access pattern like "string".localized
  * Keywords starting with '.' are treated as property access patterns
+ * Format: ".keyword" or ".keyword:commentParam" where commentParam is the named parameter for comment
  */
 export function extractSwiftPropertyAccess(
   extractor: KeyExtractor,
   filename: string,
   src: string,
-  propertyKeywords: string[],
+  keywordConfigs: PropertyKeywordConfig[],
 ) {
-  if (propertyKeywords.length === 0) {
+  if (keywordConfigs.length === 0) {
     return
   }
 
   // Build regex pattern for all property keywords
   // Escape special regex characters in keywords
-  const escapedKeywords = propertyKeywords.map(k => k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
+  const escapedKeywords = keywordConfigs.map(c => c.keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
   const keywordPattern = escapedKeywords.join('|')
 
-  // Pattern for single-line strings: "string".keyword
-  // Handles escaped characters like \"
+  // Pattern for single-line strings: "string".keyword or "string".keyword(...)
+  // Captures: (1) key string, (2) keyword, (3) arguments if present
+  // Uses negative lookahead (?![a-zA-Z0-9_]) to avoid matching keyword as substring
   const singleLinePattern = new RegExp(
-    `"((?:[^"\\\\]|\\\\.)*)"\\s*\\.\\s*(${keywordPattern})\\b`,
+    `"((?:[^"\\\\]|\\\\.)*)"\\s*\\.\\s*(${keywordPattern})(?![a-zA-Z0-9_])(?:\\s*\\(([^)]*)\\))?`,
     'gs',
   )
 
-  // Pattern for multi-line strings: """string""".keyword
+  // Pattern for multi-line strings: """string""".keyword or """string""".keyword(...)
   const multiLinePattern = new RegExp(
-    `"""([\\s\\S]*?)"""\\s*\\.\\s*(${keywordPattern})\\b`,
+    `"""([\\s\\S]*?)"""\\s*\\.\\s*(${keywordPattern})(?![a-zA-Z0-9_])(?:\\s*\\(([^)]*)\\))?`,
     'g',
   )
 
@@ -227,18 +251,33 @@ export function extractSwiftPropertyAccess(
   let match: RegExpExecArray | null
   while ((match = singleLinePattern.exec(src)) !== null) {
     const rawString = match[1]
+    const matchedKeyword = match[2]
+    const argsString = match[3] || ''
+
     // Unescape the string (handle \", \\, \n, etc.)
     const key = unescapeSwiftString(rawString)
     if (!key) {
       continue
     }
+
     const line = getLineTo(src, match.index)
-    extractor.addMessage({ filename, line }, key)
+    const config = keywordConfigs.find(c => c.keyword === matchedKeyword)
+
+    // Extract comment if commentParam is specified
+    let comment: string | undefined
+    if (config?.commentParam != null && argsString) {
+      comment = extractCommentParameter(argsString, config.commentParam) ?? undefined
+    }
+
+    extractor.addMessage({ filename, line }, key, comment ? { comment } : undefined)
   }
 
   // Extract from multi-line strings
   while ((match = multiLinePattern.exec(src)) !== null) {
     const rawString = match[1]
+    const matchedKeyword = match[2]
+    const argsString = match[3] || ''
+
     // Multi-line strings: remove leading newline and trailing whitespace before closing """
     // Also handle indentation stripping (Swift strips leading whitespace based on closing """)
     const processed = processMultiLineString(rawString)
@@ -247,9 +286,134 @@ export function extractSwiftPropertyAccess(
     if (!key) {
       continue
     }
+
     const line = getLineTo(src, match.index)
-    extractor.addMessage({ filename, line }, key)
+    const config = keywordConfigs.find(c => c.keyword === matchedKeyword)
+
+    // Extract comment if commentParam is specified
+    let comment: string | undefined
+    if (config?.commentParam != null && argsString) {
+      comment = extractCommentParameter(argsString, config.commentParam) ?? undefined
+    }
+
+    extractor.addMessage({ filename, line }, key, comment ? { comment } : undefined)
   }
+}
+
+/**
+ * Extract comment parameter value based on type
+ * - string: named parameter (e.g., comment: "value")
+ * - number: positional index (e.g., first argument = 0)
+ */
+function extractCommentParameter(argsString: string, commentParam: string | number): string | null {
+  if (typeof commentParam === 'string') {
+    return extractNamedParameter(argsString, commentParam)
+  } else {
+    return extractPositionalParameter(argsString, commentParam)
+  }
+}
+
+/**
+ * Extract value of a positional parameter from Swift function call arguments
+ * e.g., extractPositionalParameter('"hello", name', 0) -> 'hello'
+ */
+function extractPositionalParameter(argsString: string, index: number): string | null {
+  // Parse arguments by finding string literals at each position
+  // This is a simplified parser that handles basic cases
+  const args: string[] = []
+  let current = ''
+  let inString = false
+  let inTripleQuote = false
+  let depth = 0
+
+  for (let i = 0; i < argsString.length; i++) {
+    const char = argsString[i]
+    const next = argsString[i + 1]
+    const nextNext = argsString[i + 2]
+
+    // Handle triple quotes
+    if (!inString && char === '"' && next === '"' && nextNext === '"') {
+      inTripleQuote = !inTripleQuote
+      current += '"""'
+      i += 2
+      continue
+    }
+
+    // Handle single quotes (strings)
+    if (!inTripleQuote && char === '"' && argsString[i - 1] !== '\\') {
+      inString = !inString
+      current += char
+      continue
+    }
+
+    // Handle nested parentheses
+    if (!inString && !inTripleQuote) {
+      if (char === '(') depth++
+      if (char === ')') depth--
+    }
+
+    // Handle comma as argument separator (only at top level)
+    if (!inString && !inTripleQuote && depth === 0 && char === ',') {
+      args.push(current.trim())
+      current = ''
+      continue
+    }
+
+    current += char
+  }
+
+  // Add last argument
+  if (current.trim()) {
+    args.push(current.trim())
+  }
+
+  // Get the argument at the specified index
+  const arg = args[index]
+  if (!arg) {
+    return null
+  }
+
+  // Extract string value from the argument
+  // Handle triple-quoted strings
+  const tripleMatch = arg.match(/^"""([\s\S]*?)"""/)
+  if (tripleMatch) {
+    return unescapeSwiftString(processMultiLineString(tripleMatch[1]))
+  }
+
+  // Handle single-quoted strings
+  const singleMatch = arg.match(/^"((?:[^"\\]|\\.)*)"/)
+  if (singleMatch) {
+    return unescapeSwiftString(singleMatch[1])
+  }
+
+  return null
+}
+
+/**
+ * Extract value of a named parameter from Swift function call arguments
+ * e.g., extractNamedParameter('comment: "hello", args: name', 'comment') -> 'hello'
+ */
+function extractNamedParameter(argsString: string, paramName: string): string | null {
+  // Escape special regex characters in paramName
+  const escapedParamName = paramName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+
+  // Single-line string: paramName: "value"
+  const singleLineMatch = argsString.match(
+    new RegExp(`${escapedParamName}\\s*:\\s*"((?:[^"\\\\]|\\\\.)*)"`),
+  )
+  if (singleLineMatch) {
+    return unescapeSwiftString(singleLineMatch[1])
+  }
+
+  // Multi-line string: paramName: """value"""
+  const multiLineMatch = argsString.match(
+    new RegExp(`${escapedParamName}\\s*:\\s*"""([\\s\\S]*?)"""`),
+  )
+  if (multiLineMatch) {
+    return unescapeSwiftString(processMultiLineString(multiLineMatch[1]))
+  }
+
+  return null
 }
 
 function unescapeSwiftString(str: string): string {

@@ -77,10 +77,14 @@
           "description": "Extracting function name and index of key argument list",
           "examples": [
             "translate:1",
-            "translateAll:0"
+            "translateAll:0",
+            {
+              "comment": "comment",
+              "name": ".localized"
+            }
           ],
           "items": {
-            "type": "string"
+            "$ref": "#/definitions/KeywordConfig"
           },
           "type": "array"
         },
@@ -92,7 +96,7 @@
           "type": "array"
         },
         "lokalise-platform": {
-          "$ref": "#/definitions/SupportedPlatforms",
+          "$ref": "#/definitions/LokalisePlatform",
           "description": "Lokalise platform to use"
         },
         "outputs": {
@@ -156,6 +160,34 @@
       ],
       "type": "string"
     },
+    "KeywordConfig": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "comment": {
+              "description": "Comment parameter specification\n- string: Named parameter name (e.g., \"comment\" for `localized(comment: \"...\")`)\n- number: Positional index (e.g., 0 for `localized(\"...\")`)",
+              "type": [
+                "string",
+                "number"
+              ]
+            },
+            "name": {
+              "description": "Keyword name (e.g., \".localized\")",
+              "type": "string"
+            }
+          },
+          "required": [
+            "name"
+          ],
+          "type": "object"
+        }
+      ],
+      "description": "Keyword configuration for extraction\n- string: Simple keyword name (e.g., \".localized\", \"translate:1\")\n- object: Detailed configuration with parameter mapping"
+    },
     "LokaliseConf": {
       "additionalProperties": false,
       "properties": {
@@ -201,7 +233,7 @@
       ],
       "type": "object"
     },
-    "SupportedPlatforms": {
+    "LokalisePlatform": {
       "enum": [
         "ios",
         "android",

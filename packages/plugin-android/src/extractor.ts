@@ -7,7 +7,6 @@ import { parseDocument } from 'htmlparser2'
 import { findOne } from 'domutils'
 import { type Element, isTag, isText } from 'domhandler'
 import { containsAndroidXmlSpecialChars, decodeAndroidStrings } from './android-xml-utils.js'
-// eslint-disable-next-line import-x/default
 import he from 'he'
 
 export async function extractAndroidKeys(domainName: string, config: DomainConfig, keysPath: string) {

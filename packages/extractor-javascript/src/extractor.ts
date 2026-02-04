@@ -6,7 +6,7 @@ import { JsKeyExtractor } from './js-key-extractor.js'
 
 export async function extractJavaScriptKeys(domainName: string, config: DomainConfig, keysPath: string) {
   const srcPaths = await getSrcPaths(config, ['.js', '.ts', '.jsx', '.tsx'])
-  const keywords = config.getKeywords()
+  const keywords = config.getKeywordsAsStrings()
 
   const extractor = new JsKeyExtractor({ keywords })
   log.info('extractKeys', 'extracting from .js, .ts files')

@@ -35,7 +35,7 @@
     "@types/plist": "^3.0.5"
   },
   "peerDependencies": {
-    "l10n-tools-core": "^7.0.0"
+    "l10n-tools-core": "^7.1.0"
   },
   "author": "Eungkyu Song <eungkyu@gmail.com>",
   "license": "MIT",

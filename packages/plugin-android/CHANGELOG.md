@@ -1,5 +1,12 @@
 # Changelog
 
+## [7.2.1](https://github.com/tpcint/l10n-tools/compare/l10n-tools-plugin-android-v7.2.0...l10n-tools-plugin-android-v7.2.1) (2026-02-04)
+
+
+### Bug Fixes
+
+* **plugin-android:** normalize module paths for context naming ([#214](https://github.com/tpcint/l10n-tools/issues/214)) ([64434f5](https://github.com/tpcint/l10n-tools/commit/64434f589b01fa5f2b4264100b703925e5e9a4ff))
+
 ## [7.2.0](https://github.com/tpcint/l10n-tools/compare/l10n-tools-plugin-android-v7.1.0...l10n-tools-plugin-android-v7.2.0) (2026-02-04)
 
 

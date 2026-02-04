@@ -30,6 +30,18 @@ import {
 } from './android-xml-utils.js'
 
 export async function compileToAndroidXml(domainName: string, config: CompilerConfig, transDir: string) {
+  const modules = config.getModules()
+
+  if (modules.length > 0) {
+    // Multi-module mode
+    await compileMultiModule(modules, config, transDir)
+  } else {
+    // Single res-dir mode (backward compatibility)
+    await compileSingleResDir(config, transDir)
+  }
+}
+
+async function compileSingleResDir(config: CompilerConfig, transDir: string) {
   const resDir = config.getResDir()
   const defaultLocale = config.getDefaultLocale()
   log.info('compile', `generating res files '${resDir}/values-{locale}/strings.xml'`)
@@ -56,6 +68,65 @@ export async function compileToAndroidXml(domainName: string, config: CompilerCo
       await writeXml(newDstXml, resDir, locale)
     }
   }
+}
+
+async function compileMultiModule(modules: string[], config: CompilerConfig, transDir: string) {
+  const defaultLocale = config.getDefaultLocale()
+  log.info('compile', `generating res files for ${modules.length} modules`)
+
+  const parser = getAndroidXmlParser()
+  const builder = getAndroidXmlBuilder()
+
+  const transPaths = await listTransPaths(transDir)
+
+  for (const module of modules) {
+    const resDir = path.join(module, 'src', 'main', 'res')
+    log.verbose('compile', `processing module '${module}'`)
+
+    let srcXml: string
+    try {
+      srcXml = await readXml(resDir, null)
+    } catch (err) {
+      if ((err as NodeJS.ErrnoException).code === 'ENOENT') {
+        log.warn('compile', `strings.xml not found for module: ${module}`)
+        continue
+      }
+      throw err
+    }
+
+    const srcXmlJson = parseAndroidXml(parser, srcXml)
+    const resNode = findFirstTagNode(srcXmlJson, 'resources')
+    if (resNode == null) {
+      log.warn('compile', `no resources tag in module: ${module}`)
+      continue
+    }
+
+    for (const transPath of transPaths) {
+      const locale = extractLocaleFromTransPath(transPath)
+      if (locale === defaultLocale) {
+        await writeXml(buildAndroidXml(builder, srcXmlJson), resDir, null)
+      } else {
+        const transEntries = await readTransEntries(transPath)
+        // Filter entries for this module
+        const moduleTransEntries = filterTransEntriesForModule(transEntries, module)
+        const dstXml = await readXml(resDir, locale, '<?xml version="1.0" encoding="utf-8"?>\n<resources></resources>')
+        const newDstXml = await generateAndroidXml(locale, moduleTransEntries, srcXml, dstXml)
+        await writeXml(newDstXml, resDir, locale)
+      }
+    }
+  }
+}
+
+/** @internal exported for testing */
+export function filterTransEntriesForModule(transEntries: TransEntry[], module: string): TransEntry[] {
+  const prefix = `${module}:`
+  return transEntries
+    .filter(entry => entry.context?.startsWith(prefix))
+    .map(entry => ({
+      ...entry,
+      // Strip module prefix from context for matching
+      context: entry.context!.substring(prefix.length),
+    }))
 }
 
 export async function generateAndroidXml(locale: string, transEntries: TransEntry[], srcXml: string, dstXml: string) {

@@ -1,7 +1,7 @@
 import { describe, it } from 'node:test'
 import assert from 'node:assert/strict'
 import type { TransEntry } from 'l10n-tools-core'
-import { generateAndroidXml } from './compiler.js'
+import { filterTransEntriesForModule, generateAndroidXml } from './compiler.js'
 
 describe('android compiler test', () => {
   it('parse and build preserving all', async () => {
@@ -73,5 +73,80 @@ describe('android compiler test', () => {
     const dstXml = '<?xml version="1.0" encoding="utf-8"?>\n<resources></resources>'
     const newDstXml = await generateAndroidXml('en', transEntries, srcXml, dstXml)
     assert.equal(newDstXml, targetXml)
+  })
+
+  describe('multi-module support', () => {
+    describe('filterTransEntriesForModule', () => {
+      it('filters entries by module prefix', () => {
+        const transEntries: TransEntry[] = [
+          { context: 'app:app_name', key: 'MyApp', messages: { other: 'MyApp' }, flag: null },
+          { context: 'app:login_button', key: 'Login', messages: { other: 'Login' }, flag: null },
+          { context: 'features/auth:auth_title', key: 'Auth', messages: { other: 'Auth' }, flag: null },
+          { context: 'features/home:home_title', key: 'Home', messages: { other: 'Home' }, flag: null },
+        ]
+
+        const appEntries = filterTransEntriesForModule(transEntries, 'app')
+        assert.equal(appEntries.length, 2)
+        assert.equal(appEntries[0].context, 'app_name')
+        assert.equal(appEntries[1].context, 'login_button')
+
+        const authEntries = filterTransEntriesForModule(transEntries, 'features/auth')
+        assert.equal(authEntries.length, 1)
+        assert.equal(authEntries[0].context, 'auth_title')
+
+        const homeEntries = filterTransEntriesForModule(transEntries, 'features/home')
+        assert.equal(homeEntries.length, 1)
+        assert.equal(homeEntries[0].context, 'home_title')
+      })
+
+      it('returns empty array when no matching entries', () => {
+        const transEntries: TransEntry[] = [
+          { context: 'app:app_name', key: 'MyApp', messages: { other: 'MyApp' }, flag: null },
+        ]
+
+        const result = filterTransEntriesForModule(transEntries, 'nonexistent')
+        assert.equal(result.length, 0)
+      })
+
+      it('strips module prefix from context', () => {
+        const transEntries: TransEntry[] = [
+          { context: 'features/auth:login_button', key: 'Login', messages: { other: 'Login' }, flag: null },
+        ]
+
+        const result = filterTransEntriesForModule(transEntries, 'features/auth')
+        assert.equal(result[0].context, 'login_button')
+        assert.equal(result[0].key, 'Login')
+        assert.deepEqual(result[0].messages, { other: 'Login' })
+      })
+
+      it('handles entries without context', () => {
+        const transEntries: TransEntry[] = [
+          { context: null, key: 'NoContext', messages: { other: 'NoContext' }, flag: null },
+          { context: 'app:with_context', key: 'WithContext', messages: { other: 'WithContext' }, flag: null },
+        ]
+
+        const result = filterTransEntriesForModule(transEntries, 'app')
+        assert.equal(result.length, 1)
+        assert.equal(result[0].context, 'with_context')
+      })
+    })
+
+    it('generates xml with filtered module entries', async () => {
+      const transEntries: TransEntry[] = [
+        { context: 'app_name', key: 'MyApp', messages: { other: 'MyApp EN' }, flag: null },
+      ]
+      const srcXml = `<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">MyApp</string>
+</resources>`
+      const targetXml = `<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">MyApp EN</string>
+</resources>`
+
+      const dstXml = '<?xml version="1.0" encoding="utf-8"?>\n<resources></resources>'
+      const newDstXml = await generateAndroidXml('en', transEntries, srcXml, dstXml)
+      assert.equal(newDstXml, targetXml)
+    })
   })
 })

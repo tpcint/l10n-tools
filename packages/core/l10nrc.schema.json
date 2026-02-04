@@ -8,6 +8,13 @@
         "default-locale": {
           "type": "string"
         },
+        "modules": {
+          "description": "List of module paths (android only, multi-module support)",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
         "res-dir": {
           "description": "Location of res (android)",
           "type": "string"
@@ -98,6 +105,13 @@
         "lokalise-platform": {
           "$ref": "#/definitions/LokalisePlatform",
           "description": "Lokalise platform to use"
+        },
+        "modules": {
+          "description": "List of module paths (android only, multi-module support)",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
         },
         "outputs": {
           "description": "List of output formats",

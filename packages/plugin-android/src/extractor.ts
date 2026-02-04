@@ -10,18 +10,40 @@ import { containsAndroidXmlSpecialChars, decodeAndroidStrings } from './android-
 import he from 'he'
 
 export async function extractAndroidKeys(domainName: string, config: DomainConfig, keysPath: string) {
-  const resDir = config.getResDir()
-  const srcPath = path.join(resDir, 'values', 'strings.xml')
-
+  const modules = config.getModules()
   const extractor = new KeyExtractor()
-  log.info('extractKeys', 'extracting from strings.xml file')
-  log.verbose('extractKeys', `processing '${srcPath}'`)
-  const input = await fsp.readFile(srcPath, { encoding: 'utf-8' })
-  extractAndroidStringsXml(extractor, srcPath, input)
+
+  if (modules.length > 0) {
+    // Multi-module mode
+    log.info('extractKeys', 'extracting from multiple modules')
+    for (const module of modules) {
+      const srcPath = path.join(module, 'src', 'main', 'res', 'values', 'strings.xml')
+      log.verbose('extractKeys', `processing '${srcPath}'`)
+      try {
+        const input = await fsp.readFile(srcPath, { encoding: 'utf-8' })
+        extractAndroidStringsXml(extractor, srcPath, input, 1, module)
+      } catch (err) {
+        if ((err as NodeJS.ErrnoException).code === 'ENOENT') {
+          log.warn('extractKeys', `strings.xml not found: ${srcPath}`)
+          continue
+        }
+        throw err
+      }
+    }
+  } else {
+    // Single res-dir mode (backward compatibility)
+    const resDir = config.getResDir()
+    const srcPath = path.join(resDir, 'values', 'strings.xml')
+    log.info('extractKeys', 'extracting from strings.xml file')
+    log.verbose('extractKeys', `processing '${srcPath}'`)
+    const input = await fsp.readFile(srcPath, { encoding: 'utf-8' })
+    extractAndroidStringsXml(extractor, srcPath, input)
+  }
+
   await writeKeyEntries(keysPath, extractor.keys.toEntries())
 }
 
-export function extractAndroidStringsXml(extractor: KeyExtractor, filename: string, src: string, startLine: number = 1) {
+export function extractAndroidStringsXml(extractor: KeyExtractor, filename: string, src: string, startLine: number = 1, module?: string) {
   const root = parseDocument(src, { xmlMode: true, withStartIndices: true, withEndIndices: true })
   const resources = findOne(elem => elem.name == 'resources', root.children, false)
   if (resources == null) {
@@ -37,11 +59,13 @@ export function extractAndroidStringsXml(extractor: KeyExtractor, filename: stri
 
     if (elem.name == 'string') {
       const name = elem.attribs['name']
+      const context = module ? `${module}:${name}` : name
       const content = getAndroidXmlStringContent(src, elem)
       const line = getLineTo(src, getElementContentIndex(elem), startLine)
-      extractor.addMessage({ filename, line }, content, { context: name })
+      extractor.addMessage({ filename, line }, content, { context })
     } else if (elem.name == 'plurals') {
       const name = elem.attribs['name']
+      const context = module ? `${module}:${name}` : name
       const line = getLineTo(src, getElementContentIndex(elem), startLine)
       let itemElem = elem.children.filter(isTag).find(child => child.name == 'item' && child.attribs['quantity'] == 'other')
       if (itemElem == null) {
@@ -52,7 +76,7 @@ export function extractAndroidStringsXml(extractor: KeyExtractor, filename: stri
         continue
       }
       const content = getAndroidXmlStringContent(src, itemElem)
-      extractor.addMessage({ filename, line }, content, { isPlural: true, context: name })
+      extractor.addMessage({ filename, line }, content, { isPlural: true, context })
     }
   }
 }

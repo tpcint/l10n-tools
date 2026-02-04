@@ -89,6 +89,8 @@ type DomainConf = {
   'ignore-patterns'?: string[],
   /** Location of res (android only) */
   'res-dir'?: string,
+  /** List of module paths (android only, multi-module support) */
+  'modules'?: string[],
   /** Lokalise platform to use */
   'lokalise-platform'?: LokalisePlatform,
   /** List of output formats */
@@ -204,6 +206,11 @@ export class DomainConfig {
     return resDir
   }
 
+  // for android multi-module
+  getModules(): string[] {
+    return this.dc['modules'] ?? []
+  }
+
   getLokalisePlatform(): LokalisePlatform {
     const platform = this.dc['lokalise-platform']
     if (platform == null) {
@@ -252,6 +259,8 @@ type CompilerConf = {
   'src-dir'?: string,
   /** Location of res (android) */
   'res-dir'?: string,
+  /** List of module paths (android only, multi-module support) */
+  'modules'?: string[],
   'default-locale'?: string,
   /** Use locale as root key of json file if true (json-dir) */
   'use-locale-key'?: boolean,
@@ -299,6 +308,11 @@ export class CompilerConfig {
       throw new Error('res-dir is required for this output')
     }
     return resDir
+  }
+
+  // for android multi-module
+  getModules(): string[] {
+    return this.cc['modules'] ?? []
   }
 
   getDefaultLocale(): string | undefined {

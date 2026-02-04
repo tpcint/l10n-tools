@@ -35,4 +35,48 @@ describe('android extractor test', () => {
       expectKeyEntry(extractor.keys, 'spaced_key', 'SPACED KEY', false, 'test-file', '15')
     })
   })
+
+  describe('multi-module support', () => {
+    it('extracts with module prefix in context', () => {
+      const srcXml = `<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">MyApp</string>
+    <string name="login_button">Login</string>
+    <plurals name="items_count">
+        <item quantity="one">%d item</item>
+        <item quantity="other">%d items</item>
+    </plurals>
+</resources>`
+      const extractor = new KeyExtractor()
+      extractAndroidStringsXml(extractor, 'app/src/main/res/values/strings.xml', srcXml, 1, 'app')
+
+      // context should be module:name format
+      expectKeyEntry(extractor.keys, 'app:app_name', 'MyApp', false)
+      expectKeyEntry(extractor.keys, 'app:login_button', 'Login', false)
+      expectKeyEntry(extractor.keys, 'app:items_count', '%d items', true)
+    })
+
+    it('extracts with nested module path in context', () => {
+      const srcXml = `<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="auth_title">Authentication</string>
+</resources>`
+      const extractor = new KeyExtractor()
+      extractAndroidStringsXml(extractor, 'features/auth/src/main/res/values/strings.xml', srcXml, 1, 'features/auth')
+
+      expectKeyEntry(extractor.keys, 'features/auth:auth_title', 'Authentication', false)
+    })
+
+    it('extracts without module prefix when module is not specified', () => {
+      const srcXml = `<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="simple_key">Simple Value</string>
+</resources>`
+      const extractor = new KeyExtractor()
+      extractAndroidStringsXml(extractor, 'test-file', srcXml)
+
+      // context should be just the name (no module prefix)
+      expectKeyEntry(extractor.keys, 'simple_key', 'Simple Value', false)
+    })
+  })
 })

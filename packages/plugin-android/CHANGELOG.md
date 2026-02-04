@@ -1,5 +1,12 @@
 # Changelog
 
+## [7.1.0](https://github.com/tpcint/l10n-tools/compare/l10n-tools-plugin-android-v7.0.1...l10n-tools-plugin-android-v7.1.0) (2026-02-04)
+
+
+### Features
+
+* add comment extraction for iOS and upload comments on new keys ([#209](https://github.com/tpcint/l10n-tools/issues/209)) ([286bfdd](https://github.com/tpcint/l10n-tools/commit/286bfdd3ddbaf15050e0f5bdb9f058dca7037a03))
+
 ## [7.0.1](https://github.com/tpcint/l10n-tools/compare/l10n-tools-plugin-android-v7.0.0...l10n-tools-plugin-android-v7.0.1) (2026-02-03)
 
 

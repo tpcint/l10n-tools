@@ -1,6 +1,6 @@
 {
   "name": "l10n-tools-extractor-php",
-  "version": "7.0.1",
+  "version": "7.1.0",
   "description": "l10n-tools extractor for PHP (php-gettext)",
   "type": "module",
   "engines": {

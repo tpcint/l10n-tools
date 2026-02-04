@@ -241,7 +241,9 @@ export function extractSwiftPropertyAccess(
     const rawString = match[1]
     // Multi-line strings: remove leading newline and trailing whitespace before closing """
     // Also handle indentation stripping (Swift strips leading whitespace based on closing """)
-    const key = processMultiLineString(rawString)
+    const processed = processMultiLineString(rawString)
+    // Multi-line strings also support escape sequences
+    const key = unescapeSwiftString(processed)
     if (!key) {
       continue
     }

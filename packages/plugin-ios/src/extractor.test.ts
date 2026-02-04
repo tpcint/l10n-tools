@@ -123,6 +123,18 @@ let message = """
       // Empty strings are skipped
       assert.equal(extractor.keys.toEntries().length, 0)
     })
+
+    it('handles escape sequences in multi-line strings', () => {
+      const extractor = new KeyExtractor()
+      const src = `
+let message = """
+Hello\\tWorld
+Line1\\nLine2
+""".localized
+`
+      extractSwiftPropertyAccess(extractor, 'test.swift', src, ['localized'])
+      expectKeyEntry(extractor, 'Hello\tWorld\nLine1\nLine2')
+    })
   })
 
   describe('edge cases', () => {

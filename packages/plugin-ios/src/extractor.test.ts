@@ -82,6 +82,19 @@ let another = "World"
       expectKeyEntry(extractor, 'Hello')
       expectKeyEntry(extractor, 'World')
     })
+
+    it('extracts method call pattern with parentheses', () => {
+      const extractor = new KeyExtractor()
+      const src = `
+let message = "Hello".localized()
+let greeting = "Welcome".localized(comment: "greeting message")
+let formatted = "Hello %@".localized(comment: "greeting", args: name)
+`
+      extractSwiftPropertyAccess(extractor, 'test.swift', src, ['localized'])
+      expectKeyEntry(extractor, 'Hello', 'test.swift', '2')
+      expectKeyEntry(extractor, 'Welcome', 'test.swift', '3')
+      expectKeyEntry(extractor, 'Hello %@', 'test.swift', '4')
+    })
   })
 
   describe('multi-line strings', () => {

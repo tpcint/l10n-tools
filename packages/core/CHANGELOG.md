@@ -1,5 +1,12 @@
 # Changelog
 
+## [7.2.0](https://github.com/tpcint/l10n-tools/compare/l10n-tools-core-v7.1.0...l10n-tools-core-v7.2.0) (2026-02-04)
+
+
+### Features
+
+* **plugin-android:** add multi-module support ([#210](https://github.com/tpcint/l10n-tools/issues/210)) ([a4edc5d](https://github.com/tpcint/l10n-tools/commit/a4edc5da10b0aab618760c59b710c44980883bac))
+
 ## [7.1.0](https://github.com/tpcint/l10n-tools/compare/l10n-tools-core-v7.0.0...l10n-tools-core-v7.1.0) (2026-02-04)
 
 

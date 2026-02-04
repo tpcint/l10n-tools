@@ -1,6 +1,6 @@
 {
   "name": "l10n-tools-syncer-lokalise",
-  "version": "7.0.1",
+  "version": "7.1.0",
   "description": "l10n-tools syncer for Lokalise translation service",
   "type": "module",
   "engines": {

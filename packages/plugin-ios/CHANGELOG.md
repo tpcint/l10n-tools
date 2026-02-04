@@ -1,5 +1,17 @@
 # Changelog
 
+## [7.2.0](https://github.com/tpcint/l10n-tools/compare/l10n-tools-plugin-ios-v7.1.0...l10n-tools-plugin-ios-v7.2.0) (2026-02-04)
+
+
+### Features
+
+* add comment extraction for iOS and upload comments on new keys ([#209](https://github.com/tpcint/l10n-tools/issues/209)) ([286bfdd](https://github.com/tpcint/l10n-tools/commit/286bfdd3ddbaf15050e0f5bdb9f058dca7037a03))
+
+
+### Tests
+
+* **plugin-ios:** add test for method call pattern extraction ([#207](https://github.com/tpcint/l10n-tools/issues/207)) ([2cef5c9](https://github.com/tpcint/l10n-tools/commit/2cef5c9fd7d8282e2ca2c508812ccce8e77d87a8))
+
 ## [7.1.0](https://github.com/tpcint/l10n-tools/compare/l10n-tools-plugin-ios-v7.0.2...l10n-tools-plugin-ios-v7.1.0) (2026-02-04)
 
 

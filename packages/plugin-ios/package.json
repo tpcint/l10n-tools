@@ -1,6 +1,6 @@
 {
   "name": "l10n-tools-plugin-ios",
-  "version": "7.0.2",
+  "version": "7.1.0",
   "description": "l10n-tools plugin for iOS platform",
   "type": "module",
   "engines": {

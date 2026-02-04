@@ -1,5 +1,12 @@
 # Changelog
 
+## [7.1.0](https://github.com/tpcint/l10n-tools/compare/l10n-tools-plugin-ios-v7.0.2...l10n-tools-plugin-ios-v7.1.0) (2026-02-04)
+
+
+### Features
+
+* **plugin-ios:** add property access pattern extraction for Swift ([#205](https://github.com/tpcint/l10n-tools/issues/205)) ([309d652](https://github.com/tpcint/l10n-tools/commit/309d652e9e190b7414309adc9aa4fafd5a748595))
+
 ## [7.0.2](https://github.com/tpcint/l10n-tools/compare/l10n-tools-plugin-ios-v7.0.1...l10n-tools-plugin-ios-v7.0.2) (2026-02-03)
 
 

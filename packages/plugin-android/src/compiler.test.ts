@@ -82,7 +82,7 @@ describe('android compiler test', () => {
           { context: 'app:app_name', key: 'MyApp', messages: { other: 'MyApp' }, flag: null },
           { context: 'app:login_button', key: 'Login', messages: { other: 'Login' }, flag: null },
           { context: 'features/auth:auth_title', key: 'Auth', messages: { other: 'Auth' }, flag: null },
-          { context: 'features/home:home_title', key: 'Home', messages: { other: 'Home' }, flag: null },
+          { context: 'home:home_title', key: 'Home', messages: { other: 'Home' }, flag: null },
         ]
 
         const appEntries = filterTransEntriesForModule(transEntries, 'app')
@@ -90,11 +90,18 @@ describe('android compiler test', () => {
         assert.equal(appEntries[0].context, 'app_name')
         assert.equal(appEntries[1].context, 'login_button')
 
+        // nested path: features/auth -> features/auth (preserved)
         const authEntries = filterTransEntriesForModule(transEntries, 'features/auth')
         assert.equal(authEntries.length, 1)
         assert.equal(authEntries[0].context, 'auth_title')
 
-        const homeEntries = filterTransEntriesForModule(transEntries, 'features/home')
+        // relative nested path: ../features/auth -> features/auth (strips ../ prefix)
+        const authEntries2 = filterTransEntriesForModule(transEntries, '../features/auth')
+        assert.equal(authEntries2.length, 1)
+        assert.equal(authEntries2[0].context, 'auth_title')
+
+        // relative path: ../home -> home (strips ../ prefix)
+        const homeEntries = filterTransEntriesForModule(transEntries, '../home')
         assert.equal(homeEntries.length, 1)
         assert.equal(homeEntries[0].context, 'home_title')
       })
@@ -113,6 +120,7 @@ describe('android compiler test', () => {
           { context: 'features/auth:login_button', key: 'Login', messages: { other: 'Login' }, flag: null },
         ]
 
+        // nested path preserved: features/auth -> features/auth
         const result = filterTransEntriesForModule(transEntries, 'features/auth')
         assert.equal(result[0].context, 'login_button')
         assert.equal(result[0].key, 'Login')

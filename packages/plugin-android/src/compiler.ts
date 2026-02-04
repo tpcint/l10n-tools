@@ -28,6 +28,7 @@ import {
   type XMLTagNode,
   type XMLTextNode,
 } from './android-xml-utils.js'
+import { getModuleName } from './extractor.js'
 
 export async function compileToAndroidXml(domainName: string, config: CompilerConfig, transDir: string) {
   const modules = config.getModules()
@@ -119,7 +120,8 @@ async function compileMultiModule(modules: string[], config: CompilerConfig, tra
 
 /** @internal exported for testing */
 export function filterTransEntriesForModule(transEntries: TransEntry[], module: string): TransEntry[] {
-  const prefix = `${module}:`
+  const moduleName = getModuleName(module)
+  const prefix = `${moduleName}:`
   return transEntries
     .filter(entry => entry.context?.startsWith(prefix))
     .map(entry => ({

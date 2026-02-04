@@ -6,7 +6,15 @@ import plist, { type PlistObject } from 'plist'
 import { glob } from 'tinyglobby'
 import PQueue from 'p-queue'
 import os from 'os'
-import { type DomainConfig, execWithLog, fileExists, getTempDir, KeyExtractor, writeKeyEntries } from 'l10n-tools-core'
+import {
+  type DomainConfig,
+  execWithLog,
+  fileExists,
+  getLineTo,
+  getTempDir,
+  KeyExtractor,
+  writeKeyEntries,
+} from 'l10n-tools-core'
 
 const infoPlistKeys = [
   'NSCameraUsageDescription',
@@ -50,6 +58,22 @@ export async function extractIosKeys(domainName: string, config: DomainConfig, k
   for (const { input, swiftFile } of swiftExtracted) {
     if (input != null && swiftFile != null) {
       extractIosStrings(extractor, swiftFile, input)
+    }
+  }
+
+  // Extract from property access patterns like "string".localized
+  // Keywords starting with '.' are treated as property access patterns
+  const keywords = config.getKeywords()
+  const propertyKeywords = keywords
+    .filter(k => k.startsWith('.'))
+    .map(k => k.substring(1)) // Remove leading '.'
+
+  if (propertyKeywords.length > 0) {
+    log.info('extractKeys', `extracting property access patterns: ${propertyKeywords.join(', ')}`)
+    for (const swiftPath of swiftPaths) {
+      const src = await fsp.readFile(swiftPath, { encoding: 'utf-8' })
+      const swiftFile = swiftPath.substring(srcDir.length + 1)
+      extractSwiftPropertyAccess(extractor, swiftFile, src, propertyKeywords)
     }
   }
 
@@ -165,4 +189,127 @@ function parseComment(key: string, commentText: string | undefined) {
   }
 
   return { defaultValue, ignore }
+}
+
+/**
+ * Extract keys from Swift files using property access pattern like "string".localized
+ * Keywords starting with '.' are treated as property access patterns
+ */
+export function extractSwiftPropertyAccess(
+  extractor: KeyExtractor,
+  filename: string,
+  src: string,
+  propertyKeywords: string[],
+) {
+  if (propertyKeywords.length === 0) {
+    return
+  }
+
+  // Build regex pattern for all property keywords
+  // Escape special regex characters in keywords
+  const escapedKeywords = propertyKeywords.map(k => k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
+  const keywordPattern = escapedKeywords.join('|')
+
+  // Pattern for single-line strings: "string".keyword
+  // Handles escaped characters like \"
+  const singleLinePattern = new RegExp(
+    `"((?:[^"\\\\]|\\\\.)*)"\\s*\\.\\s*(${keywordPattern})\\b`,
+    'gs',
+  )
+
+  // Pattern for multi-line strings: """string""".keyword
+  const multiLinePattern = new RegExp(
+    `"""([\\s\\S]*?)"""\\s*\\.\\s*(${keywordPattern})\\b`,
+    'g',
+  )
+
+  // Extract from single-line strings
+  let match: RegExpExecArray | null
+  while ((match = singleLinePattern.exec(src)) !== null) {
+    const rawString = match[1]
+    // Unescape the string (handle \", \\, \n, etc.)
+    const key = unescapeSwiftString(rawString)
+    if (!key) {
+      continue
+    }
+    const line = getLineTo(src, match.index)
+    extractor.addMessage({ filename, line }, key)
+  }
+
+  // Extract from multi-line strings
+  while ((match = multiLinePattern.exec(src)) !== null) {
+    const rawString = match[1]
+    // Multi-line strings: remove leading newline and trailing whitespace before closing """
+    // Also handle indentation stripping (Swift strips leading whitespace based on closing """)
+    const processed = processMultiLineString(rawString)
+    // Multi-line strings also support escape sequences
+    const key = unescapeSwiftString(processed)
+    if (!key) {
+      continue
+    }
+    const line = getLineTo(src, match.index)
+    extractor.addMessage({ filename, line }, key)
+  }
+}
+
+function unescapeSwiftString(str: string): string {
+  return str.replace(/\\(\\|"|'|n|r|t|0|u\{([0-9A-Fa-f]{1,8})\})/g, (_match, esc, unicode) => {
+    if (unicode) {
+      const codePoint = parseInt(unicode, 16)
+      if (codePoint > 0x10FFFF) {
+        return `\\u{${unicode}}`
+      }
+      return String.fromCodePoint(codePoint)
+    }
+    switch (esc) {
+      case '\\': return '\\'
+      case '"': return '"'
+      case "'": return "'"
+      case 'n': return '\n'
+      case 'r': return '\r'
+      case 't': return '\t'
+      case '0': return '\0'
+      default: return esc
+    }
+  })
+}
+
+function processMultiLineString(str: string): string {
+  // Remove leading newline if present (Swift multi-line string behavior)
+  if (str.startsWith('\n')) {
+    str = str.substring(1)
+  }
+
+  // Split into lines to handle indentation
+  let lines = str.split('\n')
+
+  // Check if last line is whitespace-only (closing """ indentation)
+  // This whitespace determines the indentation to strip from all lines
+  const lastLine = lines[lines.length - 1]
+  let closingIndent = 0
+  if (lastLine != null && lastLine.trim() === '') {
+    closingIndent = lastLine.length
+    // Remove the last whitespace-only line
+    lines = lines.slice(0, -1)
+  }
+
+  // If closing """ has indentation, strip that amount from all lines
+  if (closingIndent > 0) {
+    return lines.map(line => line.substring(closingIndent)).join('\n')
+  }
+
+  // Otherwise, find and remove common minimum indentation
+  let minIndent = Infinity
+  for (const line of lines) {
+    if (line.trim().length > 0) {
+      const indent = line.match(/^[ \t]*/)?.[0].length ?? 0
+      minIndent = Math.min(minIndent, indent)
+    }
+  }
+
+  if (minIndent > 0 && minIndent < Infinity) {
+    return lines.map(line => line.substring(minIndent)).join('\n')
+  }
+
+  return lines.join('\n')
 }

@@ -56,7 +56,7 @@ describe('android extractor test', () => {
       expectKeyEntry(extractor.keys, 'app:items_count', '%d items', true)
     })
 
-    it('extracts with nested module path in context', () => {
+    it('extracts with nested module path preserving full path', () => {
       const srcXml = `<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="auth_title">Authentication</string>
@@ -64,6 +64,31 @@ describe('android extractor test', () => {
       const extractor = new KeyExtractor()
       extractAndroidStringsXml(extractor, 'features/auth/src/main/res/values/strings.xml', srcXml, 1, 'features/auth')
 
+      // nested paths are preserved as-is
+      expectKeyEntry(extractor.keys, 'features/auth:auth_title', 'Authentication', false)
+    })
+
+    it('extracts with relative module path stripping ../ prefix', () => {
+      const srcXml = `<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">MyApp</string>
+</resources>`
+      const extractor = new KeyExtractor()
+      extractAndroidStringsXml(extractor, '../app/src/main/res/values/strings.xml', srcXml, 1, '../app')
+
+      // ../app -> app
+      expectKeyEntry(extractor.keys, 'app:app_name', 'MyApp', false)
+    })
+
+    it('extracts with nested relative module path preserving structure', () => {
+      const srcXml = `<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="auth_title">Authentication</string>
+</resources>`
+      const extractor = new KeyExtractor()
+      extractAndroidStringsXml(extractor, '../features/auth/src/main/res/values/strings.xml', srcXml, 1, '../features/auth')
+
+      // ../features/auth -> features/auth
       expectKeyEntry(extractor.keys, 'features/auth:auth_title', 'Authentication', false)
     })
 

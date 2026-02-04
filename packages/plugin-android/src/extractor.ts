@@ -9,6 +9,16 @@ import { type Element, isTag, isText } from 'domhandler'
 import { containsAndroidXmlSpecialChars, decodeAndroidStrings } from './android-xml-utils.js'
 import he from 'he'
 
+/**
+ * Extracts module name from module path for use in context.
+ * - Strips leading ../ or ./ prefixes: ../features/auth -> features/auth
+ * - Nested paths are preserved: features/auth -> features/auth
+ */
+export function getModuleName(modulePath: string): string {
+  // Remove leading ../ or ./ prefixes
+  return modulePath.replace(/^(\.\.\/)+/, '').replace(/^\.\//, '')
+}
+
 export async function extractAndroidKeys(domainName: string, config: DomainConfig, keysPath: string) {
   const modules = config.getModules()
   const extractor = new KeyExtractor()
@@ -59,13 +69,15 @@ export function extractAndroidStringsXml(extractor: KeyExtractor, filename: stri
 
     if (elem.name == 'string') {
       const name = elem.attribs['name']
-      const context = module ? `${module}:${name}` : name
+      const moduleName = module ? getModuleName(module) : undefined
+      const context = moduleName ? `${moduleName}:${name}` : name
       const content = getAndroidXmlStringContent(src, elem)
       const line = getLineTo(src, getElementContentIndex(elem), startLine)
       extractor.addMessage({ filename, line }, content, { context })
     } else if (elem.name == 'plurals') {
       const name = elem.attribs['name']
-      const context = module ? `${module}:${name}` : name
+      const moduleName = module ? getModuleName(module) : undefined
+      const context = moduleName ? `${moduleName}:${name}` : name
       const line = getLineTo(src, getElementContentIndex(elem), startLine)
       let itemElem = elem.children.filter(isTag).find(child => child.name == 'item' && child.attribs['quantity'] == 'other')
       if (itemElem == null) {

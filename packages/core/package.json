@@ -35,7 +35,7 @@
   },
   "devDependencies": {
     "@types/npmlog": "^7.0.0",
-    "ts-json-schema-generator": "^2.4.0"
+    "ts-json-schema-generator": "^2.5.0"
   },
   "author": "Eungkyu Song <eungkyu@gmail.com>",
   "license": "MIT",

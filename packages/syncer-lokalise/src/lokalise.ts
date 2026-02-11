@@ -124,12 +124,16 @@ function reverseLocaleSyncMap(key: Key, invertedSyncMap: { [locale: string]: str
   }
 }
 
-function createUpdateKeyDataByAddingKeyEntry(platform: SupportedPlatforms, tag: string, key: Key | UpdateKeyDataWithId, entry: KeyEntry): UpdateKeyDataWithId {
+function createUpdateKeyDataByAddingKeyEntry(platform: SupportedPlatforms, tag: string, key: Key | UpdateKeyDataWithId, entry: KeyEntry, additionalTags?: string[]): UpdateKeyDataWithId {
+  let tags = addToArraySet(key.tags ?? [], tag)
+  for (const t of additionalTags ?? []) {
+    tags = addToArraySet(tags, t)
+  }
   return {
     key_id: key.key_id,
     key_name: entry.key,
     platforms: addToArraySet(key.platforms ?? [], platform),
-    tags: addToArraySet(key.tags ?? [], tag),
+    tags,
     context: addContext(key.context, tag, entry.context),
     description: addComment(key.description, tag, entry.comments),
   }
@@ -248,10 +252,11 @@ export function updateKeyData(
       if (!key.tags?.includes(tag) ||
         !key.platforms?.includes(platform) ||
         !containsContext(key.context, tag, keyEntry.context) ||
-        !containsComment(key.description, tag, keyEntry.comments)
+        !containsComment(key.description, tag, keyEntry.comments) ||
+        additionalTags?.some(t => !key.tags?.includes(t))
       ) {
-        // 태그, 플랫폼, context 가 없으면 업데이트
-        updatingKeyMap[entryKey] = createUpdateKeyDataByAddingKeyEntry(platform, tag, key, keyEntry)
+        // 태그, 플랫폼, context, additionalTags 가 없으면 업데이트
+        updatingKeyMap[entryKey] = createUpdateKeyDataByAddingKeyEntry(platform, tag, key, keyEntry, additionalTags)
       }
     } else {
       // 기존 키 자체가 없으면 새로 키 만들기

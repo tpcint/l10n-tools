@@ -122,7 +122,7 @@ describe('lokalise', () => {
       }
     })
 
-    it('should apply additionalTags to updated keys', () => {
+    it('should not apply additionalTags to updated keys', () => {
       const keyEntries: KeyEntry[] = [createKeyEntry('existing.key')]
       const allTransEntries: { [locale: string]: TransEntry[] } = {}
       const listedKeyMap: { [keyName: string]: Key } = {
@@ -143,32 +143,13 @@ describe('lokalise', () => {
       assert.equal(Object.keys(updatingKeyMap).length, 1)
 
       const updatedKey = updatingKeyMap['existing.key']
+      // Should have domain-tag added, but NOT additionalTags
       assert.ok(updatedKey.tags?.includes('domain-tag'))
       assert.ok(updatedKey.tags?.includes('other-tag'))
-      assert.ok(updatedKey.tags?.includes('release-2024'))
+      assert.ok(!updatedKey.tags?.includes('release-2024'))
     })
 
-    it('should not update keys that already have domain tag, platform, and additionalTags', () => {
-      const keyEntries: KeyEntry[] = [createKeyEntry('existing.key')]
-      const allTransEntries: { [locale: string]: TransEntry[] } = {}
-      const listedKeyMap: { [keyName: string]: Key } = {
-        'existing.key': createMockKey('existing.key', ['domain-tag', 'extra-tag'], ['web']),
-      }
-
-      const { creatingKeyMap, updatingKeyMap } = updateKeyData(
-        'web',
-        'domain-tag',
-        keyEntries,
-        allTransEntries,
-        listedKeyMap,
-        ['extra-tag'],
-      )
-
-      assert.equal(Object.keys(creatingKeyMap).length, 0)
-      assert.equal(Object.keys(updatingKeyMap).length, 0)
-    })
-
-    it('should update keys when additionalTags are missing', () => {
+    it('should not update keys that already have domain tag and platform', () => {
       const keyEntries: KeyEntry[] = [createKeyEntry('existing.key')]
       const allTransEntries: { [locale: string]: TransEntry[] } = {}
       const listedKeyMap: { [keyName: string]: Key } = {
@@ -185,11 +166,7 @@ describe('lokalise', () => {
       )
 
       assert.equal(Object.keys(creatingKeyMap).length, 0)
-      assert.equal(Object.keys(updatingKeyMap).length, 1)
-
-      const updatedKey = updatingKeyMap['existing.key']
-      assert.ok(updatedKey.tags?.includes('domain-tag'))
-      assert.ok(updatedKey.tags?.includes('extra-tag'))
+      assert.equal(Object.keys(updatingKeyMap).length, 0)
     })
 
     it('should work without additionalTags', () => {

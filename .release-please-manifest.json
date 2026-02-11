@@ -9,5 +9,5 @@
   "packages/extractor-php": "7.1.0",
   "packages/compiler-json": "7.0.1",
   "packages/compiler-gettext": "7.0.1",
-  "packages/syncer-lokalise": "7.1.0"
+  "packages/syncer-lokalise": "7.2.0"
 }

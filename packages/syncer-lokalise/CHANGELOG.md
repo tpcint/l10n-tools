@@ -1,5 +1,12 @@
 # Changelog
 
+## [7.2.0](https://github.com/tpcint/l10n-tools/compare/l10n-tools-syncer-lokalise-v7.1.0...l10n-tools-syncer-lokalise-v7.2.0) (2026-02-11)
+
+
+### Features
+
+* **syncer-lokalise:** apply additionalTags to existing keys ([#219](https://github.com/tpcint/l10n-tools/issues/219)) ([e512645](https://github.com/tpcint/l10n-tools/commit/e51264538f6c3040103c29f4233af003b6c125a9))
+
 ## [7.1.0](https://github.com/tpcint/l10n-tools/compare/l10n-tools-syncer-lokalise-v7.0.1...l10n-tools-syncer-lokalise-v7.1.0) (2026-02-04)
 
 

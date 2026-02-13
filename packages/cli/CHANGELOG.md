@@ -1,5 +1,19 @@
 # Changelog
 
+## [7.1.0](https://github.com/tpcint/l10n-tools/compare/l10n-tools-v7.0.3...l10n-tools-v7.1.0) (2026-02-13)
+
+
+### Features
+
+* **cli:** add download command for download-only sync ([#231](https://github.com/tpcint/l10n-tools/issues/231)) ([e8e53f0](https://github.com/tpcint/l10n-tools/commit/e8e53f003d68400c72814cf10361a0a35223c6e2))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * l10n-tools-core bumped from ^7.2.1 to ^7.3.0
+
 ## [7.0.3](https://github.com/tpcint/l10n-tools/compare/l10n-tools-v7.0.2...l10n-tools-v7.0.3) (2026-02-05)
 
 

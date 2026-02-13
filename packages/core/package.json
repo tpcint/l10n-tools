@@ -10,7 +10,7 @@
   "scripts": {
     "build": "tsc",
     "watch": "tsc -w",
-    "test": "node --no-warnings=ExperimentalWarning --loader ts-node/esm --test \"src/**/*.test.ts\"",
+    "test": "tsx --test \"src/**/*.test.ts\"",
     "schema": "ts-json-schema-generator -p 'src/**/*.ts' -e all -t L10nConf --no-top-ref -o l10nrc.schema.json"
   },
   "main": "dist/index.js",

@@ -1,5 +1,17 @@
 # Changelog
 
+## [7.3.0](https://github.com/tpcint/l10n-tools/compare/l10n-tools-core-v7.2.1...l10n-tools-core-v7.3.0) (2026-02-13)
+
+
+### Miscellaneous Chores
+
+* replace ts-node with tsx for test runner ([#227](https://github.com/tpcint/l10n-tools/issues/227)) ([d3581db](https://github.com/tpcint/l10n-tools/commit/d3581db9cebdd801dc4e7a79e99943b23252599e))
+
+
+### Features
+
+* **cli:** add download command for download-only sync ([#231](https://github.com/tpcint/l10n-tools/issues/231)) ([e8e53f0](https://github.com/tpcint/l10n-tools/commit/e8e53f003d68400c72814cf10361a0a35223c6e2))
+
 ## [7.2.1](https://github.com/tpcint/l10n-tools/compare/l10n-tools-core-v7.2.0...l10n-tools-core-v7.2.1) (2026-02-05)
 
 

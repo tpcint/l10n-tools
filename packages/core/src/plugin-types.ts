@@ -51,7 +51,7 @@ export type SyncerFunc = (
   tag: string,
   keyEntries: KeyEntry[],
   allTransEntries: Record<string, TransEntry[]>,
-  drySync: boolean,
+  skipUpload: boolean,
   additionalTags?: string[],
 ) => Promise<void>
 

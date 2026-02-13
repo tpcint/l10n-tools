@@ -12,7 +12,7 @@ export type { SyncerFunc } from './plugin-types.js'
  * @param tag - Tag for the sync operation
  * @param keysPath - Path to the keys file
  * @param transDir - Directory containing translation files
- * @param drySync - If true, simulate sync without making changes
+ * @param skipUpload - If true, skip uploading to sync target (download only)
  * @param additionalTags - Additional tags to apply
  */
 export async function syncTransToTarget(
@@ -21,7 +21,7 @@ export async function syncTransToTarget(
   tag: string,
   keysPath: string,
   transDir: string,
-  drySync: boolean,
+  skipUpload: boolean,
   additionalTags?: string[],
 ) {
   const target = config.getSyncTarget()
@@ -37,7 +37,7 @@ export async function syncTransToTarget(
 
   const keyEntries = await readKeyEntries(keysPath)
   const allTransEntries = await readAllTransEntries(transDir)
-  await syncer(config, domainConfig, tag, keyEntries, allTransEntries, drySync, additionalTags)
+  await syncer(config, domainConfig, tag, keyEntries, allTransEntries, skipUpload, additionalTags)
   await writeKeyEntries(keysPath, keyEntries)
   await writeAllTransEntries(transDir, allTransEntries)
 }

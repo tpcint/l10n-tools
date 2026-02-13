@@ -78,7 +78,7 @@ async function run() {
     .option('-t, --tags <tags>', 'additional tags to apply when creating keys (comma separated)')
     .action(async (opts: UploadOptions, cmd: Command) => {
       const additionalTags = opts.tags ? opts.tags.split(',') : undefined
-      await runSubCommand(cmd.name(), async (domainName, config, domainConfig, drySync) => {
+      await runSubCommand(cmd.name(), async (domainName, config, domainConfig, skipUpload) => {
         const cacheDir = domainConfig.getCacheDir()
         const locales = domainConfig.getLocales()
         const tag = domainConfig.getTag()
@@ -89,7 +89,26 @@ async function run() {
 
         await extractKeys(domainName, domainConfig, keysPath)
         await updateTrans(keysPath, transDir, transDir, locales, null)
-        await syncTransToTarget(config, domainConfig, tag, keysPath, transDir, drySync, additionalTags)
+        await syncTransToTarget(config, domainConfig, tag, keysPath, transDir, skipUpload, additionalTags)
+        await updateTrans(keysPath, transDir, transDir, locales, validationConfig)
+      })
+    })
+
+  program.command('download')
+    .description('Download translations from sync target to local cache')
+    .action(async (_opts, cmd: Command) => {
+      await runSubCommand(cmd.name(), async (domainName, config, domainConfig) => {
+        const cacheDir = domainConfig.getCacheDir()
+        const locales = domainConfig.getLocales()
+        const tag = domainConfig.getTag()
+        const validationConfig = config.getValidationConfig(program.opts<ProgramOptions>())
+
+        const keysPath = getKeysPath(path.join(cacheDir, domainName))
+        const transDir = path.join(cacheDir, domainName)
+
+        await extractKeys(domainName, domainConfig, keysPath)
+        await updateTrans(keysPath, transDir, transDir, locales, null)
+        await syncTransToTarget(config, domainConfig, tag, keysPath, transDir, true)
         await updateTrans(keysPath, transDir, transDir, locales, validationConfig)
       })
     })
@@ -102,7 +121,7 @@ async function run() {
     .option('-t, --tags <tags>', 'additional tags to apply when creating keys (comma separated)')
     .action(async (opts: SyncOptions, cmd: Command) => {
       const additionalTags = opts.tags ? opts.tags.split(',') : undefined
-      await runSubCommand(cmd.name(), async (domainName, config, domainConfig, drySync) => {
+      await runSubCommand(cmd.name(), async (domainName, config, domainConfig, skipUpload) => {
         const cacheDir = domainConfig.getCacheDir()
         const locales = domainConfig.getLocales()
         const tag = domainConfig.getTag()
@@ -113,7 +132,7 @@ async function run() {
 
         await extractKeys(domainName, domainConfig, keysPath)
         await updateTrans(keysPath, transDir, transDir, locales, null)
-        await syncTransToTarget(config, domainConfig, tag, keysPath, transDir, drySync, additionalTags)
+        await syncTransToTarget(config, domainConfig, tag, keysPath, transDir, skipUpload, additionalTags)
         await updateTrans(keysPath, transDir, transDir, locales, validationConfig)
 
         await compileAll(domainName, domainConfig, transDir)
@@ -133,7 +152,7 @@ async function run() {
     .argument('[files...]', 'files to check, if not specified, all files will be checked')
     .action(async (files: string[], opts: CheckOptions, cmd: Command) => {
       const additionalTags = opts.tags ? opts.tags.split(',') : undefined
-      await runSubCommand(cmd.name(), async (domainName, config, domainConfig, drySync) => {
+      await runSubCommand(cmd.name(), async (domainName, config, domainConfig, skipUpload) => {
         const cacheDir = domainConfig.getCacheDir()
         const locales = opts['locales'] ? opts['locales'].split(',') : domainConfig.getLocales()
         const tag = domainConfig.getTag()
@@ -144,9 +163,12 @@ async function run() {
         const transDir = path.join(cacheDir, domainName)
 
         await extractKeys(domainName, domainConfig, keysPath)
+        if (opts['forceSync']) {
+          log.warn(cmd.name(), '--force-sync is deprecated. Run \'l10n download\' before \'l10n check\' instead.')
+        }
         if (opts['forceSync'] || !await fileExists(transDir)) {
           await updateTrans(keysPath, transDir, transDir, locales, null)
-          await syncTransToTarget(config, domainConfig, tag, keysPath, transDir, drySync, additionalTags)
+          await syncTransToTarget(config, domainConfig, tag, keysPath, transDir, skipUpload, additionalTags)
         }
         await updateTrans(keysPath, transDir, transDir, locales, validationConfig)
 
@@ -320,21 +342,21 @@ async function run() {
     .option('-t, --tags <tags>', 'additional tags to apply when creating keys (comma separated)')
     .action(async (opts: InternalSyncOptions, cmd: Command) => {
       const additionalTags = opts.tags ? opts.tags.split(',') : undefined
-      await runSubCommand(cmd.name(), async (domainName, config, domainConfig, drySync) => {
+      await runSubCommand(cmd.name(), async (domainName, config, domainConfig, skipUpload) => {
         const tag = domainConfig.getTag()
         const cacheDir = domainConfig.getCacheDir()
 
         const transDir = path.join(cacheDir, domainName)
         const keysPath = getKeysPath(path.join(cacheDir, domainName))
 
-        await syncTransToTarget(config, domainConfig, tag, keysPath, transDir, drySync, additionalTags)
+        await syncTransToTarget(config, domainConfig, tag, keysPath, transDir, skipUpload, additionalTags)
       })
     })
 
   program.parse(process.argv)
 }
 
-async function runSubCommand(cmdName: string, action: (domainName: string, config: L10nConfig, domainConfig: DomainConfig, drySync: boolean) => Promise<void>) {
+async function runSubCommand(cmdName: string, action: (domainName: string, config: L10nConfig, domainConfig: DomainConfig, skipUpload: boolean) => Promise<void>) {
   log.heading = cmdName
 
   const globalOpts = program.opts<ProgramOptions>()
@@ -346,7 +368,10 @@ async function runSubCommand(cmdName: string, action: (domainName: string, confi
 
   const config = await loadConfig(globalOpts['rcfile'] || '.l10nrc')
   const domainNames = globalOpts['domains'] || config.getDomainNames()
-  const drySync = globalOpts['drySync'] || false
+  const skipUpload = globalOpts['drySync'] || false
+  if (skipUpload) {
+    log.warn(cmdName, '--dry-sync is deprecated. Use \'l10n download\' instead of \'l10n -n sync\'.')
+  }
 
   for (const domainName of domainNames) {
     const domainConfig = config.getDomainConfig(domainName)
@@ -355,7 +380,7 @@ async function runSubCommand(cmdName: string, action: (domainName: string, confi
       process.exit(1)
     }
     log.heading = `[${domainName}] ${cmdName}`
-    await action(domainName, config, domainConfig, drySync)
+    await action(domainName, config, domainConfig, skipUpload)
   }
 }
 

@@ -38,7 +38,7 @@ function isPureKey(keyName: string, prefixes: string[]): boolean {
   return prefixes.some(prefix => keyName.startsWith(prefix))
 }
 
-export async function syncTransToLokalise(config: L10nConfig, domainConfig: DomainConfig, tag: string, keyEntries: KeyEntry[], allTransData: { [locale: string]: TransEntry[] }, drySync: boolean, additionalTags?: string[]) {
+export async function syncTransToLokalise(config: L10nConfig, domainConfig: DomainConfig, tag: string, keyEntries: KeyEntry[], allTransData: { [locale: string]: TransEntry[] }, skipUpload: boolean, additionalTags?: string[]) {
   const lokaliseConfig = config.getLokaliseConfig()
   const lokaliseApi = new LokaliseApi({ apiKey: lokaliseConfig.getToken() })
   const projectId = lokaliseConfig.getProjectId()
@@ -61,7 +61,7 @@ export async function syncTransToLokalise(config: L10nConfig, domainConfig: Doma
   // 3. 로컬 번역 업데이트
   updateTransEntries(tag, lokaliseConfig, keyEntries, allTransData, listedKeyMap)
   // 4. 2에서 준비한 데이터 Lokalise 에 업로드
-  await uploadToLokalise(lokaliseApi, projectId, tag, lokaliseConfig, creatingKeyMap, updatingKeyMap, drySync)
+  await uploadToLokalise(lokaliseApi, projectId, tag, lokaliseConfig, creatingKeyMap, updatingKeyMap, skipUpload)
 }
 
 async function listLokaliseKeys(lokaliseApi: LokaliseApi, projectId: string, config: LokaliseConfig) {
@@ -380,7 +380,7 @@ async function uploadToLokalise(
   config: LokaliseConfig,
   creatingKeyMap: { [keyName: string]: CreateKeyData },
   updatingKeyMap: { [keyName: string]: UpdateKeyDataWithId },
-  drySync: boolean,
+  skipUpload: boolean,
 ) {
   const localeSyncMap = config.getLocaleSyncMap()
   const prefixes = config.getPureKeyPrefixes()
@@ -402,8 +402,8 @@ async function uploadToLokalise(
           return key
         })
       }
-      if (drySync) {
-        log.notice('drySync', 'creating keys', JSON.stringify(keys, undefined, 2))
+      if (skipUpload) {
+        log.notice('skipUpload', 'creating keys', JSON.stringify(keys, undefined, 2))
       } else {
         log.notice('lokaliseApi', 'creating keys...', keys.length)
         await lokaliseApi.keys().create({
@@ -423,8 +423,8 @@ async function uploadToLokalise(
   for (let keys of chunk(Object.values(updatingKeyMap), 500)) {
     try {
       keys = keys.map(key => applyLocaleSyncMap(key, localeSyncMap))
-      if (drySync) {
-        log.notice('drySync', 'updating keys', JSON.stringify(keys, undefined, 2))
+      if (skipUpload) {
+        log.notice('skipUpload', 'updating keys', JSON.stringify(keys, undefined, 2))
       } else {
         log.notice('lokaliseApi', 'updating keys...', keys.length)
         await lokaliseApi.keys().bulk_update({

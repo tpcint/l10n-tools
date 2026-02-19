@@ -18,7 +18,7 @@
     "dist"
   ],
   "dependencies": {
-    "ajv": "^8.17.1",
+    "ajv": "^8.18.0",
     "commander": "^14.0.1",
     "cosmiconfig": "^9.0.0",
     "l10n-tools-core": "^7.3.0",

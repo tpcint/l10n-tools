@@ -26,7 +26,7 @@
   "dependencies": {
     "domhandler": "^5.0.3",
     "domutils": "^3.2.2",
-    "fast-xml-parser": "^5.3.5",
+    "fast-xml-parser": "^5.3.6",
     "he": "^1.2.0",
     "htmlparser2": "^10.1.0",
     "npmlog": "^7.0.1"

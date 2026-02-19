@@ -15,7 +15,7 @@
     { "type": "test", "section": "Tests", "hidden": false }
   ],
   "include-component-in-tag": true,
-  "plugins": ["node-workspace"],
+  "plugins": [{ "type": "node-workspace", "updatePeerDependencies": true }],
   "packages": {
     "packages/core": {
       "component": "l10n-tools-core"

@@ -1,5 +1,12 @@
 # Changelog
 
+## [7.1.2](https://github.com/tpcint/l10n-tools/compare/l10n-tools-extractor-javascript-v7.1.1...l10n-tools-extractor-javascript-v7.1.2) (2026-02-19)
+
+
+### Miscellaneous Chores
+
+* **deps:** fix peerDependencies and enable updatePeerDependencies in release-please ([#233](https://github.com/tpcint/l10n-tools/issues/233)) ([36137cd](https://github.com/tpcint/l10n-tools/commit/36137cdf5d4f07e659c6c9a2fdd85e814708cff1))
+
 ## [7.1.1](https://github.com/tpcint/l10n-tools/compare/l10n-tools-extractor-javascript-v7.1.0...l10n-tools-extractor-javascript-v7.1.1) (2026-02-13)
 
 

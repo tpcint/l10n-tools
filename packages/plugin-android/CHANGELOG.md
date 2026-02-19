@@ -1,5 +1,13 @@
 # Changelog
 
+## [7.2.3](https://github.com/tpcint/l10n-tools/compare/l10n-tools-plugin-android-v7.2.2...l10n-tools-plugin-android-v7.2.3) (2026-02-19)
+
+
+### Miscellaneous Chores
+
+* **deps:** bump fast-xml-parser from 5.3.5 to 5.3.6 ([#232](https://github.com/tpcint/l10n-tools/issues/232)) ([b8245f5](https://github.com/tpcint/l10n-tools/commit/b8245f5c958c88fe5eac8a56e4438fbf56a8b5bd))
+* **deps:** fix peerDependencies and enable updatePeerDependencies in release-please ([#233](https://github.com/tpcint/l10n-tools/issues/233)) ([36137cd](https://github.com/tpcint/l10n-tools/commit/36137cdf5d4f07e659c6c9a2fdd85e814708cff1))
+
 ## [7.2.2](https://github.com/tpcint/l10n-tools/compare/l10n-tools-plugin-android-v7.2.1...l10n-tools-plugin-android-v7.2.2) (2026-02-13)
 
 

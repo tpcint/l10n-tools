@@ -1,6 +1,6 @@
 {
   "name": "l10n-tools-extractor-javascript",
-  "version": "7.1.1",
+  "version": "7.1.2",
   "description": "l10n-tools extractor for JavaScript/TypeScript (react, i18next)",
   "type": "module",
   "engines": {

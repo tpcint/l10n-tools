@@ -24,7 +24,7 @@
   ],
   "dependencies": {
     "npmlog": "^7.0.1",
-    "php-parser": "^3.2.5"
+    "php-parser": "^3.3.0"
   },
   "devDependencies": {
     "@types/npmlog": "^7.0.0"

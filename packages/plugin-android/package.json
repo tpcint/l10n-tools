@@ -14,6 +14,9 @@
   },
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "bin": {
+    "l10n-android-diff-keys": "dist/diff-keys-cli.js"
+  },
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",

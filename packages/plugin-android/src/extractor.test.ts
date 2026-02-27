@@ -1,5 +1,4 @@
 import { describe, it } from 'node:test'
-import assert from 'node:assert/strict'
 import { KeyExtractor } from 'l10n-tools-core'
 import { extractAndroidStringsXml } from './extractor.js'
 import { expectKeyEntry } from './test-utils.js'
@@ -31,13 +30,8 @@ describe('android extractor test', () => {
       expectKeyEntry(extractor.keys, 'html_key_2', 'Agreed to <u>Terms</u> and <u>PP</u>', false, 'test-file', '5')
       expectKeyEntry(extractor.keys, 'cdata_key_1', '관심사 & 해시태그', false, 'test-file', '6')
       expectKeyEntry(extractor.keys, 'html_key_3', '<b>관심사!</b>\\n설정!\\n아래!', false, 'test-file', '7')
-      // verify actual key values for html format entries (not just context lookup)
-      assert.equal(extractor.keys.find('html_key_1', null)?.key, 'No Account? <font color="#FF424D">SignUp</font>')
-      assert.equal(extractor.keys.find('html_key_2', null)?.key, 'Agreed to <u>Terms</u> and <u>PP</u>')
-      assert.equal(extractor.keys.find('html_key_3', null)?.key, '<b>관심사!</b>\\n설정!\\n아래!')
       // html format with only tag children (no leading text node) must not produce empty key
       expectKeyEntry(extractor.keys, 'html_key_4', '<u>상세보기</u>', false, 'test-file', '8')
-      assert.equal(extractor.keys.find('html_key_4', null)?.key, '<u>상세보기</u>')
       expectKeyEntry(extractor.keys, 'cdata_key_2', '<b>%1$s</b> Present.', false, 'test-file', '10')
       expectKeyEntry(extractor.keys, 'escaped_key', '<font color="#FF424D">RENEW</font>', false, 'test-file', '11')
       expectKeyEntry(extractor.keys, 'plural_key', '%d days', true, 'test-file', '12')

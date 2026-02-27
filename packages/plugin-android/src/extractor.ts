@@ -5,7 +5,7 @@ import { type DomainConfig, getLineTo, KeyExtractor, writeKeyEntries } from 'l10
 import { getElementContent, getElementContentIndex } from './element-utils.js'
 import { parseDocument } from 'htmlparser2'
 import { findOne } from 'domutils'
-import { type Element, isTag, isText } from 'domhandler'
+import { type Element, isTag } from 'domhandler'
 import { containsAndroidXmlSpecialChars, decodeAndroidStrings } from './android-xml-utils.js'
 import he from 'he'
 
@@ -95,7 +95,7 @@ export function extractAndroidStringsXml(extractor: KeyExtractor, filename: stri
 
 function getAndroidXmlStringContent(src: string, elem: Element) {
   if (elem.attribs['format'] == 'html') {
-    return elem.children.find(isText)?.data.trim() ?? ''
+    return getElementContent(src, elem).trim()
   } else {
     let content = getElementContent(src, elem).trim()
     if (content.startsWith('<![CDATA[')) {

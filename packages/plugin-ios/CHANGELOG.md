@@ -1,5 +1,14 @@
 # Changelog
 
+## [7.2.2](https://github.com/tpcint/l10n-tools/compare/l10n-tools-plugin-ios-v7.2.1...l10n-tools-plugin-ios-v7.2.2) (2026-03-02)
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * peerDependencies
+    * l10n-tools-core bumped from ^7.1.0 to ^7.4.0
+
 ## [7.2.1](https://github.com/tpcint/l10n-tools/compare/l10n-tools-plugin-ios-v7.2.0...l10n-tools-plugin-ios-v7.2.1) (2026-02-04)
 
 

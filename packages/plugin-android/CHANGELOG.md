@@ -1,5 +1,19 @@
 # Changelog
 
+## [7.4.0](https://github.com/tpcint/l10n-tools/compare/l10n-tools-plugin-android-v7.3.0...l10n-tools-plugin-android-v7.4.0) (2026-03-02)
+
+
+### Features
+
+* **plugin-android:** add default-module option to omit context prefix ([#247](https://github.com/tpcint/l10n-tools/issues/247)) ([e50e064](https://github.com/tpcint/l10n-tools/commit/e50e06494504f91c39ce853866980638b1fefdbd))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * peerDependencies
+    * l10n-tools-core bumped from ^7.3.0 to ^7.4.0
+
 ## [7.3.0](https://github.com/tpcint/l10n-tools/compare/l10n-tools-plugin-android-v7.2.4...l10n-tools-plugin-android-v7.3.0) (2026-03-02)
 
 

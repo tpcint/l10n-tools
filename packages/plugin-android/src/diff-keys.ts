@@ -5,14 +5,14 @@ import { extractAndroidStringsXml } from './extractor.js'
  * Compare old and new Android strings.xml content and return changed/added contexts.
  * Deleted keys are excluded since they don't need translation checks.
  */
-export function diffAndroidKeys(oldContent: string, newContent: string, filename: string, module?: string): string[] {
+export function diffAndroidKeys(oldContent: string, newContent: string, filename: string, module?: string, defaultModule?: string): string[] {
   const oldExtractor = new KeyExtractor()
   const newExtractor = new KeyExtractor()
 
   if (oldContent) {
-    extractAndroidStringsXml(oldExtractor, filename, oldContent, 1, module)
+    extractAndroidStringsXml(oldExtractor, filename, oldContent, 1, module, defaultModule)
   }
-  extractAndroidStringsXml(newExtractor, filename, newContent, 1, module)
+  extractAndroidStringsXml(newExtractor, filename, newContent, 1, module, defaultModule)
 
   const oldMap = new Map<string, string>()
   for (const entry of oldExtractor.keys.toEntries()) {

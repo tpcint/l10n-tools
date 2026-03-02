@@ -95,6 +95,47 @@ describe('android extractor test', () => {
       expectKeyEntry(extractor.keys, 'features/auth:auth_title', 'Authentication', false)
     })
 
+    it('extracts without prefix for default module', () => {
+      const srcXml = `<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">MyApp</string>
+    <plurals name="items_count">
+        <item quantity="one">%d item</item>
+        <item quantity="other">%d items</item>
+    </plurals>
+</resources>`
+      const extractor = new KeyExtractor()
+      extractAndroidStringsXml(extractor, 'app/src/main/res/values/strings.xml', srcXml, 1, 'app', 'app')
+
+      // default module should have no prefix
+      expectKeyEntry(extractor.keys, 'app_name', 'MyApp', false)
+      expectKeyEntry(extractor.keys, 'items_count', '%d items', true)
+    })
+
+    it('extracts without prefix for default module with relative path', () => {
+      const srcXml = `<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">MyApp</string>
+</resources>`
+      const extractor = new KeyExtractor()
+      extractAndroidStringsXml(extractor, '../app/src/main/res/values/strings.xml', srcXml, 1, '../app', 'app')
+
+      // ../app matches default module "app" after normalization
+      expectKeyEntry(extractor.keys, 'app_name', 'MyApp', false)
+    })
+
+    it('still adds prefix for non-default modules when default-module is set', () => {
+      const srcXml = `<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="auth_title">Authentication</string>
+</resources>`
+      const extractor = new KeyExtractor()
+      extractAndroidStringsXml(extractor, 'features/auth/src/main/res/values/strings.xml', srcXml, 1, 'features/auth', 'app')
+
+      // non-default module still gets prefix
+      expectKeyEntry(extractor.keys, 'features/auth:auth_title', 'Authentication', false)
+    })
+
     it('extracts without module prefix when module is not specified', () => {
       const srcXml = `<?xml version="1.0" encoding="utf-8"?>
 <resources>

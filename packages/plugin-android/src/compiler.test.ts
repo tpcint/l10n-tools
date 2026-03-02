@@ -127,6 +127,42 @@ describe('android compiler test', () => {
         assert.deepEqual(result[0].messages, { other: 'Login' })
       })
 
+      it('filters default module entries (no prefix) when defaultModule is set', () => {
+        const transEntries: TransEntry[] = [
+          { context: 'app_name', key: 'MyApp', messages: { other: 'MyApp' }, flag: null },
+          { context: 'login_button', key: 'Login', messages: { other: 'Login' }, flag: null },
+          { context: 'features/auth:auth_title', key: 'Auth', messages: { other: 'Auth' }, flag: null },
+        ]
+
+        const appEntries = filterTransEntriesForModule(transEntries, 'app', 'app')
+        assert.equal(appEntries.length, 2)
+        assert.equal(appEntries[0].context, 'app_name')
+        assert.equal(appEntries[1].context, 'login_button')
+      })
+
+      it('filters default module with relative path', () => {
+        const transEntries: TransEntry[] = [
+          { context: 'app_name', key: 'MyApp', messages: { other: 'MyApp' }, flag: null },
+          { context: 'features/auth:auth_title', key: 'Auth', messages: { other: 'Auth' }, flag: null },
+        ]
+
+        // ../app matches default module "app"
+        const appEntries = filterTransEntriesForModule(transEntries, '../app', 'app')
+        assert.equal(appEntries.length, 1)
+        assert.equal(appEntries[0].context, 'app_name')
+      })
+
+      it('still filters by prefix for non-default modules when defaultModule is set', () => {
+        const transEntries: TransEntry[] = [
+          { context: 'app_name', key: 'MyApp', messages: { other: 'MyApp' }, flag: null },
+          { context: 'features/auth:auth_title', key: 'Auth', messages: { other: 'Auth' }, flag: null },
+        ]
+
+        const authEntries = filterTransEntriesForModule(transEntries, 'features/auth', 'app')
+        assert.equal(authEntries.length, 1)
+        assert.equal(authEntries[0].context, 'auth_title')
+      })
+
       it('handles entries without context', () => {
         const transEntries: TransEntry[] = [
           { context: null, key: 'NoContext', messages: { other: 'NoContext' }, flag: null },

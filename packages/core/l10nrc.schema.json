@@ -8,6 +8,10 @@
         "default-locale": {
           "type": "string"
         },
+        "default-module": {
+          "description": "Default module that omits prefix in context (android only)",
+          "type": "string"
+        },
         "modules": {
           "description": "List of module paths (android only, multi-module support)",
           "items": {
@@ -67,6 +71,10 @@
       "properties": {
         "cache-dir": {
           "description": "Location to save intermediate files",
+          "type": "string"
+        },
+        "default-module": {
+          "description": "Default module that omits prefix in context (android only)",
           "type": "string"
         },
         "fallback-locale": {

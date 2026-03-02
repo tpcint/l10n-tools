@@ -28,7 +28,7 @@ import {
   type XMLTagNode,
   type XMLTextNode,
 } from './android-xml-utils.js'
-import { getModuleName } from './extractor.js'
+import { getModuleName, isDefaultModule } from './extractor.js'
 
 export async function compileToAndroidXml(domainName: string, config: CompilerConfig, transDir: string) {
   const modules = config.getModules()
@@ -73,6 +73,7 @@ async function compileSingleResDir(config: CompilerConfig, transDir: string) {
 
 async function compileMultiModule(modules: string[], config: CompilerConfig, transDir: string) {
   const defaultLocale = config.getDefaultLocale()
+  const defaultModule = config.getDefaultModule()
   log.info('compile', `generating res files for ${modules.length} modules`)
 
   const parser = getAndroidXmlParser()
@@ -109,7 +110,7 @@ async function compileMultiModule(modules: string[], config: CompilerConfig, tra
       } else {
         const transEntries = await readTransEntries(transPath)
         // Filter entries for this module
-        const moduleTransEntries = filterTransEntriesForModule(transEntries, module)
+        const moduleTransEntries = filterTransEntriesForModule(transEntries, module, defaultModule)
         const dstXml = await readXml(resDir, locale, '<?xml version="1.0" encoding="utf-8"?>\n<resources></resources>')
         const newDstXml = await generateAndroidXml(locale, moduleTransEntries, srcXml, dstXml)
         await writeXml(newDstXml, resDir, locale)
@@ -119,7 +120,11 @@ async function compileMultiModule(modules: string[], config: CompilerConfig, tra
 }
 
 /** @internal exported for testing */
-export function filterTransEntriesForModule(transEntries: TransEntry[], module: string): TransEntry[] {
+export function filterTransEntriesForModule(transEntries: TransEntry[], module: string, defaultModule?: string): TransEntry[] {
+  if (isDefaultModule(module, defaultModule)) {
+    // Default module entries have no prefix — filter to entries without any colon-based prefix
+    return transEntries.filter(entry => entry.context != null && !entry.context.includes(':'))
+  }
   const moduleName = getModuleName(module)
   const prefix = `${moduleName}:`
   return transEntries

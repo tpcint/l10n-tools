@@ -1,7 +1,7 @@
 {
   "packages/core": "7.3.0",
-  "packages/cli": "7.1.1",
-  "packages/plugin-android": "7.2.4",
+  "packages/cli": "7.2.0",
+  "packages/plugin-android": "7.3.0",
   "packages/plugin-ios": "7.2.1",
   "packages/extractor-javascript": "7.1.2",
   "packages/extractor-vue": "7.1.2",

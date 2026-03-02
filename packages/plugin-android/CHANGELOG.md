@@ -1,5 +1,17 @@
 # Changelog
 
+## [7.2.4](https://github.com/tpcint/l10n-tools/compare/l10n-tools-plugin-android-v7.2.3...l10n-tools-plugin-android-v7.2.4) (2026-03-02)
+
+
+### Miscellaneous Chores
+
+* **deps:** bump fast-xml-parser from 5.3.6 to 5.4.1 ([#241](https://github.com/tpcint/l10n-tools/issues/241)) ([52af050](https://github.com/tpcint/l10n-tools/commit/52af050c00495a880fc9041419d4fe053a062a62))
+
+
+### Bug Fixes
+
+* **plugin-android:** extract full HTML content for format="html" strings ([#243](https://github.com/tpcint/l10n-tools/issues/243)) ([08cd017](https://github.com/tpcint/l10n-tools/commit/08cd0170b323939dd8a3f3ce55c4f503e6cc6b37))
+
 ## [7.2.3](https://github.com/tpcint/l10n-tools/compare/l10n-tools-plugin-android-v7.2.2...l10n-tools-plugin-android-v7.2.3) (2026-02-19)
 
 

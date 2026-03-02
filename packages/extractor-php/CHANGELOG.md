@@ -1,5 +1,12 @@
 # Changelog
 
+## [7.1.1](https://github.com/tpcint/l10n-tools/compare/l10n-tools-extractor-php-v7.1.0...l10n-tools-extractor-php-v7.1.1) (2026-03-02)
+
+
+### Miscellaneous Chores
+
+* **deps:** bump php-parser from 3.2.5 to 3.4.0 ([#240](https://github.com/tpcint/l10n-tools/issues/240)) ([a201fb8](https://github.com/tpcint/l10n-tools/commit/a201fb8e8c5feaf2d5563c07c72938ae5da2db79))
+
 ## [7.1.0](https://github.com/tpcint/l10n-tools/compare/l10n-tools-extractor-php-v7.0.1...l10n-tools-extractor-php-v7.1.0) (2026-02-04)
 
 

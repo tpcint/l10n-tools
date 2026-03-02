@@ -8,16 +8,16 @@
         "default-locale": {
           "type": "string"
         },
+        "default-module": {
+          "description": "Default module that omits prefix in context (android only)",
+          "type": "string"
+        },
         "modules": {
           "description": "List of module paths (android only, multi-module support)",
           "items": {
             "type": "string"
           },
           "type": "array"
-        },
-        "default-module": {
-          "description": "Default module that omits prefix in context (android only, must be one of modules)",
-          "type": "string"
         },
         "res-dir": {
           "description": "Location of res (android)",
@@ -73,6 +73,10 @@
           "description": "Location to save intermediate files",
           "type": "string"
         },
+        "default-module": {
+          "description": "Default module that omits prefix in context (android only)",
+          "type": "string"
+        },
         "fallback-locale": {
           "description": "Fill translations from fallback locale if not exists",
           "type": "string"
@@ -116,10 +120,6 @@
             "type": "string"
           },
           "type": "array"
-        },
-        "default-module": {
-          "description": "Default module that omits prefix in context (android only, must be one of modules)",
-          "type": "string"
         },
         "outputs": {
           "description": "List of output formats",

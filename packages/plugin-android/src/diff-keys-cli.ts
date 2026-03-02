@@ -12,7 +12,11 @@ async function main() {
   let defaultModule: string | undefined
   const filteredArgs: string[] = []
   for (let i = 0; i < args.length; i++) {
-    if (args[i] === '--default-module' && i + 1 < args.length) {
+    if (args[i] === '--default-module') {
+      if (i + 1 >= args.length) {
+        console.error('Error: --default-module requires a value')
+        process.exit(1)
+      }
       defaultModule = args[++i]
     } else {
       filteredArgs.push(args[i])

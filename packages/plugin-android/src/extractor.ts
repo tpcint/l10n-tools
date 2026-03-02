@@ -31,9 +31,13 @@ export async function extractAndroidKeys(domainName: string, config: DomainConfi
   const modules = config.getModules()
   const extractor = new KeyExtractor()
 
+  const defaultModule = config.getDefaultModule()
+  if (defaultModule != null && modules.length === 0) {
+    log.warn('extractKeys', `'default-module' is set to '${defaultModule}' but 'modules' is not configured; 'default-module' will be ignored`)
+  }
+
   if (modules.length > 0) {
     // Multi-module mode
-    const defaultModule = config.getDefaultModule()
     log.info('extractKeys', 'extracting from multiple modules')
     for (const module of modules) {
       const srcPath = path.join(module, 'src', 'main', 'res', 'values', 'strings.xml')

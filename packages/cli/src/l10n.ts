@@ -143,12 +143,14 @@ async function run() {
     locales?: string,
     forceSync?: boolean,
     tags?: string,
+    contexts?: string,
   }
   program.command('check')
     .description('Check all translated')
     .option('-l, --locales [locales]', 'locales to check, all if not specified (comma separated)')
     .option('--force-sync', 'sync even if translations are cached')
     .option('-t, --tags <tags>', 'additional tags to apply when creating keys (comma separated)')
+    .option('-c, --contexts <contexts>', 'contexts to check (comma separated)')
     .argument('[files...]', 'files to check, if not specified, all files will be checked')
     .action(async (files: string[], opts: CheckOptions, cmd: Command) => {
       const additionalTags = opts.tags ? opts.tags.split(',') : undefined
@@ -174,11 +176,22 @@ async function run() {
 
         const keys = await (async () => {
           const fileSet = new Set<string>(files)
-          if (fileSet.size === 0) {
+          const contextSet = opts.contexts !== undefined
+            ? new Set<string>(opts.contexts.split(',').filter(Boolean))
+            : null
+
+          if (fileSet.size === 0 && contextSet == null) {
             return null
           }
+
           const keyEntries = (await readKeyEntries(keysPath))
-            .filter(keyEntry => keyEntry.references.some(ref => fileSet.has(ref.file)))
+            .filter(keyEntry => {
+              const matchesFile = fileSet.size > 0
+                && keyEntry.references.some(ref => fileSet.has(ref.file))
+              const matchesContext = contextSet != null
+                && keyEntry.context != null && contextSet.has(keyEntry.context)
+              return matchesFile || matchesContext
+            })
           return EntryCollection.loadEntries(keyEntries)
         })()
         for (const locale of locales) {

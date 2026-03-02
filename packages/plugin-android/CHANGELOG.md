@@ -1,5 +1,12 @@
 # Changelog
 
+## [7.3.0](https://github.com/tpcint/l10n-tools/compare/l10n-tools-plugin-android-v7.2.4...l10n-tools-plugin-android-v7.3.0) (2026-03-02)
+
+
+### Features
+
+* **plugin-android:** add context-based key diff tool and --contexts option for check ([#245](https://github.com/tpcint/l10n-tools/issues/245)) ([70f8b30](https://github.com/tpcint/l10n-tools/commit/70f8b301a6aad5d7aa5dbc5c45d5299d5dea3d28))
+
 ## [7.2.4](https://github.com/tpcint/l10n-tools/compare/l10n-tools-plugin-android-v7.2.3...l10n-tools-plugin-android-v7.2.4) (2026-03-02)
 
 

@@ -15,6 +15,10 @@
           },
           "type": "array"
         },
+        "default-module": {
+          "description": "Default module that omits prefix in context (android only, must be one of modules)",
+          "type": "string"
+        },
         "res-dir": {
           "description": "Location of res (android)",
           "type": "string"
@@ -112,6 +116,10 @@
             "type": "string"
           },
           "type": "array"
+        },
+        "default-module": {
+          "description": "Default module that omits prefix in context (android only, must be one of modules)",
+          "type": "string"
         },
         "outputs": {
           "description": "List of output formats",

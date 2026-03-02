@@ -7,12 +7,24 @@ import { diffAndroidKeys } from './diff-keys.js'
 
 async function main() {
   const args = process.argv.slice(2)
-  if (args.length < 2) {
-    console.error('Usage: l10n-android-diff-keys <base-ref> <module> [<module>...]')
+
+  // Parse --default-module option
+  let defaultModule: string | undefined
+  const filteredArgs: string[] = []
+  for (let i = 0; i < args.length; i++) {
+    if (args[i] === '--default-module' && i + 1 < args.length) {
+      defaultModule = args[++i]
+    } else {
+      filteredArgs.push(args[i])
+    }
+  }
+
+  if (filteredArgs.length < 2) {
+    console.error('Usage: l10n-android-diff-keys [--default-module <module>] <base-ref> <module> [<module>...]')
     process.exit(1)
   }
 
-  const [baseRef, ...modules] = args
+  const [baseRef, ...modules] = filteredArgs
   const allChanged: string[] = []
 
   for (const module of modules) {
@@ -41,7 +53,7 @@ async function main() {
       continue
     }
 
-    allChanged.push(...diffAndroidKeys(oldContent, newContent, fsSrcPath, module))
+    allChanged.push(...diffAndroidKeys(oldContent, newContent, fsSrcPath, module, defaultModule))
   }
 
   if (allChanged.length > 0) {

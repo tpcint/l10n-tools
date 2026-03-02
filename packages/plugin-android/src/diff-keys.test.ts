@@ -79,6 +79,32 @@ describe('diffAndroidKeys', () => {
     assert.deepEqual(changed, ['features/auth:auth_title'])
   })
 
+  it('omits prefix for default module', () => {
+    const oldXml = `<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="existing">Existing</string>
+</resources>`
+    const newXml = `<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="existing">Existing</string>
+    <string name="new_key">New</string>
+</resources>`
+    const changed = diffAndroidKeys(oldXml, newXml, 'test-file', '../app', 'app')
+    // default module should not have prefix
+    assert.deepEqual(changed, ['new_key'])
+  })
+
+  it('still adds prefix for non-default module when defaultModule is set', () => {
+    const oldXml = `<?xml version="1.0" encoding="utf-8"?>
+<resources></resources>`
+    const newXml = `<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="auth_title">Login</string>
+</resources>`
+    const changed = diffAndroidKeys(oldXml, newXml, 'test-file', '../features/auth', 'app')
+    assert.deepEqual(changed, ['features/auth:auth_title'])
+  })
+
   it('detects plurals change', () => {
     const oldXml = `<?xml version="1.0" encoding="utf-8"?>
 <resources>

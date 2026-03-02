@@ -19,19 +19,28 @@ export function getModuleName(modulePath: string): string {
   return modulePath.replace(/^(\.\.\/)+/, '').replace(/^\.\//, '')
 }
 
+/**
+ * Check if the given module is the default module (should omit prefix in context).
+ */
+export function isDefaultModule(module: string, defaultModule: string | undefined): boolean {
+  if (defaultModule == null) return false
+  return getModuleName(module) === getModuleName(defaultModule)
+}
+
 export async function extractAndroidKeys(domainName: string, config: DomainConfig, keysPath: string) {
   const modules = config.getModules()
   const extractor = new KeyExtractor()
 
   if (modules.length > 0) {
     // Multi-module mode
+    const defaultModule = config.getDefaultModule()
     log.info('extractKeys', 'extracting from multiple modules')
     for (const module of modules) {
       const srcPath = path.join(module, 'src', 'main', 'res', 'values', 'strings.xml')
       log.verbose('extractKeys', `processing '${srcPath}'`)
       try {
         const input = await fsp.readFile(srcPath, { encoding: 'utf-8' })
-        extractAndroidStringsXml(extractor, srcPath, input, 1, module)
+        extractAndroidStringsXml(extractor, srcPath, input, 1, module, defaultModule)
       } catch (err) {
         if ((err as NodeJS.ErrnoException).code === 'ENOENT') {
           log.warn('extractKeys', `strings.xml not found: ${srcPath}`)
@@ -53,12 +62,15 @@ export async function extractAndroidKeys(domainName: string, config: DomainConfi
   await writeKeyEntries(keysPath, extractor.keys.toEntries())
 }
 
-export function extractAndroidStringsXml(extractor: KeyExtractor, filename: string, src: string, startLine: number = 1, module?: string) {
+export function extractAndroidStringsXml(extractor: KeyExtractor, filename: string, src: string, startLine: number = 1, module?: string, defaultModule?: string) {
   const root = parseDocument(src, { xmlMode: true, withStartIndices: true, withEndIndices: true })
   const resources = findOne(elem => elem.name == 'resources', root.children, false)
   if (resources == null) {
     return
   }
+  // Default module omits prefix in context for backward compatibility
+  const usePrefix = module != null && !isDefaultModule(module, defaultModule)
+  const moduleName = module && usePrefix ? getModuleName(module) : undefined
   for (const elem of resources.children) {
     if (!isTag(elem)) {
       continue
@@ -69,14 +81,12 @@ export function extractAndroidStringsXml(extractor: KeyExtractor, filename: stri
 
     if (elem.name == 'string') {
       const name = elem.attribs['name']
-      const moduleName = module ? getModuleName(module) : undefined
       const context = moduleName ? `${moduleName}:${name}` : name
       const content = getAndroidXmlStringContent(src, elem)
       const line = getLineTo(src, getElementContentIndex(elem), startLine)
       extractor.addMessage({ filename, line }, content, { context })
     } else if (elem.name == 'plurals') {
       const name = elem.attribs['name']
-      const moduleName = module ? getModuleName(module) : undefined
       const context = moduleName ? `${moduleName}:${name}` : name
       const line = getLineTo(src, getElementContentIndex(elem), startLine)
       let itemElem = elem.children.filter(isTag).find(child => child.name == 'item' && child.attribs['quantity'] == 'other')

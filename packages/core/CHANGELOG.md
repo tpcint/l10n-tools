@@ -1,5 +1,12 @@
 # Changelog
 
+## [7.4.0](https://github.com/tpcint/l10n-tools/compare/l10n-tools-core-v7.3.0...l10n-tools-core-v7.4.0) (2026-03-02)
+
+
+### Features
+
+* **plugin-android:** add default-module option to omit context prefix ([#247](https://github.com/tpcint/l10n-tools/issues/247)) ([e50e064](https://github.com/tpcint/l10n-tools/commit/e50e06494504f91c39ce853866980638b1fefdbd))
+
 ## [7.3.0](https://github.com/tpcint/l10n-tools/compare/l10n-tools-core-v7.2.1...l10n-tools-core-v7.3.0) (2026-02-13)
 
 

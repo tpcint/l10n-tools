@@ -1,5 +1,14 @@
 # Changelog
 
+## [7.2.1](https://github.com/tpcint/l10n-tools/compare/l10n-tools-v7.2.0...l10n-tools-v7.2.1) (2026-03-02)
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * l10n-tools-core bumped from ^7.3.0 to ^7.4.0
+
 ## [7.2.0](https://github.com/tpcint/l10n-tools/compare/l10n-tools-v7.1.1...l10n-tools-v7.2.0) (2026-03-02)
 
 

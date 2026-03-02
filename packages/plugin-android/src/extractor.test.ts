@@ -13,6 +13,7 @@ describe('android extractor test', () => {
     <string name="html_key_2" format="html">Agreed to <u>Terms</u> and <u>PP</u></string>
     <string name="cdata_key_1"><![CDATA[관심사 & 해시태그]]></string>
     <string name="html_key_3" format="html"><b>관심사!</b>\\n설정!\\n아래!</string>
+    <string name="html_key_4" format="html"><u>상세보기</u></string>
     <string name="no_trans_key" translatable="false">(+%1$s)</string>
     <string name="cdata_key_2"><![CDATA[<b>%1$s</b> Present.]]></string>
     <string name="escaped_key">&lt;font color="#FF424D"&gt;RENEW&lt;/font&gt;</string>
@@ -29,10 +30,12 @@ describe('android extractor test', () => {
       expectKeyEntry(extractor.keys, 'html_key_2', 'Agreed to <u>Terms</u> and <u>PP</u>', false, 'test-file', '5')
       expectKeyEntry(extractor.keys, 'cdata_key_1', '관심사 & 해시태그', false, 'test-file', '6')
       expectKeyEntry(extractor.keys, 'html_key_3', '<b>관심사!</b>\\n설정!\\n아래!', false, 'test-file', '7')
-      expectKeyEntry(extractor.keys, 'cdata_key_2', '<b>%1$s</b> Present.', false, 'test-file', '9')
-      expectKeyEntry(extractor.keys, 'escaped_key', '<font color="#FF424D">RENEW</font>', false, 'test-file', '10')
-      expectKeyEntry(extractor.keys, 'plural_key', '%d days', true, 'test-file', '11')
-      expectKeyEntry(extractor.keys, 'spaced_key', 'SPACED KEY', false, 'test-file', '15')
+      // html format with only tag children (no leading text node) must not produce empty key
+      expectKeyEntry(extractor.keys, 'html_key_4', '<u>상세보기</u>', false, 'test-file', '8')
+      expectKeyEntry(extractor.keys, 'cdata_key_2', '<b>%1$s</b> Present.', false, 'test-file', '10')
+      expectKeyEntry(extractor.keys, 'escaped_key', '<font color="#FF424D">RENEW</font>', false, 'test-file', '11')
+      expectKeyEntry(extractor.keys, 'plural_key', '%d days', true, 'test-file', '12')
+      expectKeyEntry(extractor.keys, 'spaced_key', 'SPACED KEY', false, 'test-file', '16')
     })
   })
 

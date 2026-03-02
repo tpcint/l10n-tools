@@ -176,7 +176,9 @@ async function run() {
 
         const keys = await (async () => {
           const fileSet = new Set<string>(files)
-          const contextSet = opts.contexts ? new Set<string>(opts.contexts.split(',')) : null
+          const contextSet = opts.contexts !== undefined
+            ? new Set<string>(opts.contexts.split(',').filter(Boolean))
+            : null
 
           if (fileSet.size === 0 && contextSet == null) {
             return null

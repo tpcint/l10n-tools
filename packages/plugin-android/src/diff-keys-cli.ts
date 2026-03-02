@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { execSync } from 'node:child_process'
+import { execFileSync } from 'node:child_process'
 import fsp from 'node:fs/promises'
 import path from 'node:path'
 import { diffAndroidKeys } from './diff-keys.js'
@@ -16,24 +16,32 @@ async function main() {
   const allChanged: string[] = []
 
   for (const module of modules) {
-    const srcPath = path.join(module, 'src', 'main', 'res', 'values', 'strings.xml')
+    const fsSrcPath = path.join(module, 'src', 'main', 'res', 'values', 'strings.xml')
+    const gitSrcPath = path.posix.join(module, 'src', 'main', 'res', 'values', 'strings.xml')
 
     let oldContent = ''
     try {
-      oldContent = execSync(`git show ${baseRef}:${srcPath}`, { encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'] })
-    } catch {
+      oldContent = execFileSync('git', ['show', `${baseRef}:${gitSrcPath}`], { encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'] })
+    } catch (err) {
+      const stderr = String((err as { stderr?: Buffer | string }).stderr ?? '')
+      if (!stderr.includes('does not exist') && !stderr.includes('did not match')) {
+        throw err
+      }
       // File doesn't exist in base ref — all keys are new
     }
 
     let newContent: string
     try {
-      newContent = await fsp.readFile(srcPath, { encoding: 'utf-8' })
-    } catch {
+      newContent = await fsp.readFile(fsSrcPath, { encoding: 'utf-8' })
+    } catch (err) {
+      if ((err as NodeJS.ErrnoException).code !== 'ENOENT') {
+        throw err
+      }
       // File doesn't exist in current — no keys to check
       continue
     }
 
-    allChanged.push(...diffAndroidKeys(oldContent, newContent, srcPath, module))
+    allChanged.push(...diffAndroidKeys(oldContent, newContent, fsSrcPath, module))
   }
 
   if (allChanged.length > 0) {

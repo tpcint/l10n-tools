@@ -24,7 +24,7 @@
   "devDependencies": {
     "@faker-js/faker": "^10.1.0",
     "@stylistic/eslint-plugin": "^5.9.0",
-    "@types/node": "^22.19.12",
+    "@types/node": "^22.19.13",
     "@typescript-eslint/parser": "^8.56.1",
     "eslint": "^9.39.3",
     "eslint-import-resolver-typescript": "^4.4.4",

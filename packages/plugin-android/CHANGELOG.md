@@ -1,5 +1,19 @@
 # Changelog
 
+## [7.4.1](https://github.com/tpcint/l10n-tools/compare/l10n-tools-plugin-android-v7.4.0...l10n-tools-plugin-android-v7.4.1) (2026-03-14)
+
+
+### Miscellaneous Chores
+
+* **deps:** bump fast-xml-parser from 5.4.1 to 5.4.2 ([#249](https://github.com/tpcint/l10n-tools/issues/249)) ([2dde836](https://github.com/tpcint/l10n-tools/commit/2dde8366e060d261d1bcfd87901d3875d6ded777))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * peerDependencies
+    * l10n-tools-core bumped from ^7.4.0 to ^7.4.1
+
 ## [7.4.0](https://github.com/tpcint/l10n-tools/compare/l10n-tools-plugin-android-v7.3.0...l10n-tools-plugin-android-v7.4.0) (2026-03-02)
 
 

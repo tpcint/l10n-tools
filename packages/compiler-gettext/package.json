@@ -23,7 +23,7 @@
     "dist"
   ],
   "dependencies": {
-    "gettext-parser": "^9.0.1",
+    "gettext-parser": "^9.0.2",
     "npmlog": "^7.0.1"
   },
   "devDependencies": {

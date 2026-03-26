@@ -1,4 +1,5 @@
 .idea
 .claude/
+.superset/
 node_modules/
 dist/

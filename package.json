@@ -22,6 +22,7 @@
     "url": "git+https://github.com/tpcint/l10n-tools.git"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "@faker-js/faker": "^10.1.0",
     "@stylistic/eslint-plugin": "^5.10.0",
     "@types/node": "^22.19.13",

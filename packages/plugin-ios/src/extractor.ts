@@ -190,7 +190,7 @@ function parseComment(key: string, commentText: string | undefined) {
 
   const commentData: { [key: string]: string } = {}
   const re = /\s*([^ ]+)\s*=\s*(".*?");/gmsui
-  let match: RegExpExecArray | null = null
+  let match: RegExpExecArray | null
   while ((match = re.exec(commentText)) != null) {
     commentData[match[1]] = match[2]
   }

@@ -27,7 +27,7 @@
     "dist"
   ],
   "dependencies": {
-    "domhandler": "^5.0.3",
+    "domhandler": "^6.0.1",
     "domutils": "^3.2.2",
     "fast-xml-parser": "^5.5.7",
     "he": "^1.2.0",

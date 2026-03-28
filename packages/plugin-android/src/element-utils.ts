@@ -1,4 +1,4 @@
-import type { Element } from 'domhandler'
+import type { Element } from 'htmlparser2'
 
 export function getElementContent(src: string, elem: Element) {
   if (elem.children.length === 0) {

@@ -1,6 +1,4 @@
-import { parseDocument } from 'htmlparser2'
-import { isTag } from 'domhandler'
-import { findAll } from 'domutils'
+import { parseDocument, DomUtils } from 'htmlparser2'
 import { getElementContent, getElementContentIndex } from './element-utils.js'
 import { getLineTo, JsKeyExtractor } from 'l10n-tools-extractor-javascript'
 import log from 'npmlog'
@@ -41,7 +39,7 @@ export class VueKeyExtractor extends JsKeyExtractor {
   extractVue(filename: string, src: string, startLine: number = 1) {
     const root = parseDocument(src, { withStartIndices: true, withEndIndices: true })
     for (const elem of root.children) {
-      if (!isTag(elem)) {
+      if (!DomUtils.isTag(elem)) {
         continue
       }
       if (elem.name == 'template') {
@@ -90,7 +88,7 @@ export class VueKeyExtractor extends JsKeyExtractor {
 
   private extractTemplate(filename: string, src: string, startLine: number = 1) {
     const root = parseDocument(src, { withStartIndices: true, withEndIndices: true })
-    for (const elem of findAll(() => true, root)) {
+    for (const elem of DomUtils.findAll(() => true, root)) {
       // Handle <script> tags within templates
       if (elem.name == 'script') {
         const content = getElementContent(src, elem)

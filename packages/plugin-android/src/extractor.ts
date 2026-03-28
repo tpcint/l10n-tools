@@ -3,9 +3,7 @@ import fsp from 'node:fs/promises'
 import path from 'node:path'
 import { type DomainConfig, getLineTo, KeyExtractor, writeKeyEntries } from 'l10n-tools-core'
 import { getElementContent, getElementContentIndex } from './element-utils.js'
-import { parseDocument } from 'htmlparser2'
-import { findOne } from 'domutils'
-import { type Element, isTag } from 'domhandler'
+import { parseDocument, DomUtils, type Element } from 'htmlparser2'
 import { containsAndroidXmlSpecialChars, decodeAndroidStrings } from './android-xml-utils.js'
 import he from 'he'
 
@@ -68,7 +66,7 @@ export async function extractAndroidKeys(domainName: string, config: DomainConfi
 
 export function extractAndroidStringsXml(extractor: KeyExtractor, filename: string, src: string, startLine: number = 1, module?: string, defaultModule?: string) {
   const root = parseDocument(src, { xmlMode: true, withStartIndices: true, withEndIndices: true })
-  const resources = findOne(elem => elem.name == 'resources', root.children, false)
+  const resources = DomUtils.findOne(elem => elem.name == 'resources', root.children, false)
   if (resources == null) {
     return
   }
@@ -76,7 +74,7 @@ export function extractAndroidStringsXml(extractor: KeyExtractor, filename: stri
   const usePrefix = module != null && !isDefaultModule(module, defaultModule)
   const moduleName = module && usePrefix ? getModuleName(module) : undefined
   for (const elem of resources.children) {
-    if (!isTag(elem)) {
+    if (!DomUtils.isTag(elem)) {
       continue
     }
     if (elem.attribs['translatable'] == 'false') {
@@ -93,9 +91,9 @@ export function extractAndroidStringsXml(extractor: KeyExtractor, filename: stri
       const name = elem.attribs['name']
       const context = moduleName ? `${moduleName}:${name}` : name
       const line = getLineTo(src, getElementContentIndex(elem), startLine)
-      let itemElem = elem.children.filter(isTag).find(child => child.name == 'item' && child.attribs['quantity'] == 'other')
+      let itemElem = elem.children.filter(DomUtils.isTag).find(child => child.name == 'item' && child.attribs['quantity'] == 'other')
       if (itemElem == null) {
-        itemElem = elem.children.filter(isTag).find(child => child.name == 'item')
+        itemElem = elem.children.filter(DomUtils.isTag).find(child => child.name == 'item')
       }
       if (itemElem == null) {
         log.warn('extractKeys', `missing item tag of plurals ${name}`)

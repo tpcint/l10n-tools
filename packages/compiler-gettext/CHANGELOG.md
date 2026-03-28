@@ -1,5 +1,19 @@
 # Changelog
 
+## [7.0.3](https://github.com/tpcint/l10n-tools/compare/l10n-tools-compiler-gettext-v7.0.2...l10n-tools-compiler-gettext-v7.0.3) (2026-03-28)
+
+
+### Miscellaneous Chores
+
+* **deps:** bump gettext-parser from 9.0.1 to 9.0.2 ([#257](https://github.com/tpcint/l10n-tools/issues/257)) ([3f66c51](https://github.com/tpcint/l10n-tools/commit/3f66c5151438522000ace1a1435ea7df2b5c41f6))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * peerDependencies
+    * l10n-tools-core bumped from ^7.4.0 to ^7.4.1
+
 ## [7.0.2](https://github.com/tpcint/l10n-tools/compare/l10n-tools-compiler-gettext-v7.0.1...l10n-tools-compiler-gettext-v7.0.2) (2026-03-02)
 
 

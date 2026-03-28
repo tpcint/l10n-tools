@@ -1,5 +1,19 @@
 # Changelog
 
+## [7.2.3](https://github.com/tpcint/l10n-tools/compare/l10n-tools-plugin-ios-v7.2.2...l10n-tools-plugin-ios-v7.2.3) (2026-03-28)
+
+
+### Miscellaneous Chores
+
+* **deps-dev:** bump the eslint group across 1 directory with 6 updates ([#263](https://github.com/tpcint/l10n-tools/issues/263)) ([28e76be](https://github.com/tpcint/l10n-tools/commit/28e76bee628558389a4b50b9bcd4b50c11b767f7))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * peerDependencies
+    * l10n-tools-core bumped from ^7.4.0 to ^7.4.1
+
 ## [7.2.2](https://github.com/tpcint/l10n-tools/compare/l10n-tools-plugin-ios-v7.2.1...l10n-tools-plugin-ios-v7.2.2) (2026-03-02)
 
 

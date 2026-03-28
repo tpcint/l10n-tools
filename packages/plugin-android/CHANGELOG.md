@@ -1,5 +1,23 @@
 # Changelog
 
+## [7.4.1](https://github.com/tpcint/l10n-tools/compare/l10n-tools-plugin-android-v7.4.0...l10n-tools-plugin-android-v7.4.1) (2026-03-28)
+
+
+### Miscellaneous Chores
+
+* **deps:** bump fast-xml-parser from 5.4.1 to 5.4.2 ([#249](https://github.com/tpcint/l10n-tools/issues/249)) ([2dde836](https://github.com/tpcint/l10n-tools/commit/2dde8366e060d261d1bcfd87901d3875d6ded777))
+* **deps:** bump fast-xml-parser from 5.4.2 to 5.5.6 ([#255](https://github.com/tpcint/l10n-tools/issues/255)) ([8d002b9](https://github.com/tpcint/l10n-tools/commit/8d002b959121c1c5ae9d87b83a7e70121812a4f2))
+* **deps:** bump fast-xml-parser from 5.5.6 to 5.5.7 ([#258](https://github.com/tpcint/l10n-tools/issues/258)) ([512fd42](https://github.com/tpcint/l10n-tools/commit/512fd424a630aa0f13ac7c668f528f9ebdb02316))
+* **deps:** bump fast-xml-parser from 5.5.7 to 5.5.9 ([#267](https://github.com/tpcint/l10n-tools/issues/267)) ([160e326](https://github.com/tpcint/l10n-tools/commit/160e3269781160dbd5caeee5eb6623f02882e6c3))
+* **deps:** bump the htmlparser2 group with 3 updates ([#266](https://github.com/tpcint/l10n-tools/issues/266)) ([2d148bc](https://github.com/tpcint/l10n-tools/commit/2d148bc595dee3e542bb1c0c56b6fc66a3b938b1))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * peerDependencies
+    * l10n-tools-core bumped from ^7.4.0 to ^7.4.1
+
 ## [7.4.0](https://github.com/tpcint/l10n-tools/compare/l10n-tools-plugin-android-v7.3.0...l10n-tools-plugin-android-v7.4.0) (2026-03-02)
 
 

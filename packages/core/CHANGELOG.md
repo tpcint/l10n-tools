@@ -1,5 +1,12 @@
 # Changelog
 
+## [7.4.1](https://github.com/tpcint/l10n-tools/compare/l10n-tools-core-v7.4.0...l10n-tools-core-v7.4.1) (2026-03-28)
+
+
+### Miscellaneous Chores
+
+* **deps-dev:** bump ts-json-schema-generator from 2.5.0 to 2.9.0 ([#253](https://github.com/tpcint/l10n-tools/issues/253)) ([a9e311e](https://github.com/tpcint/l10n-tools/commit/a9e311ecfd1541dbdea556671dc2bd18bb177747))
+
 ## [7.4.0](https://github.com/tpcint/l10n-tools/compare/l10n-tools-core-v7.3.0...l10n-tools-core-v7.4.0) (2026-03-02)
 
 

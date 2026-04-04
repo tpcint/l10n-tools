@@ -26,13 +26,13 @@
     "@faker-js/faker": "^10.1.0",
     "@stylistic/eslint-plugin": "^5.10.0",
     "@types/node": "^22.19.15",
-    "@typescript-eslint/parser": "^8.57.2",
+    "@typescript-eslint/parser": "^8.58.0",
     "eslint": "^10.1.0",
     "eslint-import-resolver-typescript": "^4.4.4",
     "eslint-plugin-import-newlines": "^2.0.0",
     "eslint-plugin-import-x": "^4.16.2",
     "tsx": "^4.21.0",
     "typescript": "^5.9.3",
-    "typescript-eslint": "^8.57.2"
+    "typescript-eslint": "^8.58.0"
   }
 }

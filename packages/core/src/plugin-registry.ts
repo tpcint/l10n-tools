@@ -16,6 +16,7 @@ const KNOWN_PLUGINS = [
   'l10n-tools-compiler-json',
   'l10n-tools-compiler-gettext',
   'l10n-tools-syncer-lokalise',
+  'l10n-tools-syncer-l10n-storage',
 ] as const
 
 /**
@@ -54,7 +55,8 @@ const COMPILER_TYPE_TO_PLUGIN: Record<string, string> = {
  * Mapping from sync targets to suggested syncer plugins
  */
 const SYNCER_TYPE_TO_PLUGIN: Record<string, string> = {
-  lokalise: 'l10n-tools-syncer-lokalise',
+  'lokalise': 'l10n-tools-syncer-lokalise',
+  'l10n-storage': 'l10n-tools-syncer-l10n-storage',
 }
 
 /**

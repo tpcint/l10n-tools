@@ -265,8 +265,28 @@
       "type": "string"
     },
     "SyncTarget": {
-      "const": "lokalise",
+      "enum": ["lokalise", "l10n-storage"],
       "type": "string"
+    },
+    "L10nStorageConf": {
+      "additionalProperties": false,
+      "properties": {
+        "url": {
+          "description": "Base URL of the tpc-agent service. Can be overridden by TPC_AGENT_URL env var",
+          "type": "string"
+        },
+        "projectId": {
+          "type": "string"
+        },
+        "source": {
+          "description": "Source identifier for tag ownership. Can be overridden by L10N_SOURCE env var",
+          "type": "string"
+        }
+      },
+      "required": [
+        "projectId"
+      ],
+      "type": "object"
     },
     "ValidationConf": {
       "additionalProperties": false,
@@ -292,6 +312,9 @@
         "$ref": "#/definitions/DomainConf"
       },
       "type": "object"
+    },
+    "l10n-storage": {
+      "$ref": "#/definitions/L10nStorageConf"
     },
     "lokalise": {
       "$ref": "#/definitions/LokaliseConf"

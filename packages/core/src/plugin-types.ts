@@ -42,6 +42,18 @@ export interface CompilerPlugin {
 }
 
 /**
+ * Options for syncer functions
+ */
+export interface SyncerOptions {
+  /** Additional tags to apply when creating keys */
+  additionalTags?: string[],
+  /** Global metadata (tag=null) to apply when creating keys */
+  globalMetadata?: Record<string, string>,
+  /** Tag-specific metadata to apply when creating keys */
+  tagMetadata?: Record<string, string>,
+}
+
+/**
  * Syncer function signature
  * Synchronizes translations with external services
  */
@@ -52,7 +64,7 @@ export type SyncerFunc = (
   keyEntries: KeyEntry[],
   allTransEntries: Record<string, TransEntry[]>,
   skipUpload: boolean,
-  additionalTags?: string[],
+  options?: SyncerOptions,
 ) => Promise<void>
 
 /**

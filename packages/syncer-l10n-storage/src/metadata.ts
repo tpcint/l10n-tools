@@ -30,6 +30,7 @@ export function buildContextMetadataRemoving(existingMetadata: L10nKeyMetadata[]
   if (!context) return null
   const existing = getContextsFromMetadata(existingMetadata, tag)
   const updated = existing.filter(c => c !== context)
+  if (updated.length === existing.length) return null
   return { tag, metaKey: 'context', metaValue: JSON.stringify(updated) }
 }
 

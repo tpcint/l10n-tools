@@ -13,14 +13,22 @@ export class L10nStorageApiClient {
   private async request<T>(method: string, path: string, body?: unknown): Promise<T> {
     const url = `${this.baseUrl}${path}`
     log.verbose('l10n-storage-api', `${method} ${url}`)
-    const res = await fetch(url, {
-      method,
-      headers: {
-        'Authorization': `Bearer ${this.token}`,
-        'Content-Type': 'application/json',
-      },
-      body: body ? JSON.stringify(body) : undefined,
-    })
+    const controller = new AbortController()
+    const timeout = setTimeout(() => controller.abort(), 30_000)
+    let res: Response
+    try {
+      res = await fetch(url, {
+        method,
+        headers: {
+          'Authorization': `Bearer ${this.token}`,
+          'Content-Type': 'application/json',
+        },
+        body: body ? JSON.stringify(body) : undefined,
+        signal: controller.signal,
+      })
+    } finally {
+      clearTimeout(timeout)
+    }
     if (!res.ok) {
       const text = await res.text()
       throw new Error(`L10n Storage API error: ${res.status} ${res.statusText} - ${text}`)

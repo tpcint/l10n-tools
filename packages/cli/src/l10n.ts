@@ -16,8 +16,8 @@ import {
   type ProgramOptions,
   readKeyEntries,
   readTransEntries,
-  syncTransToTarget,
   type SyncerOptions,
+  syncTransToTarget,
   updateTrans,
 } from 'l10n-tools-core'
 import * as path from 'path'

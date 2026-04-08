@@ -1,10 +1,5 @@
 import log from 'npmlog'
-import type {
-  CreateL10nKeyInput,
-  L10nKey,
-  ListKeysResponse,
-  UpdateL10nKeyInput,
-} from './api-types.js'
+import type { CreateL10nKeyInput, L10nKey, ListKeysResponse, UpdateL10nKeyInput } from './api-types.js'
 
 export class L10nStorageApiClient {
   private readonly baseUrl: string

@@ -371,10 +371,10 @@ export class ValidationConfig {
 
 type L10nStorageConf = {
   /** Base URL of the tpc-agent service. Can be overridden by TPC_AGENT_URL env var */
-  'url'?: string,
-  'projectId': string,
+  url?: string,
+  projectId: string,
   /** Source identifier for tag ownership. Can be overridden by L10N_SOURCE env var */
-  'source'?: string,
+  source?: string,
 }
 
 export class L10nStorageConfig {
@@ -384,7 +384,7 @@ export class L10nStorageConfig {
   }
 
   getUrl(): string {
-    const url = process.env.TPC_AGENT_URL ?? this.sc['url']
+    const url = process.env.TPC_AGENT_URL ?? this.sc.url
     if (!url) {
       throw new Error('l10n-storage url is required: set TPC_AGENT_URL env var or url in config')
     }
@@ -392,11 +392,11 @@ export class L10nStorageConfig {
   }
 
   getProjectId(): string {
-    return this.sc['projectId']
+    return this.sc.projectId
   }
 
   getSource(): string {
-    return process.env.L10N_SOURCE ?? this.sc['source'] ?? 'main'
+    return process.env.L10N_SOURCE ?? this.sc.source ?? 'main'
   }
 }
 

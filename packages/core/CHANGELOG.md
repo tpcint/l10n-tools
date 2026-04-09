@@ -1,5 +1,12 @@
 # Changelog
 
+## [7.6.0](https://github.com/tpcint/l10n-tools/compare/l10n-tools-core-v7.5.0...l10n-tools-core-v7.6.0) (2026-04-09)
+
+
+### Features
+
+* **core:** support L10N_SYNC_TARGET env var to override sync target ([#278](https://github.com/tpcint/l10n-tools/issues/278)) ([5b21ec8](https://github.com/tpcint/l10n-tools/commit/5b21ec8dcb20c63717bf81ce3b6e565d97a125e5))
+
 ## [7.5.0](https://github.com/tpcint/l10n-tools/compare/l10n-tools-core-v7.4.1...l10n-tools-core-v7.5.0) (2026-04-09)
 
 

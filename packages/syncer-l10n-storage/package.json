@@ -1,6 +1,6 @@
 {
   "name": "l10n-tools-syncer-l10n-storage",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "l10n-tools syncer for tpc-agent l10n-storage service",
   "type": "module",
   "engines": {
@@ -31,7 +31,7 @@
     "@types/npmlog": "^7.0.0"
   },
   "peerDependencies": {
-    "l10n-tools-core": "^7.5.0"
+    "l10n-tools-core": "^7.6.0"
   },
   "author": "Eungkyu Song <eungkyu@gmail.com>",
   "license": "MIT",

@@ -1,5 +1,24 @@
 # Changelog
 
+## [7.4.0](https://github.com/tpcint/l10n-tools/compare/l10n-tools-syncer-lokalise-v7.3.3...l10n-tools-syncer-lokalise-v7.4.0) (2026-04-09)
+
+
+### Miscellaneous Chores
+
+* **deps:** bump p-queue from 9.1.0 to 9.1.1 ([#274](https://github.com/tpcint/l10n-tools/issues/274)) ([0b7b30f](https://github.com/tpcint/l10n-tools/commit/0b7b30f98af00598773f2bda6a8572def2f13a07))
+
+
+### Features
+
+* add syncer-l10n-storage for tpc-agent l10n-storage ([#276](https://github.com/tpcint/l10n-tools/issues/276)) ([7ef2c24](https://github.com/tpcint/l10n-tools/commit/7ef2c24825cca5992fe1c440d8d74639676b5729))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * peerDependencies
+    * l10n-tools-core bumped from ^7.4.1 to ^7.5.0
+
 ## [7.3.3](https://github.com/tpcint/l10n-tools/compare/l10n-tools-syncer-lokalise-v7.3.2...l10n-tools-syncer-lokalise-v7.3.3) (2026-03-28)
 
 

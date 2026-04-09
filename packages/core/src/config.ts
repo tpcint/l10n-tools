@@ -126,9 +126,16 @@ export class L10nConfig {
   }
 
   getSyncTarget(): SyncTarget {
-    return (process.env.L10N_SYNC_TARGET as SyncTarget | undefined)
-      ?? this.rc['sync-target']
-      ?? 'lokalise'
+    const envTarget = process.env.L10N_SYNC_TARGET
+    if (envTarget != null) {
+      if (envTarget === 'lokalise' || envTarget === 'l10n-storage') {
+        return envTarget
+      }
+      throw new Error(
+        `Invalid L10N_SYNC_TARGET: ${envTarget}. Expected one of: lokalise, l10n-storage`,
+      )
+    }
+    return this.rc['sync-target'] ?? 'lokalise'
   }
 
   getL10nStorageConfig(): L10nStorageConfig {

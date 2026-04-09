@@ -44,7 +44,7 @@ export class L10nStorageApiClient {
     let cursor: string | undefined
     do {
       log.info('l10n-storage-api', `listing keys${cursor ? ` (cursor: ${cursor})` : ''}`)
-      const params = new URLSearchParams({ includeTranslations: '1', limit: '500' })
+      const params = new URLSearchParams({ includeTranslations: '1', includeSuggestions: '1', limit: '500' })
       if (cursor) params.set('cursor', cursor)
       const response = await this.request<ListKeysResponse>(
         'GET',

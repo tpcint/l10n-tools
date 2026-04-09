@@ -299,6 +299,9 @@ function updateTransEntries(
   listedKeyMap: { [keyName: string]: L10nKey },
 ) {
   for (const [keyName, key] of Object.entries(listedKeyMap)) {
+    const translatedLocales = new Set(key.translations.map(t => t.locale))
+
+    // 1. 확정 번역 반영
     for (const tr of key.translations) {
       const locale = tr.locale
       if (allTransEntries[locale] == null) continue
@@ -310,7 +313,6 @@ function updateTransEntries(
         const transEntry = trans.find(keyContext, keyName)
         if (!transEntry) continue
 
-        // l10n-storage의 번역은 항상 확정 상태
         transEntry.flag = null
 
         if (key.isPlural) {
@@ -326,6 +328,40 @@ function updateTransEntries(
           const value = tr.translation.other
           if (value && value !== transEntry.messages.other) {
             log.verbose('updateTransEntries', `updating ${locale} value of ${keyName}`)
+            transEntry.messages = { other: value }
+          }
+        }
+      }
+    }
+
+    // 2. 확정 번역이 없는 locale의 pending suggestion → unverified로 반영
+    for (const sugg of key.suggestions) {
+      if (translatedLocales.has(sugg.locale)) continue
+      const locale = sugg.locale
+      if (allTransEntries[locale] == null) continue
+
+      const trans = EntryCollection.loadEntries(allTransEntries[locale])
+      const contexts = [...getContextsFromMetadata(key.metadata, tag), null]
+
+      for (const keyContext of contexts) {
+        const transEntry = trans.find(keyContext, keyName)
+        if (!transEntry) continue
+
+        transEntry.flag = 'unverified'
+
+        if (key.isPlural) {
+          const translations: Record<string, string> = {}
+          for (const [form, value] of Object.entries(sugg.translation)) {
+            if (value) translations[form] = value
+          }
+          if (Object.keys(translations).length > 0 && !isEqual(transEntry.messages, translations)) {
+            log.verbose('updateTransEntries', `updating ${locale} value of ${keyName} (unverified)`)
+            transEntry.messages = translations as TransMessages
+          }
+        } else {
+          const value = sugg.translation.other
+          if (value && value !== transEntry.messages.other) {
+            log.verbose('updateTransEntries', `updating ${locale} value of ${keyName} (unverified)`)
             transEntry.messages = { other: value }
           }
         }

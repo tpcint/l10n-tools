@@ -42,6 +42,7 @@ export class L10nStorageApiClient {
   async listAllKeys(projectId: string): Promise<L10nKey[]> {
     const allKeys: L10nKey[] = []
     let cursor: string | undefined
+    let previousCursor: string | undefined
     do {
       log.info('l10n-storage-api', `listing keys${cursor ? ` (cursor: ${cursor})` : ''}`)
       const params = new URLSearchParams({ includeTranslations: '1', includeSuggestions: '1', limit: '500' })
@@ -51,7 +52,11 @@ export class L10nStorageApiClient {
         `/api/l10n/projects/${projectId}/keys?${params}`,
       )
       allKeys.push(...response.keys)
+      previousCursor = cursor
       cursor = response.nextCursor ?? undefined
+      if (cursor && cursor === previousCursor) {
+        throw new Error(`L10n Storage API pagination loop detected: cursor ${cursor} repeated`)
+      }
       log.info('l10n-storage-api', `fetched ${response.keys.length} keys (total: ${allKeys.length})`)
     } while (cursor)
     return allKeys

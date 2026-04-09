@@ -1,5 +1,19 @@
 # Changelog
 
+## [7.2.4](https://github.com/tpcint/l10n-tools/compare/l10n-tools-plugin-ios-v7.2.3...l10n-tools-plugin-ios-v7.2.4) (2026-04-09)
+
+
+### Miscellaneous Chores
+
+* **deps:** bump p-queue from 9.1.0 to 9.1.1 ([#274](https://github.com/tpcint/l10n-tools/issues/274)) ([0b7b30f](https://github.com/tpcint/l10n-tools/commit/0b7b30f98af00598773f2bda6a8572def2f13a07))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * peerDependencies
+    * l10n-tools-core bumped from ^7.4.1 to ^7.5.0
+
 ## [7.2.3](https://github.com/tpcint/l10n-tools/compare/l10n-tools-plugin-ios-v7.2.2...l10n-tools-plugin-ios-v7.2.3) (2026-03-28)
 
 

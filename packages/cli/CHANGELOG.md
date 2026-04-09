@@ -1,5 +1,19 @@
 # Changelog
 
+## [7.3.0](https://github.com/tpcint/l10n-tools/compare/l10n-tools-v7.2.2...l10n-tools-v7.3.0) (2026-04-09)
+
+
+### Features
+
+* add syncer-l10n-storage for tpc-agent l10n-storage ([#276](https://github.com/tpcint/l10n-tools/issues/276)) ([7ef2c24](https://github.com/tpcint/l10n-tools/commit/7ef2c24825cca5992fe1c440d8d74639676b5729))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * l10n-tools-core bumped from ^7.4.1 to ^7.5.0
+
 ## [7.2.2](https://github.com/tpcint/l10n-tools/compare/l10n-tools-v7.2.1...l10n-tools-v7.2.2) (2026-03-28)
 
 

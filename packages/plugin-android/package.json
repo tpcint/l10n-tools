@@ -1,6 +1,6 @@
 {
   "name": "l10n-tools-plugin-android",
-  "version": "7.4.1",
+  "version": "7.4.2",
   "description": "l10n-tools plugin for Android platform",
   "type": "module",
   "engines": {
@@ -39,7 +39,7 @@
     "@types/npmlog": "^7.0.0"
   },
   "peerDependencies": {
-    "l10n-tools-core": "^7.4.1"
+    "l10n-tools-core": "^7.5.0"
   },
   "author": "Eungkyu Song <eungkyu@gmail.com>",
   "license": "MIT",

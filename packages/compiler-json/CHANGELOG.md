@@ -1,5 +1,14 @@
 # Changelog
 
+## [7.0.4](https://github.com/tpcint/l10n-tools/compare/l10n-tools-compiler-json-v7.0.3...l10n-tools-compiler-json-v7.0.4) (2026-04-09)
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * peerDependencies
+    * l10n-tools-core bumped from ^7.4.1 to ^7.5.0
+
 ## [7.0.3](https://github.com/tpcint/l10n-tools/compare/l10n-tools-compiler-json-v7.0.2...l10n-tools-compiler-json-v7.0.3) (2026-03-28)
 
 

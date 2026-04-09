@@ -1,5 +1,19 @@
 # Changelog
 
+## [7.1.4](https://github.com/tpcint/l10n-tools/compare/l10n-tools-extractor-php-v7.1.3...l10n-tools-extractor-php-v7.1.4) (2026-04-09)
+
+
+### Miscellaneous Chores
+
+* **deps:** bump php-parser from 3.5.0 to 3.5.1 ([#272](https://github.com/tpcint/l10n-tools/issues/272)) ([102cbb8](https://github.com/tpcint/l10n-tools/commit/102cbb805442625cdf97a06d06fa090e6b422e4c))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * peerDependencies
+    * l10n-tools-core bumped from ^7.4.1 to ^7.5.0
+
 ## [7.1.3](https://github.com/tpcint/l10n-tools/compare/l10n-tools-extractor-php-v7.1.2...l10n-tools-extractor-php-v7.1.3) (2026-03-28)
 
 

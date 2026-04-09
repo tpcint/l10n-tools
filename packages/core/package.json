@@ -10,17 +10,19 @@
   "scripts": {
     "build": "tsc",
     "watch": "tsc -w",
-    "test": "tsx --test \"src/**/*.test.ts\"",
+    "test": "tsx --conditions source --test \"src/**/*.test.ts\"",
     "schema": "ts-json-schema-generator -p 'src/**/*.ts' -e all -t L10nConf --no-top-ref -o l10nrc.schema.json"
   },
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "exports": {
     ".": {
+      "source": "./src/index.ts",
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
     },
     "./plugin-types": {
+      "source": "./src/plugin-types.ts",
       "types": "./dist/plugin-types.d.ts",
       "import": "./dist/plugin-types.js"
     }

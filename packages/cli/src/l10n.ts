@@ -16,6 +16,7 @@ import {
   type ProgramOptions,
   readKeyEntries,
   readTransEntries,
+  type SyncerOptions,
   syncTransToTarget,
   updateTrans,
 } from 'l10n-tools-core'
@@ -27,6 +28,23 @@ import { Ajv } from 'ajv'
 
 const program = new Command('l10n-tools')
 const dirname = path.dirname(fileURLToPath(import.meta.url))
+
+function collectKeyValue(value: string, previous: Record<string, string>): Record<string, string> {
+  const eqIdx = value.indexOf('=')
+  if (eqIdx < 1) {
+    throw new Error(`Invalid key=value format: ${value}`)
+  }
+  previous[value.substring(0, eqIdx)] = value.substring(eqIdx + 1)
+  return previous
+}
+
+function buildSyncerOptions(opts: { tags?: string, metadata?: Record<string, string>, tagMetadata?: Record<string, string> }): SyncerOptions {
+  return {
+    additionalTags: opts.tags ? opts.tags.split(',') : undefined,
+    globalMetadata: opts.metadata && Object.keys(opts.metadata).length > 0 ? opts.metadata : undefined,
+    tagMetadata: opts.tagMetadata && Object.keys(opts.tagMetadata).length > 0 ? opts.tagMetadata : undefined,
+  }
+}
 
 /**
  * Configure the CLI, register l10n commands and options, and parse process arguments.
@@ -72,12 +90,16 @@ async function run() {
 
   type UploadOptions = {
     tags?: string,
+    metadata?: Record<string, string>,
+    tagMetadata?: Record<string, string>,
   }
   program.command('upload')
     .description('Upload local changes to sync target (local files will not touched)')
     .option('-t, --tags <tags>', 'additional tags to apply when creating keys (comma separated)')
+    .option('-m, --metadata <key=value>', 'global metadata to apply when creating keys (repeatable)', collectKeyValue, {})
+    .option('--tag-metadata <key=value>', 'tag-specific metadata to apply when creating keys (repeatable)', collectKeyValue, {})
     .action(async (opts: UploadOptions, cmd: Command) => {
-      const additionalTags = opts.tags ? opts.tags.split(',') : undefined
+      const syncerOptions = buildSyncerOptions(opts)
       await runSubCommand(cmd.name(), async (domainName, config, domainConfig, skipUpload) => {
         const cacheDir = domainConfig.getCacheDir()
         const locales = domainConfig.getLocales()
@@ -89,7 +111,7 @@ async function run() {
 
         await extractKeys(domainName, domainConfig, keysPath)
         await updateTrans(keysPath, transDir, transDir, locales, null)
-        await syncTransToTarget(config, domainConfig, tag, keysPath, transDir, skipUpload, additionalTags)
+        await syncTransToTarget(config, domainConfig, tag, keysPath, transDir, skipUpload, syncerOptions)
         await updateTrans(keysPath, transDir, transDir, locales, validationConfig)
       })
     })
@@ -115,12 +137,16 @@ async function run() {
 
   type SyncOptions = {
     tags?: string,
+    metadata?: Record<string, string>,
+    tagMetadata?: Record<string, string>,
   }
   program.command('sync')
     .description('Synchronize local translations and sync target')
     .option('-t, --tags <tags>', 'additional tags to apply when creating keys (comma separated)')
+    .option('-m, --metadata <key=value>', 'global metadata to apply when creating keys (repeatable)', collectKeyValue, {})
+    .option('--tag-metadata <key=value>', 'tag-specific metadata to apply when creating keys (repeatable)', collectKeyValue, {})
     .action(async (opts: SyncOptions, cmd: Command) => {
-      const additionalTags = opts.tags ? opts.tags.split(',') : undefined
+      const syncerOptions = buildSyncerOptions(opts)
       await runSubCommand(cmd.name(), async (domainName, config, domainConfig, skipUpload) => {
         const cacheDir = domainConfig.getCacheDir()
         const locales = domainConfig.getLocales()
@@ -132,7 +158,7 @@ async function run() {
 
         await extractKeys(domainName, domainConfig, keysPath)
         await updateTrans(keysPath, transDir, transDir, locales, null)
-        await syncTransToTarget(config, domainConfig, tag, keysPath, transDir, skipUpload, additionalTags)
+        await syncTransToTarget(config, domainConfig, tag, keysPath, transDir, skipUpload, syncerOptions)
         await updateTrans(keysPath, transDir, transDir, locales, validationConfig)
 
         await compileAll(domainName, domainConfig, transDir)
@@ -143,6 +169,8 @@ async function run() {
     locales?: string,
     forceSync?: boolean,
     tags?: string,
+    metadata?: Record<string, string>,
+    tagMetadata?: Record<string, string>,
     contexts?: string,
   }
   program.command('check')
@@ -150,10 +178,12 @@ async function run() {
     .option('-l, --locales [locales]', 'locales to check, all if not specified (comma separated)')
     .option('--force-sync', 'sync even if translations are cached')
     .option('-t, --tags <tags>', 'additional tags to apply when creating keys (comma separated)')
+    .option('-m, --metadata <key=value>', 'global metadata to apply when creating keys (repeatable)', collectKeyValue, {})
+    .option('--tag-metadata <key=value>', 'tag-specific metadata to apply when creating keys (repeatable)', collectKeyValue, {})
     .option('-c, --contexts <contexts>', 'contexts to check (comma separated)')
     .argument('[files...]', 'files to check, if not specified, all files will be checked')
     .action(async (files: string[], opts: CheckOptions, cmd: Command) => {
-      const additionalTags = opts.tags ? opts.tags.split(',') : undefined
+      const syncerOptions = buildSyncerOptions(opts)
       await runSubCommand(cmd.name(), async (domainName, config, domainConfig, skipUpload) => {
         const cacheDir = domainConfig.getCacheDir()
         const locales = opts['locales'] ? opts['locales'].split(',') : domainConfig.getLocales()
@@ -170,7 +200,7 @@ async function run() {
         }
         if (opts['forceSync'] || !await fileExists(transDir)) {
           await updateTrans(keysPath, transDir, transDir, locales, null)
-          await syncTransToTarget(config, domainConfig, tag, keysPath, transDir, skipUpload, additionalTags)
+          await syncTransToTarget(config, domainConfig, tag, keysPath, transDir, skipUpload, syncerOptions)
         }
         await updateTrans(keysPath, transDir, transDir, locales, validationConfig)
 
@@ -349,12 +379,16 @@ async function run() {
 
   type InternalSyncOptions = {
     tags?: string,
+    metadata?: Record<string, string>,
+    tagMetadata?: Record<string, string>,
   }
   program.command('_sync')
     .description('Synchronize translations to remote target (internal use only)')
     .option('-t, --tags <tags>', 'additional tags to apply when creating keys (comma separated)')
+    .option('-m, --metadata <key=value>', 'global metadata to apply when creating keys (repeatable)', collectKeyValue, {})
+    .option('--tag-metadata <key=value>', 'tag-specific metadata to apply when creating keys (repeatable)', collectKeyValue, {})
     .action(async (opts: InternalSyncOptions, cmd: Command) => {
-      const additionalTags = opts.tags ? opts.tags.split(',') : undefined
+      const syncerOptions = buildSyncerOptions(opts)
       await runSubCommand(cmd.name(), async (domainName, config, domainConfig, skipUpload) => {
         const tag = domainConfig.getTag()
         const cacheDir = domainConfig.getCacheDir()
@@ -362,7 +396,7 @@ async function run() {
         const transDir = path.join(cacheDir, domainName)
         const keysPath = getKeysPath(path.join(cacheDir, domainName))
 
-        await syncTransToTarget(config, domainConfig, tag, keysPath, transDir, skipUpload, additionalTags)
+        await syncTransToTarget(config, domainConfig, tag, keysPath, transDir, skipUpload, syncerOptions)
       })
     })
 

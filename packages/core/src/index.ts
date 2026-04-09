@@ -8,6 +8,7 @@ export type {
   CompilerFunc,
   SyncerPlugin,
   SyncerFunc,
+  SyncerOptions,
 } from './plugin-types.js'
 
 export { pluginRegistry } from './plugin-registry.js'
@@ -18,6 +19,7 @@ export {
   DomainConfig,
   CompilerConfig,
   LokaliseConfig,
+  L10nStorageConfig,
   type DomainType,
   type CompilerType,
   type SyncTarget,

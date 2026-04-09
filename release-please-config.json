@@ -49,6 +49,9 @@
     },
     "packages/syncer-lokalise": {
       "component": "l10n-tools-syncer-lokalise"
+    },
+    "packages/syncer-l10n-storage": {
+      "component": "l10n-tools-syncer-l10n-storage"
     }
   }
 }

@@ -1,8 +1,9 @@
 import type { DomainConfig, L10nConfig } from './config.js'
 import { readAllTransEntries, readKeyEntries, writeAllTransEntries, writeKeyEntries } from './entry.js'
 import { pluginRegistry } from './plugin-registry.js'
+import type { SyncerOptions } from './plugin-types.js'
 
-export type { SyncerFunc } from './plugin-types.js'
+export type { SyncerFunc, SyncerOptions } from './plugin-types.js'
 
 /**
  * Synchronize translations with the configured sync target.
@@ -13,7 +14,7 @@ export type { SyncerFunc } from './plugin-types.js'
  * @param keysPath - Path to the keys file
  * @param transDir - Directory containing translation files
  * @param skipUpload - If true, skip uploading to sync target (download only)
- * @param additionalTags - Additional tags to apply
+ * @param options - Syncer options (additional tags, metadata, etc.)
  */
 export async function syncTransToTarget(
   config: L10nConfig,
@@ -22,7 +23,7 @@ export async function syncTransToTarget(
   keysPath: string,
   transDir: string,
   skipUpload: boolean,
-  additionalTags?: string[],
+  options?: SyncerOptions,
 ) {
   const target = config.getSyncTarget()
 
@@ -37,7 +38,7 @@ export async function syncTransToTarget(
 
   const keyEntries = await readKeyEntries(keysPath)
   const allTransEntries = await readAllTransEntries(transDir)
-  await syncer(config, domainConfig, tag, keyEntries, allTransEntries, skipUpload, additionalTags)
+  await syncer(config, domainConfig, tag, keyEntries, allTransEntries, skipUpload, options)
   await writeKeyEntries(keysPath, keyEntries)
   await writeAllTransEntries(transDir, allTransEntries)
 }

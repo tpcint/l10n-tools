@@ -5,6 +5,7 @@ import {
   type KeyEntry,
   type L10nConfig,
   type LokaliseConfig,
+  type SyncerOptions,
   type TransEntry,
   type TransMessages,
 } from 'l10n-tools-core'
@@ -38,7 +39,8 @@ function isPureKey(keyName: string, prefixes: string[]): boolean {
   return prefixes.some(prefix => keyName.startsWith(prefix))
 }
 
-export async function syncTransToLokalise(config: L10nConfig, domainConfig: DomainConfig, tag: string, keyEntries: KeyEntry[], allTransData: { [locale: string]: TransEntry[] }, skipUpload: boolean, additionalTags?: string[]) {
+export async function syncTransToLokalise(config: L10nConfig, domainConfig: DomainConfig, tag: string, keyEntries: KeyEntry[], allTransData: { [locale: string]: TransEntry[] }, skipUpload: boolean, options?: SyncerOptions) {
+  const additionalTags = options?.additionalTags
   const lokaliseConfig = config.getLokaliseConfig()
   const lokaliseApi = new LokaliseApi({ apiKey: lokaliseConfig.getToken() })
   const projectId = lokaliseConfig.getProjectId()

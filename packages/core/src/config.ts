@@ -17,9 +17,10 @@ type L10nConf = {
   'validation'?: ValidationConf,
   'sync-target'?: SyncTarget,
   'lokalise'?: LokaliseConf,
+  'l10n-storage'?: L10nStorageConf,
 }
 
-export type SyncTarget = 'lokalise'
+export type SyncTarget = 'lokalise' | 'l10n-storage'
 
 /**
  * vue-gettext: Extract from $gettext like function, translate tag, and v-translate attrs
@@ -126,6 +127,14 @@ export class L10nConfig {
 
   getSyncTarget(): SyncTarget {
     return this.rc['sync-target'] ?? 'lokalise'
+  }
+
+  getL10nStorageConfig(): L10nStorageConfig {
+    const sc = this.rc['l10n-storage']
+    if (sc == null) {
+      throw new Error('no l10n-storage in rc')
+    }
+    return new L10nStorageConfig(sc)
   }
 
   getLokaliseConfig(): LokaliseConfig {
@@ -357,6 +366,37 @@ export class ValidationConfig {
 
   getSkip(): boolean {
     return this.opts['skip'] ?? this.vc?.['skip'] ?? false
+  }
+}
+
+type L10nStorageConf = {
+  /** Base URL of the tpc-agent service. Can be overridden by TPC_AGENT_URL env var */
+  url?: string,
+  projectId: string,
+  /** Source identifier for tag ownership. Can be overridden by L10N_SOURCE env var */
+  source?: string,
+}
+
+export class L10nStorageConfig {
+  private readonly sc: L10nStorageConf
+  constructor(sc: L10nStorageConf) {
+    this.sc = sc
+  }
+
+  getUrl(): string {
+    const url = process.env.TPC_AGENT_URL ?? this.sc.url
+    if (!url) {
+      throw new Error('l10n-storage url is required: set TPC_AGENT_URL env var or url in config')
+    }
+    return url
+  }
+
+  getProjectId(): string {
+    return this.sc.projectId
+  }
+
+  getSource(): string {
+    return process.env.L10N_SOURCE ?? this.sc.source ?? 'main'
   }
 }
 

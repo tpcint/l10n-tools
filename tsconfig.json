@@ -11,6 +11,7 @@
     { "path": "packages/extractor-php" },
     { "path": "packages/compiler-json" },
     { "path": "packages/compiler-gettext" },
-    { "path": "packages/syncer-lokalise" }
+    { "path": "packages/syncer-lokalise" },
+    { "path": "packages/syncer-l10n-storage" }
   ]
 }

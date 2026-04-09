@@ -126,7 +126,9 @@ export class L10nConfig {
   }
 
   getSyncTarget(): SyncTarget {
-    return this.rc['sync-target'] ?? 'lokalise'
+    return (process.env.L10N_SYNC_TARGET as SyncTarget | undefined)
+      ?? this.rc['sync-target']
+      ?? 'lokalise'
   }
 
   getL10nStorageConfig(): L10nStorageConfig {

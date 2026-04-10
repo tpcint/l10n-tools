@@ -210,6 +210,33 @@
       ],
       "description": "Keyword configuration for extraction\n- string: Simple keyword name (e.g., \".localized\", \"translate:1\")\n- object: Detailed configuration with parameter mapping"
     },
+    "L10nStorageConf": {
+      "additionalProperties": false,
+      "properties": {
+        "locale-sync-map": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "Locale map to pass to syncer",
+          "type": "object"
+        },
+        "projectId": {
+          "type": "string"
+        },
+        "source": {
+          "description": "Source identifier for tag ownership. Can be overridden by L10N_SOURCE env var",
+          "type": "string"
+        },
+        "url": {
+          "description": "Base URL of the tpc-agent service. Can be overridden by TPC_AGENT_URL env var",
+          "type": "string"
+        }
+      },
+      "required": [
+        "projectId"
+      ],
+      "type": "object"
+    },
     "LokaliseConf": {
       "additionalProperties": false,
       "properties": {
@@ -265,28 +292,11 @@
       "type": "string"
     },
     "SyncTarget": {
-      "enum": ["lokalise", "l10n-storage"],
-      "type": "string"
-    },
-    "L10nStorageConf": {
-      "additionalProperties": false,
-      "properties": {
-        "url": {
-          "description": "Base URL of the tpc-agent service. Can be overridden by TPC_AGENT_URL env var",
-          "type": "string"
-        },
-        "projectId": {
-          "type": "string"
-        },
-        "source": {
-          "description": "Source identifier for tag ownership. Can be overridden by L10N_SOURCE env var",
-          "type": "string"
-        }
-      },
-      "required": [
-        "projectId"
+      "enum": [
+        "lokalise",
+        "l10n-storage"
       ],
-      "type": "object"
+      "type": "string"
     },
     "ValidationConf": {
       "additionalProperties": false,

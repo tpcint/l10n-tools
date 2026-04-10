@@ -8,7 +8,7 @@ import {
   type TransEntry,
   type TransMessages,
 } from 'l10n-tools-core'
-import { chunk, isEqual } from 'es-toolkit/compat'
+import { chunk, invert, isEqual } from 'es-toolkit/compat'
 import { L10nStorageApiClient } from './api-client.js'
 import type {
   CreateL10nKeyInput,
@@ -49,6 +49,9 @@ export async function syncTransToL10nStorage(
     throw new Error('TPC_AGENT_TOKEN environment variable is required')
   }
 
+  const localeSyncMap = storageConfig.getLocaleSyncMap()
+  const invertedSyncMap = localeSyncMap ? invert(localeSyncMap) : undefined
+
   const apiClient = new L10nStorageApiClient(url, token)
 
   // 1. l10n-storage에서 키 전체 조회
@@ -60,11 +63,11 @@ export async function syncTransToL10nStorage(
 
   // 2. 로컬과 비교하여 create/update 대상 분류
   const { creatingKeys, updatingKeys } = buildKeyChanges(
-    source, tag, keyEntries, allTransData, listedKeyMap, options,
+    source, tag, keyEntries, allTransData, listedKeyMap, localeSyncMap, options,
   )
 
   // 3. 서버 번역을 로컬에 반영
-  updateTransEntries(tag, allTransData, listedKeyMap)
+  updateTransEntries(tag, allTransData, listedKeyMap, invertedSyncMap)
 
   // 4. l10n-storage에 업로드
   await uploadToL10nStorage(apiClient, projectId, creatingKeys, updatingKeys, skipUpload)
@@ -145,6 +148,7 @@ export function buildKeyChanges(
   keyEntries: KeyEntry[],
   allTransEntries: { [locale: string]: TransEntry[] },
   listedKeyMap: { [keyName: string]: L10nKey },
+  localeSyncMap?: { [locale: string]: string },
   options?: SyncerOptions,
 ): {
   creatingKeys: CreateL10nKeyInput[],
@@ -259,6 +263,7 @@ export function buildKeyChanges(
 
   // Pass 3: 로컬 번역 → suggestions 첨부
   for (const [locale, transEntries] of Object.entries(allTransEntries)) {
+    const serverLocale = localeSyncMap?.[locale] ?? locale
     for (const transEntry of transEntries) {
       const entryKey = transEntry.key
       if (!transEntry.messages.other) continue
@@ -266,20 +271,20 @@ export function buildKeyChanges(
       const listedKey = listedKeyMap[entryKey]
       if (listedKey != null) {
         // 기존 키: translation도 suggestion도 없는 locale만
-        if (!hasTranslation(listedKey, locale) && !hasSuggestion(listedKey, locale)) {
+        if (!hasTranslation(listedKey, serverLocale) && !hasSuggestion(listedKey, serverLocale)) {
           let updating = updatingKeyMap[entryKey]
           if (!updating) {
             updating = { keyId: listedKey.id }
             updatingKeyMap[entryKey] = updating
           }
-          pushSuggestion(updating, createSuggestion(locale, listedKey.isPlural, transEntry.messages))
+          pushSuggestion(updating, createSuggestion(serverLocale, listedKey.isPlural, transEntry.messages))
         }
       } else {
         // 새 키
         const creating = creatingKeyMap[entryKey]
-        if (creating && !creatingSuggestionHasLocale(creating, locale)) {
+        if (creating && !creatingSuggestionHasLocale(creating, serverLocale)) {
           if (!creating.suggestions) creating.suggestions = []
-          creating.suggestions.push(createSuggestion(locale, creating.isPlural ?? false, transEntry.messages))
+          creating.suggestions.push(createSuggestion(serverLocale, creating.isPlural ?? false, transEntry.messages))
         }
       }
     }
@@ -297,13 +302,14 @@ function updateTransEntries(
   tag: string,
   allTransEntries: { [locale: string]: TransEntry[] },
   listedKeyMap: { [keyName: string]: L10nKey },
+  invertedSyncMap?: { [locale: string]: string },
 ) {
   for (const [keyName, key] of Object.entries(listedKeyMap)) {
     const translatedLocales = new Set(key.translations.map(t => t.locale))
 
     // 1. 확정 번역 반영
     for (const tr of key.translations) {
-      const locale = tr.locale
+      const locale = invertedSyncMap?.[tr.locale] ?? tr.locale
       if (allTransEntries[locale] == null) continue
 
       const trans = EntryCollection.loadEntries(allTransEntries[locale])
@@ -337,7 +343,7 @@ function updateTransEntries(
     // 2. 확정 번역이 없는 locale의 pending suggestion → unverified로 반영
     for (const sugg of key.suggestions) {
       if (translatedLocales.has(sugg.locale)) continue
-      const locale = sugg.locale
+      const locale = invertedSyncMap?.[sugg.locale] ?? sugg.locale
       if (allTransEntries[locale] == null) continue
 
       const trans = EntryCollection.loadEntries(allTransEntries[locale])

@@ -77,6 +77,22 @@
           "description": "Default module that omits prefix in context (android only)",
           "type": "string"
         },
+        "extra-expr-attrs": {
+          "description": "Extra directive names whose attribute value should be parsed as JavaScript expressions containing translation function calls (vue extractor only).\n\nThese are appended to the built-in directive list the extractor already scans (the built-in list differs by extractor type — for example the vue-i18n extractor scans `v-html` by default while the vue-gettext extractor does not). Use this option to register custom directives such as sanitizing HTML wrappers.",
+          "examples": [
+            [
+              "v-dompurify-html"
+            ],
+            [
+              "v-dompurify-html",
+              "v-safe-html"
+            ]
+          ],
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
         "fallback-locale": {
           "description": "Fill translations from fallback locale if not exists",
           "type": "string"

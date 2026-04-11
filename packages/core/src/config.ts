@@ -96,6 +96,19 @@ type DomainConf = {
   'default-module'?: string,
   /** Lokalise platform to use */
   'lokalise-platform'?: LokalisePlatform,
+  /**
+   * Extra directive names whose attribute value should be parsed as JavaScript
+   * expressions containing translation function calls (vue extractor only).
+   *
+   * These are appended to the built-in directive list the extractor already
+   * scans (the built-in list differs by extractor type — for example the
+   * vue-i18n extractor scans `v-html` by default while the vue-gettext
+   * extractor does not). Use this option to register custom directives such
+   * as sanitizing HTML wrappers.
+   *
+   * @examples [["v-dompurify-html"], ["v-dompurify-html", "v-safe-html"]]
+   */
+  'extra-expr-attrs'?: string[],
   /** List of output formats */
   'outputs': CompilerConf[],
 }
@@ -245,6 +258,14 @@ export class DomainConfig {
 
   getCompilerConfigs(): CompilerConfig[] {
     return this.dc['outputs'].map(output => new CompilerConfig(output)) ?? []
+  }
+
+  /**
+   * Extra Vue directive names (exact match) whose attribute values should be
+   * scanned for translation function calls by the Vue extractor.
+   */
+  getExtraExprAttrs(): string[] {
+    return this.dc['extra-expr-attrs'] ?? []
   }
 }
 

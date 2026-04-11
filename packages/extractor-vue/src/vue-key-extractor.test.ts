@@ -143,6 +143,66 @@ describe('VueKeyExtractor', () => {
       expectKeyEntry(extractor, null, 'key-v-t', false, 'test-file', '3')
       expectKeyEntry(extractor, null, 'key-v-t-path', false, 'test-file', '4')
     })
+
+    it('extra exprAttrs: custom directive (e.g. v-dompurify-html)', () => {
+      const module = `
+                <template>
+                    <div>
+                        <p v-html="$t('key-v-html')"></p>
+                        <p v-dompurify-html="$t('key-v-dompurify-html')"></p>
+                        <p v-safe-html="$t('key-v-safe-html')"></p>
+                    </div>
+                </template>
+            `
+      const extractor = new VueKeyExtractor({
+        exprAttrs: [/^v-html$/, /^v-dompurify-html$/, /^v-safe-html$/],
+        keywords: ['$t'],
+      })
+      extractor.extractVue('test-file', module)
+      expectKeyEntry(extractor, null, 'key-v-html', false, 'test-file', '4')
+      expectKeyEntry(extractor, null, 'key-v-dompurify-html', false, 'test-file', '5')
+      expectKeyEntry(extractor, null, 'key-v-safe-html', false, 'test-file', '6')
+    })
+
+    it('extra exprAttrs: directive not listed should be ignored', () => {
+      const module = `
+                <template>
+                    <p v-dompurify-html="$t('key-v-dompurify-html')"></p>
+                </template>
+            `
+      // Only v-html in exprAttrs, v-dompurify-html should NOT be scanned
+      const extractor = new VueKeyExtractor({
+        exprAttrs: [/^v-html$/],
+        keywords: ['$t'],
+      })
+      extractor.extractVue('test-file', module)
+      assert.equal(
+        extractor.keys.find(null, 'key-v-dompurify-html'),
+        null,
+        'key from unlisted directive should not be extracted',
+      )
+    })
+
+    it('extra exprAttrs: anchored exact match does not leak to prefixes', () => {
+      const module = `
+                <template>
+                    <p v-html="$t('key-v-html')"></p>
+                    <p v-html-foo="$t('key-v-html-foo')"></p>
+                </template>
+            `
+      // Anchored /^v-html$/ must match only exact "v-html", NOT "v-html-foo"
+      const extractor = new VueKeyExtractor({
+        exprAttrs: [/^v-html$/],
+        keywords: ['$t'],
+      })
+      extractor.extractVue('test-file', module)
+      expectKeyEntry(extractor, null, 'key-v-html', false, 'test-file', '3')
+      assert.equal(
+        extractor.keys.find(null, 'key-v-html-foo'),
+        null,
+        'prefix-matched directive should not be extracted under exact-match regex',
+      )
+    })
   })
 
   describe('script in vue file', () => {

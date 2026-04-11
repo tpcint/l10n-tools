@@ -51,6 +51,8 @@ export interface SyncerOptions {
   globalMetadata?: Record<string, string>,
   /** Tag-specific metadata to apply when creating keys */
   tagMetadata?: Record<string, string>,
+  /** Source identifier for tag ownership (l10n-storage) */
+  source?: string,
 }
 
 /**

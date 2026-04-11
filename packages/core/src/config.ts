@@ -380,10 +380,12 @@ export class ValidationConfig {
 
 type L10nStorageConf = {
   /** Base URL of the tpc-agent service. Can be overridden by TPC_AGENT_URL env var */
-  url?: string,
-  projectId: string,
-  /** Source identifier for tag ownership. Can be overridden by L10N_SOURCE env var */
-  source?: string,
+  'url'?: string,
+  'projectId': string,
+  /** Source identifier for tag ownership */
+  'source'?: string,
+  /** Locale map to pass to syncer */
+  'locale-sync-map'?: { [locale: string]: string },
 }
 
 export class L10nStorageConfig {
@@ -405,7 +407,11 @@ export class L10nStorageConfig {
   }
 
   getSource(): string {
-    return process.env.L10N_SOURCE ?? this.sc.source ?? 'main'
+    return this.sc.source ?? 'main'
+  }
+
+  getLocaleSyncMap(): { [locale: string]: string } | undefined {
+    return this.sc['locale-sync-map']
   }
 }
 

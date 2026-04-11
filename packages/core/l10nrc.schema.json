@@ -224,7 +224,7 @@
           "type": "string"
         },
         "source": {
-          "description": "Source identifier for tag ownership. Can be overridden by L10N_SOURCE env var",
+          "description": "Source identifier for tag ownership",
           "type": "string"
         },
         "url": {

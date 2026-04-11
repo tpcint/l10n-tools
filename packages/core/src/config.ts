@@ -382,7 +382,7 @@ type L10nStorageConf = {
   /** Base URL of the tpc-agent service. Can be overridden by TPC_AGENT_URL env var */
   'url'?: string,
   'projectId': string,
-  /** Source identifier for tag ownership. Can be overridden by L10N_SOURCE env var */
+  /** Source identifier for tag ownership */
   'source'?: string,
   /** Locale map to pass to syncer */
   'locale-sync-map'?: { [locale: string]: string },

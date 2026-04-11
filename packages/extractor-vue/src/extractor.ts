@@ -4,6 +4,30 @@ import * as path from 'path'
 import { type DomainConfig, getSrcPaths, writeKeyEntries } from 'l10n-tools-core'
 import { VueKeyExtractor } from './vue-key-extractor.js'
 
+/**
+ * Escape all regex metacharacters so a user-supplied directive name is
+ * treated as a literal string when compiled into a `RegExp`.
+ *
+ * This keeps the config contract simple — users declare plain directive
+ * names in `.l10nrc`, not regex patterns — and prevents accidental
+ * wildcard matching from characters like `.`, `*`, `+`, etc.
+ */
+function escapeRegex(str: string): string {
+  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}
+
+/**
+ * Build additional `exprAttrs` regex patterns from the domain config.
+ *
+ * Users declare extra directive names (e.g. `v-dompurify-html`) in
+ * `.l10nrc` under `extra-expr-attrs`. Each name is escaped and compiled
+ * into an anchored exact-match regex so that it joins the built-in list
+ * used by the Vue key extractor.
+ */
+function buildExtraExprAttrs(config: DomainConfig): RegExp[] {
+  return config.getExtraExprAttrs().map(name => new RegExp(`^${escapeRegex(name)}$`))
+}
+
 export async function extractVueGettextKeys(domainName: string, config: DomainConfig, keysPath: string) {
   const srcPaths = await getSrcPaths(config, ['.vue', '.js'])
   const keywords = new Set(config.getKeywordsAsStrings())
@@ -17,7 +41,7 @@ export async function extractVueGettextKeys(domainName: string, config: DomainCo
   const extractor = new VueKeyExtractor({
     tagNames: ['translate'],
     attrNames: ['v-translate'],
-    exprAttrs: [/^:/, /^v-bind:/],
+    exprAttrs: [/^:/, /^v-bind:/, ...buildExtraExprAttrs(config)],
     markers: [{ start: '{{', end: '}}' }],
     keywords: keywords,
   })
@@ -55,7 +79,7 @@ export async function extractVueI18nKeys(domainName: string, config: DomainConfi
   const extractor = new VueKeyExtractor({
     tagNames: ['i18n', 'i18n-t'],
     objectAttrs: { 'v-t': ['', 'path'] },
-    exprAttrs: [/^:/, /^v-bind:/, /^v-html$/],
+    exprAttrs: [/^:/, /^v-bind:/, /^v-html$/, ...buildExtraExprAttrs(config)],
     markers: [{ start: '{{', end: '}}' }],
     keywords: [...keywords],
   })

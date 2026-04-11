@@ -1,5 +1,12 @@
 # Changelog
 
+## [7.9.0](https://github.com/tpcint/l10n-tools/compare/l10n-tools-core-v7.8.0...l10n-tools-core-v7.9.0) (2026-04-11)
+
+
+### Features
+
+* **extractor-vue:** support extra-expr-attrs config for custom directives ([#289](https://github.com/tpcint/l10n-tools/issues/289)) ([1892f48](https://github.com/tpcint/l10n-tools/commit/1892f48f36ccdcbd38938912549d5c51c76d5314))
+
 ## [7.8.0](https://github.com/tpcint/l10n-tools/compare/l10n-tools-core-v7.7.0...l10n-tools-core-v7.8.0) (2026-04-11)
 
 

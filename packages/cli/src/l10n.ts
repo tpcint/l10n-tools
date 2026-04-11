@@ -38,11 +38,12 @@ function collectKeyValue(value: string, previous: Record<string, string>): Recor
   return previous
 }
 
-function buildSyncerOptions(opts: { tags?: string, metadata?: Record<string, string>, tagMetadata?: Record<string, string> }): SyncerOptions {
+function buildSyncerOptions(opts: { tags?: string, metadata?: Record<string, string>, tagMetadata?: Record<string, string>, source?: string }): SyncerOptions {
   return {
     additionalTags: opts.tags ? opts.tags.split(',') : undefined,
     globalMetadata: opts.metadata && Object.keys(opts.metadata).length > 0 ? opts.metadata : undefined,
     tagMetadata: opts.tagMetadata && Object.keys(opts.tagMetadata).length > 0 ? opts.tagMetadata : undefined,
+    source: opts.source,
   }
 }
 
@@ -92,12 +93,14 @@ async function run() {
     tags?: string,
     metadata?: Record<string, string>,
     tagMetadata?: Record<string, string>,
+    source?: string,
   }
   program.command('upload')
     .description('Upload local changes to sync target (local files will not touched)')
     .option('-t, --tags <tags>', 'additional tags to apply when creating keys (comma separated)')
     .option('-m, --metadata <key=value>', 'global metadata to apply when creating keys (repeatable)', collectKeyValue, {})
     .option('--tag-metadata <key=value>', 'tag-specific metadata to apply when creating keys (repeatable)', collectKeyValue, {})
+    .option('--source <source>', 'source identifier for tag ownership (l10n-storage)')
     .action(async (opts: UploadOptions, cmd: Command) => {
       const syncerOptions = buildSyncerOptions(opts)
       await runSubCommand(cmd.name(), async (domainName, config, domainConfig, skipUpload) => {
@@ -139,12 +142,14 @@ async function run() {
     tags?: string,
     metadata?: Record<string, string>,
     tagMetadata?: Record<string, string>,
+    source?: string,
   }
   program.command('sync')
     .description('Synchronize local translations and sync target')
     .option('-t, --tags <tags>', 'additional tags to apply when creating keys (comma separated)')
     .option('-m, --metadata <key=value>', 'global metadata to apply when creating keys (repeatable)', collectKeyValue, {})
     .option('--tag-metadata <key=value>', 'tag-specific metadata to apply when creating keys (repeatable)', collectKeyValue, {})
+    .option('--source <source>', 'source identifier for tag ownership (l10n-storage)')
     .action(async (opts: SyncOptions, cmd: Command) => {
       const syncerOptions = buildSyncerOptions(opts)
       await runSubCommand(cmd.name(), async (domainName, config, domainConfig, skipUpload) => {
@@ -171,6 +176,7 @@ async function run() {
     tags?: string,
     metadata?: Record<string, string>,
     tagMetadata?: Record<string, string>,
+    source?: string,
     contexts?: string,
   }
   program.command('check')
@@ -180,6 +186,7 @@ async function run() {
     .option('-t, --tags <tags>', 'additional tags to apply when creating keys (comma separated)')
     .option('-m, --metadata <key=value>', 'global metadata to apply when creating keys (repeatable)', collectKeyValue, {})
     .option('--tag-metadata <key=value>', 'tag-specific metadata to apply when creating keys (repeatable)', collectKeyValue, {})
+    .option('--source <source>', 'source identifier for tag ownership (l10n-storage)')
     .option('-c, --contexts <contexts>', 'contexts to check (comma separated)')
     .argument('[files...]', 'files to check, if not specified, all files will be checked')
     .action(async (files: string[], opts: CheckOptions, cmd: Command) => {
@@ -381,12 +388,14 @@ async function run() {
     tags?: string,
     metadata?: Record<string, string>,
     tagMetadata?: Record<string, string>,
+    source?: string,
   }
   program.command('_sync')
     .description('Synchronize translations to remote target (internal use only)')
     .option('-t, --tags <tags>', 'additional tags to apply when creating keys (comma separated)')
     .option('-m, --metadata <key=value>', 'global metadata to apply when creating keys (repeatable)', collectKeyValue, {})
     .option('--tag-metadata <key=value>', 'tag-specific metadata to apply when creating keys (repeatable)', collectKeyValue, {})
+    .option('--source <source>', 'source identifier for tag ownership (l10n-storage)')
     .action(async (opts: InternalSyncOptions, cmd: Command) => {
       const syncerOptions = buildSyncerOptions(opts)
       await runSubCommand(cmd.name(), async (domainName, config, domainConfig, skipUpload) => {

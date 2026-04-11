@@ -407,7 +407,7 @@ export class L10nStorageConfig {
   }
 
   getSource(): string {
-    return process.env.L10N_SOURCE ?? this.sc.source ?? 'main'
+    return this.sc.source ?? 'main'
   }
 
   getLocaleSyncMap(): { [locale: string]: string } | undefined {

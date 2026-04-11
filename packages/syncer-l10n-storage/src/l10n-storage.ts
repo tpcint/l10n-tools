@@ -54,7 +54,7 @@ export async function syncTransToL10nStorage(
 ) {
   const storageConfig = config.getL10nStorageConfig()
   const projectId = storageConfig.getProjectId()
-  const source = storageConfig.getSource()
+  const source = options?.source ?? storageConfig.getSource()
   const url = storageConfig.getUrl()
 
   const token = process.env.TPC_AGENT_TOKEN
@@ -91,6 +91,10 @@ export async function syncTransToL10nStorage(
 
 function hasTag(tags: L10nKeyTag[], tag: string, source: string): boolean {
   return tags.some(t => t.tag === tag && t.source === source)
+}
+
+function hasTagName(tags: L10nKeyTag[], tag: string): boolean {
+  return tags.some(t => t.tag === tag)
 }
 
 function hasTranslation(key: L10nKey, locale: string): boolean {
@@ -210,7 +214,7 @@ export function buildKeyChanges(
     const listedKey = listedKeyMap[entryKey]
 
     if (listedKey != null) {
-      const needsTagAdd = !hasTag(listedKey.tags, tag, source)
+      const needsTagAdd = !hasTagName(listedKey.tags, tag)
       const needsContextUpdate = !metadataContainsContext(listedKey.metadata, tag, keyEntry.context)
       const needsDescriptionUpdate = !metadataContainsDescription(listedKey.metadata, tag, keyEntry.comments)
 

@@ -1,6 +1,6 @@
 {
   "name": "l10n-tools-compiler-gettext",
-  "version": "7.0.5",
+  "version": "7.0.6",
   "description": "l10n-tools compiler for gettext formats (PO/MO)",
   "type": "module",
   "engines": {
@@ -31,7 +31,7 @@
     "@types/npmlog": "^7.0.0"
   },
   "peerDependencies": {
-    "l10n-tools-core": "^7.6.0"
+    "l10n-tools-core": "^7.7.0"
   },
   "author": "Eungkyu Song <eungkyu@gmail.com>",
   "license": "MIT",

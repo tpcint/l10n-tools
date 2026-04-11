@@ -1,5 +1,19 @@
 # Changelog
 
+## [7.4.2](https://github.com/tpcint/l10n-tools/compare/l10n-tools-syncer-lokalise-v7.4.1...l10n-tools-syncer-lokalise-v7.4.2) (2026-04-11)
+
+
+### Code Refactoring
+
+* run tests from source via tsx with --conditions source ([#284](https://github.com/tpcint/l10n-tools/issues/284)) ([d6e5306](https://github.com/tpcint/l10n-tools/commit/d6e53063fff07143283893a14ee871f13eaf0247))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * peerDependencies
+    * l10n-tools-core bumped from ^7.6.0 to ^7.7.0
+
 ## [7.4.1](https://github.com/tpcint/l10n-tools/compare/l10n-tools-syncer-lokalise-v7.4.0...l10n-tools-syncer-lokalise-v7.4.1) (2026-04-09)
 
 

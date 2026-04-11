@@ -1,5 +1,22 @@
 # Changelog
 
+## [7.7.0](https://github.com/tpcint/l10n-tools/compare/l10n-tools-core-v7.6.0...l10n-tools-core-v7.7.0) (2026-04-11)
+
+
+### Miscellaneous Chores
+
+* **deps:** bump tinyglobby from 0.2.15 to 0.2.16 ([#281](https://github.com/tpcint/l10n-tools/issues/281)) ([2308a2d](https://github.com/tpcint/l10n-tools/commit/2308a2d31e3b84eb504638c6f5ace3273da40330))
+
+
+### Features
+
+* **syncer-l10n-storage:** add locale-sync-map and --source CLI option ([#286](https://github.com/tpcint/l10n-tools/issues/286)) ([a985d27](https://github.com/tpcint/l10n-tools/commit/a985d27f66d9d88ff35002e739ba40d17a6092a6))
+
+
+### Code Refactoring
+
+* run tests from source via tsx with --conditions source ([#284](https://github.com/tpcint/l10n-tools/issues/284)) ([d6e5306](https://github.com/tpcint/l10n-tools/commit/d6e53063fff07143283893a14ee871f13eaf0247))
+
 ## [7.6.0](https://github.com/tpcint/l10n-tools/compare/l10n-tools-core-v7.5.0...l10n-tools-core-v7.6.0) (2026-04-09)
 
 

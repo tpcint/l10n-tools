@@ -140,7 +140,7 @@ class PluginRegistry {
     }
     const plugin = await factory()
     this.register(plugin)
-    log.info('plugin-registry', `Loaded plugin: ${plugin.name}`)
+    log.verbose('plugin-registry', `Loaded plugin: ${plugin.name}`)
   }
 
   /**
@@ -223,6 +223,13 @@ class PluginRegistry {
    */
   getSuggestedSyncerPlugin(syncTarget: string): string | undefined {
     return SYNCER_TYPE_TO_PLUGIN[syncTarget]
+  }
+
+  /**
+   * Get all loaded plugins
+   */
+  getPlugins(): ReadonlyMap<string, L10nPlugin> {
+    return this.plugins
   }
 
   /**

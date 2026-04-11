@@ -71,6 +71,24 @@ async function run() {
       console.info('\nRC file:\n  refer to [L10nConf] type or see \'l10nrc.schema.json\'')
     })
 
+  program.command('plugins')
+    .description('List installed plugins')
+    .action(async () => {
+      for (const plugin of pluginRegistry.getPlugins().values()) {
+        const caps: string[] = []
+        if (plugin.extractors?.length) {
+          caps.push('extractors: ' + plugin.extractors.flatMap(e => e.domainTypes).join(', '))
+        }
+        if (plugin.compilers?.length) {
+          caps.push('compilers: ' + plugin.compilers.flatMap(c => Object.keys(c.compilers)).join(', '))
+        }
+        if (plugin.syncers?.length) {
+          caps.push('syncers: ' + plugin.syncers.map(s => s.syncTarget).join(', '))
+        }
+        console.log(`${plugin.name}\t${caps.join('\t')}`)
+      }
+    })
+
   program.command('update')
     .description('Update local translations')
     .action(async (opts, cmd: Command) => {

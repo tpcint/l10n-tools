@@ -1,5 +1,19 @@
 # Changelog
 
+## [7.5.0](https://github.com/tpcint/l10n-tools/compare/l10n-tools-v7.4.0...l10n-tools-v7.5.0) (2026-04-11)
+
+
+### Features
+
+* **cli:** add plugins command to list installed plugins ([#287](https://github.com/tpcint/l10n-tools/issues/287)) ([42396b1](https://github.com/tpcint/l10n-tools/commit/42396b15f9cd29b8a00e7ebde7fa844d0921d90d))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * l10n-tools-core bumped from ^7.7.0 to ^7.8.0
+
 ## [7.4.0](https://github.com/tpcint/l10n-tools/compare/l10n-tools-v7.3.1...l10n-tools-v7.4.0) (2026-04-11)
 
 

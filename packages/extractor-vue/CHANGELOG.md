@@ -1,5 +1,16 @@
 # Changelog
 
+## [7.1.8](https://github.com/tpcint/l10n-tools/compare/l10n-tools-extractor-vue-v7.1.7...l10n-tools-extractor-vue-v7.1.8) (2026-04-11)
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * l10n-tools-extractor-javascript bumped from ^7.1.7 to ^7.1.8
+  * peerDependencies
+    * l10n-tools-core bumped from ^7.7.0 to ^7.8.0
+
 ## [7.1.7](https://github.com/tpcint/l10n-tools/compare/l10n-tools-extractor-vue-v7.1.6...l10n-tools-extractor-vue-v7.1.7) (2026-04-11)
 
 

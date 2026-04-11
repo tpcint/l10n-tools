@@ -1,5 +1,12 @@
 # Changelog
 
+## [7.8.0](https://github.com/tpcint/l10n-tools/compare/l10n-tools-core-v7.7.0...l10n-tools-core-v7.8.0) (2026-04-11)
+
+
+### Features
+
+* **cli:** add plugins command to list installed plugins ([#287](https://github.com/tpcint/l10n-tools/issues/287)) ([42396b1](https://github.com/tpcint/l10n-tools/commit/42396b15f9cd29b8a00e7ebde7fa844d0921d90d))
+
 ## [7.7.0](https://github.com/tpcint/l10n-tools/compare/l10n-tools-core-v7.6.0...l10n-tools-core-v7.7.0) (2026-04-11)
 
 

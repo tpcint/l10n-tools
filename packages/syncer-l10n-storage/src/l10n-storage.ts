@@ -30,6 +30,19 @@ import {
   metadataContainsDescription,
 } from './metadata.js'
 
+function assertBijectiveLocaleSyncMap(localeSyncMap: { [locale: string]: string }): void {
+  const seen: { [serverLocale: string]: string } = {}
+  for (const [localLocale, serverLocale] of Object.entries(localeSyncMap)) {
+    const existing = seen[serverLocale]
+    if (existing && existing !== localLocale) {
+      throw new Error(
+        `Invalid locale-sync-map: duplicated target locale "${serverLocale}" for "${existing}" and "${localLocale}"`,
+      )
+    }
+    seen[serverLocale] = localLocale
+  }
+}
+
 export async function syncTransToL10nStorage(
   config: L10nConfig,
   domainConfig: DomainConfig,
@@ -50,6 +63,7 @@ export async function syncTransToL10nStorage(
   }
 
   const localeSyncMap = storageConfig.getLocaleSyncMap()
+  if (localeSyncMap) assertBijectiveLocaleSyncMap(localeSyncMap)
   const invertedSyncMap = localeSyncMap ? invert(localeSyncMap) : undefined
 
   const apiClient = new L10nStorageApiClient(url, token)

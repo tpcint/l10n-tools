@@ -23,7 +23,8 @@ export async function syncTransToTarget(
   keysPath: string,
   transDir: string,
   skipUpload: boolean,
-  options?: SyncerOptions & { skipWriteBack?: boolean },
+  options?: SyncerOptions,
+  skipWriteBack?: boolean,
 ) {
   const target = config.getSyncTarget()
 
@@ -39,7 +40,7 @@ export async function syncTransToTarget(
   const keyEntries = await readKeyEntries(keysPath)
   const allTransEntries = await readAllTransEntries(transDir)
   await syncer(config, domainConfig, tag, keyEntries, allTransEntries, skipUpload, options)
-  if (!options?.skipWriteBack) {
+  if (!skipWriteBack) {
     await writeKeyEntries(keysPath, keyEntries)
     await writeAllTransEntries(transDir, allTransEntries)
   }

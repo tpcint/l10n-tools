@@ -140,7 +140,13 @@ async function getInfoPlistPath(srcDir: string) {
   const srcPattern = path.join(srcDir, '**', 'Info.plist')
   const paths = await glob(srcPattern)
   const filtered = paths.filter(p => !/(\.framework|\.xcframework)[/\\]/.test(p))
-  return filtered[0] ?? paths[0]
+  if (paths.length === 0) {
+    throw new Error(`Info.plist not found under: ${srcDir}`)
+  }
+  if (filtered.length === 0) {
+    throw new Error(`No app Info.plist found outside .framework/.xcframework under: ${srcDir}`)
+  }
+  return filtered[0]
 }
 
 async function getXibPaths(srcDir: string) {

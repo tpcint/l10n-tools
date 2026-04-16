@@ -2,7 +2,7 @@
   "packages/core": "7.9.0",
   "packages/cli": "7.5.1",
   "packages/plugin-android": "7.4.6",
-  "packages/plugin-ios": "7.2.8",
+  "packages/plugin-ios": "7.2.9",
   "packages/extractor-javascript": "7.1.9",
   "packages/extractor-vue": "7.2.0",
   "packages/extractor-python": "7.0.8",

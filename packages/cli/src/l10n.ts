@@ -132,7 +132,7 @@ async function run() {
 
         await extractKeys(domainName, domainConfig, keysPath)
         await updateTrans(keysPath, transDir, transDir, locales, null)
-        await syncTransToTarget(config, domainConfig, tag, keysPath, transDir, skipUpload, syncerOptions)
+        await syncTransToTarget(config, domainConfig, tag, keysPath, transDir, skipUpload, syncerOptions, true)
         await updateTrans(keysPath, transDir, transDir, locales, validationConfig)
       })
     })

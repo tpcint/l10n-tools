@@ -15,6 +15,7 @@ export type { SyncerFunc, SyncerOptions } from './plugin-types.js'
  * @param transDir - Directory containing translation files
  * @param skipUpload - If true, skip uploading to sync target (download only)
  * @param options - Syncer options (additional tags, metadata, etc.)
+ * @param skipWriteBack - If true, skip writing updated entries back to disk (prevents cache corruption during upload-only operations)
  */
 export async function syncTransToTarget(
   config: L10nConfig,
@@ -24,6 +25,7 @@ export async function syncTransToTarget(
   transDir: string,
   skipUpload: boolean,
   options?: SyncerOptions,
+  skipWriteBack?: boolean,
 ) {
   const target = config.getSyncTarget()
 
@@ -39,6 +41,8 @@ export async function syncTransToTarget(
   const keyEntries = await readKeyEntries(keysPath)
   const allTransEntries = await readAllTransEntries(transDir)
   await syncer(config, domainConfig, tag, keyEntries, allTransEntries, skipUpload, options)
-  await writeKeyEntries(keysPath, keyEntries)
-  await writeAllTransEntries(transDir, allTransEntries)
+  if (!skipWriteBack) {
+    await writeKeyEntries(keysPath, keyEntries)
+    await writeAllTransEntries(transDir, allTransEntries)
+  }
 }

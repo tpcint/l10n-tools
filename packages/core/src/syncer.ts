@@ -15,6 +15,7 @@ export type { SyncerFunc, SyncerOptions } from './plugin-types.js'
  * @param transDir - Directory containing translation files
  * @param skipUpload - If true, skip uploading to sync target (download only)
  * @param options - Syncer options (additional tags, metadata, etc.)
+ * @param skipWriteBack - If true, skip writing updated entries back to disk (prevents cache corruption during upload-only operations)
  */
 export async function syncTransToTarget(
   config: L10nConfig,

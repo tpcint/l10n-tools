@@ -1,5 +1,12 @@
 # Changelog
 
+## [7.2.9](https://github.com/tpcint/l10n-tools/compare/l10n-tools-plugin-ios-v7.2.8...l10n-tools-plugin-ios-v7.2.9) (2026-04-16)
+
+
+### Bug Fixes
+
+* **plugin-ios:** exclude framework Info.plist from glob results ([#291](https://github.com/tpcint/l10n-tools/issues/291)) ([6bc0e44](https://github.com/tpcint/l10n-tools/commit/6bc0e440e887df167b5ec930dd3d1aab3cde4cef))
+
 ## [7.2.8](https://github.com/tpcint/l10n-tools/compare/l10n-tools-plugin-ios-v7.2.7...l10n-tools-plugin-ios-v7.2.8) (2026-04-11)
 
 

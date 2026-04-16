@@ -139,7 +139,8 @@ export async function extractIosKeys(domainName: string, config: DomainConfig, k
 async function getInfoPlistPath(srcDir: string) {
   const srcPattern = path.join(srcDir, '**', 'Info.plist')
   const paths = await glob(srcPattern)
-  return paths[0]
+  const filtered = paths.filter(p => !/(\.framework|\.xcframework)[/\\]/.test(p))
+  return filtered[0] ?? paths[0]
 }
 
 async function getXibPaths(srcDir: string) {

@@ -1,5 +1,19 @@
 # Changelog
 
+## [7.5.2](https://github.com/tpcint/l10n-tools/compare/l10n-tools-v7.5.1...l10n-tools-v7.5.2) (2026-04-16)
+
+
+### Bug Fixes
+
+* **core:** skip write-back in upload command to prevent cache corruption ([#293](https://github.com/tpcint/l10n-tools/issues/293)) ([e715bda](https://github.com/tpcint/l10n-tools/commit/e715bdaa43a03af4e91338562ac8955fda19bdaa))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * l10n-tools-core bumped from ^7.9.0 to ^7.9.1
+
 ## [7.5.1](https://github.com/tpcint/l10n-tools/compare/l10n-tools-v7.5.0...l10n-tools-v7.5.1) (2026-04-11)
 
 

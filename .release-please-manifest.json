@@ -1,14 +1,14 @@
 {
-  "packages/core": "7.9.0",
-  "packages/cli": "7.5.1",
-  "packages/plugin-android": "7.4.6",
-  "packages/plugin-ios": "7.2.9",
-  "packages/extractor-javascript": "7.1.9",
-  "packages/extractor-vue": "7.2.0",
-  "packages/extractor-python": "7.0.8",
-  "packages/extractor-php": "7.1.8",
-  "packages/compiler-json": "7.0.8",
-  "packages/compiler-gettext": "7.0.8",
-  "packages/syncer-lokalise": "7.4.4",
-  "packages/syncer-l10n-storage": "1.1.2"
+  "packages/core": "7.9.1",
+  "packages/cli": "7.5.2",
+  "packages/plugin-android": "7.4.7",
+  "packages/plugin-ios": "7.2.10",
+  "packages/extractor-javascript": "7.1.10",
+  "packages/extractor-vue": "7.2.1",
+  "packages/extractor-python": "7.0.9",
+  "packages/extractor-php": "7.1.9",
+  "packages/compiler-json": "7.0.9",
+  "packages/compiler-gettext": "7.0.9",
+  "packages/syncer-lokalise": "7.4.5",
+  "packages/syncer-l10n-storage": "1.1.3"
 }

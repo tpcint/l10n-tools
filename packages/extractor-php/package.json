@@ -1,6 +1,6 @@
 {
   "name": "l10n-tools-extractor-php",
-  "version": "7.1.8",
+  "version": "7.1.9",
   "description": "l10n-tools extractor for PHP (php-gettext)",
   "type": "module",
   "engines": {
@@ -30,7 +30,7 @@
     "@types/npmlog": "^7.0.0"
   },
   "peerDependencies": {
-    "l10n-tools-core": "^7.9.0"
+    "l10n-tools-core": "^7.9.1"
   },
   "author": "Eungkyu Song <eungkyu@gmail.com>",
   "license": "MIT",

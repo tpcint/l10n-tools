@@ -1,5 +1,14 @@
 # Changelog
 
+## [7.1.9](https://github.com/tpcint/l10n-tools/compare/l10n-tools-extractor-php-v7.1.8...l10n-tools-extractor-php-v7.1.9) (2026-04-16)
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * peerDependencies
+    * l10n-tools-core bumped from ^7.9.0 to ^7.9.1
+
 ## [7.1.8](https://github.com/tpcint/l10n-tools/compare/l10n-tools-extractor-php-v7.1.7...l10n-tools-extractor-php-v7.1.8) (2026-04-11)
 
 

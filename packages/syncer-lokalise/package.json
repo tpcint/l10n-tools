@@ -25,7 +25,7 @@
   ],
   "dependencies": {
     "@lokalise/node-api": "^15.3.1",
-    "es-toolkit": "^1.45.1",
+    "es-toolkit": "^1.46.0",
     "npmlog": "^7.0.1",
     "p-queue": "^9.1.2"
   },

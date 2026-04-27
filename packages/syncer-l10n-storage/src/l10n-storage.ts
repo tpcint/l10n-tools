@@ -130,6 +130,10 @@ function creatingSuggestionHasLocale(key: CreateL10nKeyInput, locale: string): b
   return key.suggestions?.some(s => s.locale === locale) ?? false
 }
 
+function updatingSuggestionHasLocale(key: UpdateL10nKeyInput, locale: string): boolean {
+  return key.suggestions?.some(s => s.locale === locale) ?? false
+}
+
 function createSuggestion(locale: string, isPlural: boolean, messages: TransMessages): CreateSuggestionInput {
   if (isPlural) {
     const translation: Record<string, string> = {}
@@ -292,7 +296,9 @@ export function buildKeyChanges(
             updating = { keyId: listedKey.id }
             updatingKeyMap[entryKey] = updating
           }
-          pushSuggestion(updating, createSuggestion(serverLocale, listedKey.isPlural, transEntry.messages))
+          if (!updatingSuggestionHasLocale(updating, serverLocale)) {
+            pushSuggestion(updating, createSuggestion(serverLocale, listedKey.isPlural, transEntry.messages))
+          }
         }
       } else {
         // 새 키

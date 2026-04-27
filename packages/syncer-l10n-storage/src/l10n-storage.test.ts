@@ -1,7 +1,7 @@
 import { describe, it } from 'node:test'
 import assert from 'node:assert/strict'
 import type { KeyEntry, TransEntry } from 'l10n-tools-core'
-import type { L10nKey } from './api-types.js'
+import type { L10nKeyToServe } from './api-types.js'
 import { buildKeyChanges } from './l10n-storage.js'
 
 function createKeyEntry(key: string, opts?: { isPlural?: boolean, context?: string | null }): KeyEntry {
@@ -19,9 +19,8 @@ function createL10nKey(keyName: string, opts?: {
   tags?: { tag: string, source: string }[],
   metadata?: { tag: string | null, metaKey: string, metaValue: string }[],
   translations?: { locale: string, translation: Record<string, string> }[],
-  suggestions?: { id: string, locale: string, translation: Record<string, string>, status: string }[],
   isPlural?: boolean,
-}): L10nKey {
+}): L10nKeyToServe {
   return {
     id: opts?.id ?? Math.random().toString(),
     keyName,
@@ -29,7 +28,6 @@ function createL10nKey(keyName: string, opts?: {
     tags: opts?.tags ?? [],
     metadata: opts?.metadata ?? [],
     translations: opts?.translations ?? [],
-    suggestions: opts?.suggestions ?? [],
   }
 }
 
@@ -104,7 +102,7 @@ describe('buildKeyChanges', () => {
     assert.deepEqual(creatingKeys[0].suggestions?.[0].translation, { other: '새 키' })
   })
 
-  it('should attach suggestions for existing keys without translation or suggestion', () => {
+  it('should attach suggestions for existing keys without translation', () => {
     const keyEntries = [createKeyEntry('existing.key')]
     const listedKeyMap = {
       'existing.key': createL10nKey('existing.key', {

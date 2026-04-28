@@ -79,15 +79,7 @@ export async function compileToIosStrings(domainName: string, config: CompilerCo
               if (!await fileExists(stringsDictPath)) {
                 throw new Error(`[${locale}] Add ${stringsName}.stringsdict file to project to utilize plural translation`)
               }
-              const messages = Object.fromEntries(
-                Object.entries(transEntry.messages).map(([quantity, message]) => {
-                  const regex = /%(1$)?l?[dDfuUi]/
-                  if (!regex.test(message)) {
-                    throw new Error(`[${locale}] "${quantity}" of "${transEntry.key}": count format should be the first: "${message}"`)
-                  }
-                  return [quantity, message.replace(regex, '%li')]
-                }),
-              )
+              const messages = transformIosPluralMessages(locale, transEntry.key, transEntry.messages)
               stringsDict[key] = {
                 NSStringLocalizedFormatKey: '%#@format@',
                 format: {
@@ -142,7 +134,19 @@ async function getStringsPaths(srcDir: string, locale: string): Promise<string[]
   return await glob(srcPattern)
 }
 
-function generateStringsFile(data: I18nStringsMsg | CommentedI18nStringsMsg) {
+export function transformIosPluralMessages(locale: string, key: string, messages: TransMessages): TransMessages {
+  return Object.fromEntries(
+    Object.entries(messages).map(([quantity, message]) => {
+      const regex = /%(1$)?l?[dDfuUi]/
+      if (!regex.test(message)) {
+        throw new Error(`[${locale}] "${quantity}" of "${key}": count format should be the first: "${message}"`)
+      }
+      return [quantity, message.replace(regex, '%li')]
+    }),
+  )
+}
+
+export function generateStringsFile(data: I18nStringsMsg | CommentedI18nStringsMsg) {
   let output = ''
   for (let msgid of Object.keys(data)) {
     const val = data[msgid]

@@ -1,4 +1,5 @@
 import { DomainConfig, L10nConfig } from 'l10n-tools-core'
+import type { CreateL10nKeyInput, L10nKeyMetadata, L10nKeyTag } from '../api-types.js'
 
 export const API_BASE = process.env.TPC_AGENT_URL ?? 'http://localhost:5100'
 
@@ -93,4 +94,32 @@ export function buildDomainConfig(): DomainConfig {
     locales: [],
     outputs: [],
   })
+}
+
+interface SeededKey {
+  id: string,
+  keyName: string,
+  isPlural: boolean,
+  tags: L10nKeyTag[],
+  metadata: L10nKeyMetadata[],
+  suggestions: { id: string, locale: string }[],
+}
+
+export async function seedKeys(projectId: string, keys: CreateL10nKeyInput[]): Promise<SeededKey[]> {
+  await api(`/projects/${projectId}/keys`, {
+    method: 'POST',
+    body: JSON.stringify({ keys }),
+  })
+  const response = await api<{ keys: SeededKey[] }>(
+    `/projects/${projectId}/keys?includeSuggestions=1`,
+  )
+  return response.keys
+}
+
+export async function acceptAllSuggestions(seeded: SeededKey[]): Promise<void> {
+  for (const k of seeded) {
+    for (const s of k.suggestions) {
+      await api(`/suggestions/${s.id}/accept`, { method: 'POST' })
+    }
+  }
 }

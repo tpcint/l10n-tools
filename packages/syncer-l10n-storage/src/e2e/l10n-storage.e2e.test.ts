@@ -5,6 +5,7 @@ import { L10nStorageApiClient } from '../api-client.js'
 import type { L10nKeyToServe } from '../api-types.js'
 import { syncTransToL10nStorage } from '../l10n-storage.js'
 import {
+  acceptAllSuggestions,
   API_BASE,
   buildDomainConfig,
   buildL10nConfig,
@@ -12,6 +13,7 @@ import {
   deleteProject,
   DEV_TOKEN,
   isL10nApiAvailable,
+  seedKeys,
 } from './helpers.js'
 
 function key(k: string, opts?: { isPlural?: boolean, context?: string | null }): KeyEntry {
@@ -88,17 +90,10 @@ describe('syncTransToL10nStorage (e2e)', () => {
   })
 
   it('adds tag to existing key without duplicating', async () => {
-    const apiBefore = await fetch(`${API_BASE}/api/l10n/projects/${projectId}/keys`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${DEV_TOKEN}` },
-      body: JSON.stringify({
-        keys: [{
-          keyName: 'shared.key',
-          tags: [{ tag: 'web', source: 'other' }],
-        }],
-      }),
-    })
-    assert.ok(apiBefore.ok, `seed failed: ${apiBefore.status}`)
+    await seedKeys(projectId!, [{
+      keyName: 'shared.key',
+      tags: [{ tag: 'web', source: 'other' }],
+    }])
 
     const config = buildL10nConfig(projectId!, { source: 'main' })
     await syncTransToL10nStorage(
@@ -113,35 +108,15 @@ describe('syncTransToL10nStorage (e2e)', () => {
   })
 
   it('downloads server translations into local trans entries', async () => {
-    const seed = await fetch(`${API_BASE}/api/l10n/projects/${projectId}/keys`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${DEV_TOKEN}` },
-      body: JSON.stringify({
-        keys: [{
-          keyName: 'server.has.translation',
-          tags: [{ tag: 'web', source: 'main' }],
-          suggestions: [
-            { locale: 'en', translation: { other: 'Server EN' }, suggestedBy: 'syncer' },
-            { locale: 'ko', translation: { other: '서버 번역' }, suggestedBy: 'syncer' },
-          ],
-        }],
-      }),
-    })
-    assert.ok(seed.ok, `seed failed: ${seed.status}`)
-
-    const { keys: createdKeys } = await (await fetch(
-      `${API_BASE}/api/l10n/projects/${projectId}/keys?includeSuggestions=1`,
-      { headers: { Authorization: `Bearer ${DEV_TOKEN}` } },
-    )).json() as { keys: { id: string, keyName: string, suggestions: { id: string, locale: string }[] }[] }
-    for (const k of createdKeys) {
-      for (const s of k.suggestions) {
-        const acc = await fetch(`${API_BASE}/api/l10n/suggestions/${s.id}/accept`, {
-          method: 'POST',
-          headers: { Authorization: `Bearer ${DEV_TOKEN}` },
-        })
-        assert.ok(acc.ok, `accept failed: ${acc.status}`)
-      }
-    }
+    const seeded = await seedKeys(projectId!, [{
+      keyName: 'server.has.translation',
+      tags: [{ tag: 'web', source: 'main' }],
+      suggestions: [
+        { locale: 'en', translation: { other: 'Server EN' }, suggestedBy: 'syncer' },
+        { locale: 'ko', translation: { other: '서버 번역' }, suggestedBy: 'syncer' },
+      ],
+    }])
+    await acceptAllSuggestions(seeded)
 
     const localTrans = {
       en: [trans('server.has.translation', { other: '' })],
@@ -192,5 +167,136 @@ describe('syncTransToL10nStorage (e2e)', () => {
     const mapped = created.find(x => x.keyName === 'mapped.key')!
     const locales = mapped.suggestions.map(s => s.locale).sort()
     assert.deepEqual(locales, ['en', 'ko'])
+  })
+
+  it('removes context from metadata when local entry no longer has it', async () => {
+    await seedKeys(projectId!, [{
+      keyName: 'ctx.key',
+      tags: [{ tag: 'web', source: 'main' }],
+      metadata: [{ tag: 'web', metaKey: 'context', metaValue: JSON.stringify(['ctx-A', 'ctx-B']) }],
+    }])
+
+    const config = buildL10nConfig(projectId!, { source: 'main' })
+    // ctx-A만 로컬에 남고 ctx-B는 사라진 상태
+    await syncTransToL10nStorage(
+      config, buildDomainConfig(), 'web', [key('ctx.key', { context: 'ctx-A' })], {}, false,
+    )
+
+    const [k] = await apiClient.listAllKeysToServe(projectId!)
+    const ctxMeta = k.metadata.find(m => m.tag === 'web' && m.metaKey === 'context')
+    assert.deepEqual(JSON.parse(ctxMeta!.metaValue), ['ctx-A'])
+    assert.equal(k.tags.length, 1, 'tag remains because ctx-A still belongs to main')
+  })
+
+  it('removes own-source tag when all contexts are gone', async () => {
+    await seedKeys(projectId!, [{
+      keyName: 'ctx.gone.key',
+      tags: [{ tag: 'web', source: 'main' }, { tag: 'web', source: 'other' }],
+      metadata: [{ tag: 'web', metaKey: 'context', metaValue: JSON.stringify(['ctx-only']) }],
+    }])
+
+    const config = buildL10nConfig(projectId!, { source: 'main' })
+    // 로컬엔 더 이상 ctx-only가 없음 → main source 태그가 빠져야 함
+    await syncTransToL10nStorage(
+      config, buildDomainConfig(), 'web', [], {}, false,
+    )
+
+    const [k] = await apiClient.listAllKeysToServe(projectId!)
+    assert.ok(!k.tags.some(t => t.source === 'main'), 'main source tag removed')
+    assert.ok(k.tags.some(t => t.source === 'other'), 'other source tag preserved')
+    const ctxMeta = k.metadata.find(m => m.tag === 'web' && m.metaKey === 'context')
+    assert.deepEqual(JSON.parse(ctxMeta!.metaValue), [])
+  })
+
+  it('attaches additionalTags + globalMetadata + tagMetadata when creating keys', async () => {
+    const config = buildL10nConfig(projectId!, { source: 'main' })
+    await syncTransToL10nStorage(
+      config, buildDomainConfig(), 'web', [key('extra.key')], { en: [trans('extra.key', { other: 'X' })] }, false,
+      {
+        additionalTags: ['featured'],
+        globalMetadata: { team: 'l10n' },
+        tagMetadata: { repository: 'likey-web' },
+      },
+    )
+
+    const [k] = await apiClient.listAllKeysToServe(projectId!)
+    const tagPairs = k.tags.map(t => ({ tag: t.tag, source: t.source }))
+    assert.ok(tagPairs.some(t => t.tag === 'web' && t.source === 'main'))
+    assert.ok(tagPairs.some(t => t.tag === 'featured' && t.source === 'main'))
+    assert.ok(k.metadata.some(m => m.tag === null && m.metaKey === 'team' && m.metaValue === 'l10n'))
+    assert.ok(k.metadata.some(m => m.tag === 'web' && m.metaKey === 'repository' && m.metaValue === 'likey-web'))
+  })
+
+  it('refreshes references metadata on every sync', async () => {
+    await seedKeys(projectId!, [{
+      keyName: 'ref.key',
+      tags: [{ tag: 'web', source: 'main' }],
+      metadata: [{
+        tag: 'web',
+        metaKey: 'references',
+        metaValue: JSON.stringify([{ file: 'old.ts' }]),
+      }],
+    }])
+
+    const config = buildL10nConfig(projectId!, { source: 'main' })
+    const keyEntry: KeyEntry = {
+      key: 'ref.key',
+      isPlural: false,
+      context: null,
+      references: [{ file: 'src/new.ts', loc: '10:5' }],
+      comments: [],
+    }
+    await syncTransToL10nStorage(config, buildDomainConfig(), 'web', [keyEntry], {}, false)
+
+    const [k] = await apiClient.listAllKeysToServe(projectId!)
+    const refMeta = k.metadata.find(m => m.tag === 'web' && m.metaKey === 'references')
+    assert.deepEqual(JSON.parse(refMeta!.metaValue), [{ file: 'src/new.ts', loc: '10:5' }])
+  })
+
+  it('downloads plural translations as a full message object', async () => {
+    const seeded = await seedKeys(projectId!, [{
+      keyName: 'plural.download',
+      isPlural: true,
+      tags: [{ tag: 'web', source: 'main' }],
+      suggestions: [
+        { locale: 'en', translation: { one: '{n} item', other: '{n} items' }, suggestedBy: 'syncer' },
+      ],
+    }])
+    await acceptAllSuggestions(seeded)
+
+    const localTrans = {
+      en: [trans('plural.download', {})],
+    }
+    const config = buildL10nConfig(projectId!, { source: 'main' })
+    await syncTransToL10nStorage(
+      config, buildDomainConfig(), 'web', [key('plural.download', { isPlural: true })],
+      localTrans, true,
+    )
+
+    assert.equal(localTrans.en[0].messages.one, '{n} item')
+    assert.equal(localTrans.en[0].messages.other, '{n} items')
+  })
+
+  it('clears flag on local trans entry when server translation is applied', async () => {
+    const seeded = await seedKeys(projectId!, [{
+      keyName: 'flagged.key',
+      tags: [{ tag: 'web', source: 'main' }],
+      suggestions: [
+        { locale: 'en', translation: { other: 'Authoritative' }, suggestedBy: 'syncer' },
+      ],
+    }])
+    await acceptAllSuggestions(seeded)
+
+    const localTrans = {
+      en: [trans('flagged.key', { other: 'Authoritative' }) as TransEntry],
+    }
+    localTrans.en[0].flag = 'fuzzy'
+
+    const config = buildL10nConfig(projectId!, { source: 'main' })
+    await syncTransToL10nStorage(
+      config, buildDomainConfig(), 'web', [key('flagged.key')], localTrans, true,
+    )
+
+    assert.equal(localTrans.en[0].flag, null)
   })
 })

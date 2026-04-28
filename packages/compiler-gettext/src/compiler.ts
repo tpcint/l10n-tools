@@ -45,7 +45,7 @@ export async function compileToMo(domainName: string, config: CompilerConfig, tr
   }
 }
 
-function createPo(domainName: string, locale: string, transEntries: TransEntry[]): GetTextTranslations {
+export function createPo(domainName: string, locale: string, transEntries: TransEntry[]): GetTextTranslations {
   const po: GetTextTranslations = {
     charset: 'utf-8',
     headers: {
@@ -69,7 +69,7 @@ function createPo(domainName: string, locale: string, transEntries: TransEntry[]
   return po
 }
 
-function createPoEntry(locale: string, transEntry: TransEntry): GetTextTranslation {
+export function createPoEntry(locale: string, transEntry: TransEntry): GetTextTranslation {
   if (!transEntry.messages['other'] || Object.keys(transEntry.messages).length == 1) {
     return {
       msgctxt: transEntry.context || undefined,

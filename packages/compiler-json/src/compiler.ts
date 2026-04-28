@@ -7,6 +7,7 @@ import {
   getPluralKeys,
   listTransPaths,
   readTransEntries,
+  type TransEntry,
 } from 'l10n-tools-core'
 
 export async function compileToJson(domainName: string, config: CompilerConfig, transDir: string) {
@@ -22,7 +23,7 @@ export async function compileToJson(domainName: string, config: CompilerConfig, 
   await fsp.writeFile(targetPath, JSON.stringify(translations, null, 2))
 }
 
-type JsonPluralType = 'vue-i18n' | 'node-i18n' | 'i18next'
+export type JsonPluralType = 'vue-i18n' | 'node-i18n' | 'i18next'
 
 export function compileToJsonDir(pluralType?: JsonPluralType) {
   return async function (domainName: string, config: CompilerConfig, transDir: string) {
@@ -45,17 +46,16 @@ export function compileToJsonDir(pluralType?: JsonPluralType) {
   }
 }
 
-type JsonTransValue = string | { [transKey: string]: string }
-type JsonTrans = {
+export type JsonTransValue = string | { [transKey: string]: string }
+export type JsonTrans = {
   [key: string]: JsonTransValue,
 }
 
-async function exportTransToJson(locale: string, transPath: string, pluralType?: JsonPluralType): Promise<JsonTrans> {
+export function buildJsonTrans(locale: string, transEntries: TransEntry[], pluralType?: JsonPluralType): JsonTrans {
   const json: JsonTrans = {}
-  const transEntries = await readTransEntries(transPath)
   for (const transEntry of transEntries) {
     if (transEntry.context) {
-      throw new Error('[exportTransToJson] trans entry with context is not supported yet')
+      throw new Error('[buildJsonTrans] trans entry with context is not supported yet')
     }
     if (!transEntry.key || !transEntry.messages['other']) {
       continue
@@ -80,4 +80,9 @@ async function exportTransToJson(locale: string, transPath: string, pluralType?:
     }
   }
   return json
+}
+
+async function exportTransToJson(locale: string, transPath: string, pluralType?: JsonPluralType): Promise<JsonTrans> {
+  const transEntries = await readTransEntries(transPath)
+  return buildJsonTrans(locale, transEntries, pluralType)
 }

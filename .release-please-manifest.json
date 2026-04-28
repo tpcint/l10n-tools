@@ -6,7 +6,6 @@
   "packages/extractor-javascript": "7.1.10",
   "packages/extractor-vue": "7.2.1",
   "packages/extractor-python": "7.0.9",
-  "packages/extractor-php": "7.1.9",
   "packages/compiler-json": "7.0.9",
   "packages/compiler-gettext": "7.0.9",
   "packages/syncer-lokalise": "7.4.5",

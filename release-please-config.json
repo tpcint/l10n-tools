@@ -38,9 +38,6 @@
     "packages/extractor-python": {
       "component": "l10n-tools-extractor-python"
     },
-    "packages/extractor-php": {
-      "component": "l10n-tools-extractor-php"
-    },
     "packages/compiler-json": {
       "component": "l10n-tools-compiler-json"
     },

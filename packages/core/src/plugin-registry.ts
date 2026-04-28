@@ -12,7 +12,6 @@ const KNOWN_PLUGINS = [
   'l10n-tools-extractor-javascript',
   'l10n-tools-extractor-vue',
   'l10n-tools-extractor-python',
-  'l10n-tools-extractor-php',
   'l10n-tools-compiler-json',
   'l10n-tools-compiler-gettext',
   'l10n-tools-syncer-lokalise',
@@ -32,7 +31,6 @@ const EXTRACTOR_TYPE_TO_PLUGIN: Record<string, string> = {
   'vue-gettext': 'l10n-tools-extractor-vue',
   'vue-i18n': 'l10n-tools-extractor-vue',
   'python': 'l10n-tools-extractor-python',
-  'php-gettext': 'l10n-tools-extractor-php',
 }
 
 /**

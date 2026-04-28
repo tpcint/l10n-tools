@@ -183,7 +183,7 @@
       "type": "object"
     },
     "DomainType": {
-      "description": "vue-gettext: Extract from $gettext like function, translate tag, and v-translate attrs vue-i18n: Extract from $t like function, i18n, i18n-t tag, v-t attrs and more typescript (javascript, react, i18next): Extract from .js, .ts, .jsx file with keyword definitions python: Extract from python gettext functions android: Extract from android strings.xml res files ios: Extract from iOS swift files, storyboard, and xib files php-gettext: Extract from php gettext functions",
+      "description": "vue-gettext: Extract from $gettext like function, translate tag, and v-translate attrs vue-i18n: Extract from $t like function, i18n, i18n-t tag, v-t attrs and more typescript (javascript, react, i18next): Extract from .js, .ts, .jsx file with keyword definitions python: Extract from python gettext functions android: Extract from android strings.xml res files ios: Extract from iOS swift files, storyboard, and xib files",
       "enum": [
         "vue-gettext",
         "vue-i18n",
@@ -193,8 +193,7 @@
         "i18next",
         "python",
         "android",
-        "ios",
-        "php-gettext"
+        "ios"
       ],
       "type": "string"
     },

@@ -10,7 +10,8 @@
   "scripts": {
     "build": "tsc",
     "watch": "tsc -w",
-    "test": "tsx --conditions source --test \"src/**/*.test.ts\""
+    "test": "tsx --conditions source --test \"src/*.test.ts\"",
+    "test:e2e": "tsx --env-file-if-exists=.env --conditions source --test \"src/e2e/*.e2e.test.ts\""
   },
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

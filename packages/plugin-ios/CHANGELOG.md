@@ -1,5 +1,19 @@
 # Changelog
 
+## [7.2.11](https://github.com/tpcint/l10n-tools/compare/l10n-tools-plugin-ios-v7.2.10...l10n-tools-plugin-ios-v7.2.11) (2026-04-28)
+
+
+### Tests
+
+* add unit tests for core, compilers, and plugin-ios helpers ([#307](https://github.com/tpcint/l10n-tools/issues/307)) ([58c5c00](https://github.com/tpcint/l10n-tools/commit/58c5c009a242914f5f396c186490046337018878))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * peerDependencies
+    * l10n-tools-core bumped from ^7.9.1 to ^8.0.0
+
 ## [7.2.10](https://github.com/tpcint/l10n-tools/compare/l10n-tools-plugin-ios-v7.2.9...l10n-tools-plugin-ios-v7.2.10) (2026-04-16)
 
 

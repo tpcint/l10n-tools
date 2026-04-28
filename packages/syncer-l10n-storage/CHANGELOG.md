@@ -1,5 +1,29 @@
 # Changelog
 
+## [1.2.0](https://github.com/tpcint/l10n-tools/compare/l10n-tools-syncer-l10n-storage-v1.1.3...l10n-tools-syncer-l10n-storage-v1.2.0) (2026-04-28)
+
+
+### Miscellaneous Chores
+
+* **deps:** bump es-toolkit from 1.45.1 to 1.46.0 ([#303](https://github.com/tpcint/l10n-tools/issues/303)) ([a909c3d](https://github.com/tpcint/l10n-tools/commit/a909c3d709ef72fa52a191c6299e503bd95708bf))
+
+
+### Features
+
+* **syncer-l10n-storage:** switch sync to keys-to-serve API ([#305](https://github.com/tpcint/l10n-tools/issues/305)) ([23fef7d](https://github.com/tpcint/l10n-tools/commit/23fef7d2b99c6ca5500be5db3e24fdfdeac34394))
+
+
+### Tests
+
+* **syncer-l10n-storage:** add e2e tests against tpc-agent backend ([#306](https://github.com/tpcint/l10n-tools/issues/306)) ([6ce2065](https://github.com/tpcint/l10n-tools/commit/6ce2065453aabf72c1e3bf520ec040c3df26c438))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * peerDependencies
+    * l10n-tools-core bumped from ^7.9.1 to ^8.0.0
+
 ## [1.1.3](https://github.com/tpcint/l10n-tools/compare/l10n-tools-syncer-l10n-storage-v1.1.2...l10n-tools-syncer-l10n-storage-v1.1.3) (2026-04-16)
 
 

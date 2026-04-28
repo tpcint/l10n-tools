@@ -1,5 +1,21 @@
 # Changelog
 
+## [8.0.0](https://github.com/tpcint/l10n-tools/compare/l10n-tools-core-v7.9.1...l10n-tools-core-v8.0.0) (2026-04-28)
+
+
+### ⚠ BREAKING CHANGES
+
+* **core:** drop PHP gettext support ([#308](https://github.com/tpcint/l10n-tools/issues/308))
+
+### Features
+
+* **core:** drop PHP gettext support ([#308](https://github.com/tpcint/l10n-tools/issues/308)) ([8f8e2b3](https://github.com/tpcint/l10n-tools/commit/8f8e2b320aa0d4bc2fc7125a7167bd2c611688cd))
+
+
+### Tests
+
+* add unit tests for core, compilers, and plugin-ios helpers ([#307](https://github.com/tpcint/l10n-tools/issues/307)) ([58c5c00](https://github.com/tpcint/l10n-tools/commit/58c5c009a242914f5f396c186490046337018878))
+
 ## [7.9.1](https://github.com/tpcint/l10n-tools/compare/l10n-tools-core-v7.9.0...l10n-tools-core-v7.9.1) (2026-04-16)
 
 

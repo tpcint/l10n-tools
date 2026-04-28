@@ -1,5 +1,5 @@
 import log from 'npmlog'
-import type { CreateL10nKeyInput, L10nKey, ListKeysResponse, UpdateL10nKeyInput } from './api-types.js'
+import type { CreateL10nKeyInput, L10nKeyToServe, ListKeysToServeResponse, UpdateL10nKeyInput } from './api-types.js'
 
 export class L10nStorageApiClient {
   private readonly baseUrl: string
@@ -39,17 +39,17 @@ export class L10nStorageApiClient {
     return await res.json() as T
   }
 
-  async listAllKeys(projectId: string): Promise<L10nKey[]> {
-    const allKeys: L10nKey[] = []
+  async listAllKeysToServe(projectId: string): Promise<L10nKeyToServe[]> {
+    const allKeys: L10nKeyToServe[] = []
     let cursor: string | undefined
     let previousCursor: string | undefined
     do {
       log.info('l10n-storage-api', `listing keys${cursor ? ` (cursor: ${cursor})` : ''}`)
-      const params = new URLSearchParams({ includeTranslations: '1', includeSuggestions: '1', limit: '500' })
+      const params = new URLSearchParams({ limit: '500' })
       if (cursor) params.set('cursor', cursor)
-      const response = await this.request<ListKeysResponse>(
+      const response = await this.request<ListKeysToServeResponse>(
         'GET',
-        `/api/l10n/projects/${projectId}/keys?${params}`,
+        `/api/l10n/projects/${projectId}/keys-to-serve?${params}`,
       )
       allKeys.push(...response.keys)
       previousCursor = cursor

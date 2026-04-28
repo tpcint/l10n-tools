@@ -9,26 +9,18 @@ export interface L10nKeyMetadata {
   metaValue: string,
 }
 
-export interface L10nTranslation {
+export interface L10nServedTranslation {
   locale: string,
   translation: Record<string, string>,
 }
 
-export interface L10nSuggestion {
-  id: string,
-  locale: string,
-  translation: Record<string, string>,
-  status: string,
-}
-
-export interface L10nKey {
+export interface L10nKeyToServe {
   id: string,
   keyName: string,
   isPlural: boolean,
   tags: L10nKeyTag[],
   metadata: L10nKeyMetadata[],
-  translations: L10nTranslation[],
-  suggestions: L10nSuggestion[],
+  translations: L10nServedTranslation[],
 }
 
 export interface CreateSuggestionInput {
@@ -53,7 +45,7 @@ export interface UpdateL10nKeyInput {
   suggestions?: CreateSuggestionInput[],
 }
 
-export interface ListKeysResponse {
-  keys: L10nKey[],
+export interface ListKeysToServeResponse {
+  keys: L10nKeyToServe[],
   nextCursor: string | null,
 }

@@ -13,9 +13,9 @@ import { L10nStorageApiClient } from './api-client.js'
 import type {
   CreateL10nKeyInput,
   CreateSuggestionInput,
-  L10nKey,
   L10nKeyMetadata,
   L10nKeyTag,
+  L10nKeyToServe,
   UpdateL10nKeyInput,
 } from './api-types.js'
 import {
@@ -68,9 +68,9 @@ export async function syncTransToL10nStorage(
 
   const apiClient = new L10nStorageApiClient(url, token)
 
-  // 1. l10n-storage에서 키 전체 조회
-  const listedKeys = await apiClient.listAllKeys(projectId)
-  const listedKeyMap: { [keyName: string]: L10nKey } = {}
+  // 1. l10n-storage에서 정책 적용된 키 전체 조회 (keys-to-serve)
+  const listedKeys = await apiClient.listAllKeysToServe(projectId)
+  const listedKeyMap: { [keyName: string]: L10nKeyToServe } = {}
   for (const key of listedKeys) {
     listedKeyMap[key.keyName] = key
   }
@@ -97,12 +97,8 @@ function hasTagName(tags: L10nKeyTag[], tag: string): boolean {
   return tags.some(t => t.tag === tag)
 }
 
-function hasTranslation(key: L10nKey, locale: string): boolean {
+function hasTranslation(key: L10nKeyToServe, locale: string): boolean {
   return key.translations.some(t => t.locale === locale)
-}
-
-function hasSuggestion(key: L10nKey, locale: string): boolean {
-  return key.suggestions.some(s => s.locale === locale)
 }
 
 function pushAddTag(updating: UpdateL10nKeyInput, tag: L10nKeyTag): void {
@@ -131,6 +127,10 @@ function pushSuggestion(updating: UpdateL10nKeyInput, suggestion: CreateSuggesti
 }
 
 function creatingSuggestionHasLocale(key: CreateL10nKeyInput, locale: string): boolean {
+  return key.suggestions?.some(s => s.locale === locale) ?? false
+}
+
+function updatingSuggestionHasLocale(key: UpdateL10nKeyInput, locale: string): boolean {
   return key.suggestions?.some(s => s.locale === locale) ?? false
 }
 
@@ -165,7 +165,7 @@ export function buildKeyChanges(
   tag: string,
   keyEntries: KeyEntry[],
   allTransEntries: { [locale: string]: TransEntry[] },
-  listedKeyMap: { [keyName: string]: L10nKey },
+  listedKeyMap: { [keyName: string]: L10nKeyToServe },
   localeSyncMap?: { [locale: string]: string },
   options?: SyncerOptions,
 ): {
@@ -288,14 +288,17 @@ export function buildKeyChanges(
 
       const listedKey = listedKeyMap[entryKey]
       if (listedKey != null) {
-        // 기존 키: translation도 suggestion도 없는 locale만
-        if (!hasTranslation(listedKey, serverLocale) && !hasSuggestion(listedKey, serverLocale)) {
+        // keys-to-serve는 정책 적용된 단일 translations만 노출. 해당 locale 항목이 없으면 suggestion 추가.
+        // 이미 pending suggestion이 서버에 있는 경우는 storage 측 dedup에 위임.
+        if (!hasTranslation(listedKey, serverLocale)) {
           let updating = updatingKeyMap[entryKey]
           if (!updating) {
             updating = { keyId: listedKey.id }
             updatingKeyMap[entryKey] = updating
           }
-          pushSuggestion(updating, createSuggestion(serverLocale, listedKey.isPlural, transEntry.messages))
+          if (!updatingSuggestionHasLocale(updating, serverLocale)) {
+            pushSuggestion(updating, createSuggestion(serverLocale, listedKey.isPlural, transEntry.messages))
+          }
         }
       } else {
         // 새 키
@@ -319,13 +322,12 @@ export function buildKeyChanges(
 function updateTransEntries(
   tag: string,
   allTransEntries: { [locale: string]: TransEntry[] },
-  listedKeyMap: { [keyName: string]: L10nKey },
+  listedKeyMap: { [keyName: string]: L10nKeyToServe },
   invertedSyncMap?: { [locale: string]: string },
 ) {
+  // keys-to-serve가 locale별 정책(serveSuggestions)을 이미 적용해 단일 translations로 내려주므로
+  // 클라이언트는 그대로 반영하기만 하면 된다. unverified flag는 더 이상 사용하지 않는다.
   for (const [keyName, key] of Object.entries(listedKeyMap)) {
-    const translatedLocales = new Set(key.translations.map(t => t.locale))
-
-    // 1. 확정 번역 반영
     for (const tr of key.translations) {
       const locale = invertedSyncMap?.[tr.locale] ?? tr.locale
       if (allTransEntries[locale] == null) continue
@@ -352,40 +354,6 @@ function updateTransEntries(
           const value = tr.translation.other
           if (value && value !== transEntry.messages.other) {
             log.verbose('updateTransEntries', `updating ${locale} value of ${keyName}`)
-            transEntry.messages = { other: value }
-          }
-        }
-      }
-    }
-
-    // 2. 확정 번역이 없는 locale의 pending suggestion → unverified로 반영
-    for (const sugg of key.suggestions) {
-      if (translatedLocales.has(sugg.locale)) continue
-      const locale = invertedSyncMap?.[sugg.locale] ?? sugg.locale
-      if (allTransEntries[locale] == null) continue
-
-      const trans = EntryCollection.loadEntries(allTransEntries[locale])
-      const contexts = [...getContextsFromMetadata(key.metadata, tag), null]
-
-      for (const keyContext of contexts) {
-        const transEntry = trans.find(keyContext, keyName)
-        if (!transEntry) continue
-
-        transEntry.flag = 'unverified'
-
-        if (key.isPlural) {
-          const translations: Record<string, string> = {}
-          for (const [form, value] of Object.entries(sugg.translation)) {
-            if (value) translations[form] = value
-          }
-          if (Object.keys(translations).length > 0 && !isEqual(transEntry.messages, translations)) {
-            log.verbose('updateTransEntries', `updating ${locale} value of ${keyName} (unverified)`)
-            transEntry.messages = translations as TransMessages
-          }
-        } else {
-          const value = sugg.translation.other
-          if (value && value !== transEntry.messages.other) {
-            log.verbose('updateTransEntries', `updating ${locale} value of ${keyName} (unverified)`)
             transEntry.messages = { other: value }
           }
         }

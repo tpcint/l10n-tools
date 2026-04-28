@@ -62,7 +62,7 @@ const SYNCER_TYPE_TO_PLUGIN: Record<string, string> = {
 /**
  * Plugin registry for managing extractors, compilers, and syncers
  */
-class PluginRegistry {
+export class PluginRegistry {
   private plugins = new Map<string, L10nPlugin>()
   private extractors = new Map<string, ExtractorFunc>()
   private compilers = new Map<string, CompilerFunc>()

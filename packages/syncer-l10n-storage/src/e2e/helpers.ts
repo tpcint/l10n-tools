@@ -66,7 +66,9 @@ export async function createProject(namePrefix: string, locales: string[], sourc
 
 export async function deleteProject(projectId: string | undefined): Promise<void> {
   if (!projectId) return
-  await api(`/projects/${projectId}`, { method: 'DELETE' }).catch(() => {})
+  await api(`/projects/${projectId}`, { method: 'DELETE' }).catch((err: unknown) => {
+    console.warn(`failed to delete e2e project ${projectId}:`, err)
+  })
 }
 
 export function buildL10nConfig(projectId: string, opts?: {

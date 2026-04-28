@@ -8,6 +8,8 @@ jobs:
   changes:
     name: Detect changes
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     if: ${{ !startsWith(github.head_ref, 'release-please--') }}
     outputs:
       should_run: ${{ steps.filter.outputs.syncer_l10n_storage }}

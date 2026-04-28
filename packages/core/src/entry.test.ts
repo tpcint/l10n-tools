@@ -21,25 +21,25 @@ function makeTransEntry(overrides: Partial<TransEntry> = {}): TransEntry {
 
 describe('compareKeyReference', () => {
   it('compares by file when files differ', () => {
-    assert.equal(compareKeyReference({ file: 'a.ts' }, { file: 'b.ts' }), -1)
-    assert.equal(compareKeyReference({ file: 'b.ts' }, { file: 'a.ts' }), 1)
+    assert.ok(compareKeyReference({ file: 'a.ts' }, { file: 'b.ts' }) < 0)
+    assert.ok(compareKeyReference({ file: 'b.ts' }, { file: 'a.ts' }) > 0)
   })
 
   it('places null loc before defined loc on the same file', () => {
-    assert.equal(compareKeyReference({ file: 'a.ts' }, { file: 'a.ts', loc: '10' }), -1)
-    assert.equal(compareKeyReference({ file: 'a.ts', loc: '10' }, { file: 'a.ts' }), 1)
+    assert.ok(compareKeyReference({ file: 'a.ts' }, { file: 'a.ts', loc: '10' }) < 0)
+    assert.ok(compareKeyReference({ file: 'a.ts', loc: '10' }, { file: 'a.ts' }) > 0)
   })
 
   it('compares loc lexicographically on the same file', () => {
-    assert.equal(compareKeyReference({ file: 'a.ts', loc: '10' }, { file: 'a.ts', loc: '20' }), -1)
-    assert.equal(compareKeyReference({ file: 'a.ts', loc: '20' }, { file: 'a.ts', loc: '10' }), 1)
+    assert.ok(compareKeyReference({ file: 'a.ts', loc: '10' }, { file: 'a.ts', loc: '20' }) < 0)
+    assert.ok(compareKeyReference({ file: 'a.ts', loc: '20' }, { file: 'a.ts', loc: '10' }) > 0)
   })
 })
 
 describe('compareEntry', () => {
   it('compares by key when both contexts are null', () => {
-    assert.equal(compareEntry({ context: null, key: 'a' }, { context: null, key: 'b' }), -1)
-    assert.equal(compareEntry({ context: null, key: 'b' }, { context: null, key: 'a' }), 1)
+    assert.ok(compareEntry({ context: null, key: 'a' }, { context: null, key: 'b' }) < 0)
+    assert.ok(compareEntry({ context: null, key: 'b' }, { context: null, key: 'a' }) > 0)
   })
 
   it('returns 0 when both contexts are null and keys match', () => {
@@ -47,13 +47,13 @@ describe('compareEntry', () => {
   })
 
   it('places null context before defined context', () => {
-    assert.equal(compareEntry({ context: null, key: 'a' }, { context: 'ctx', key: 'a' }), -1)
-    assert.equal(compareEntry({ context: 'ctx', key: 'a' }, { context: null, key: 'a' }), 1)
+    assert.ok(compareEntry({ context: null, key: 'a' }, { context: 'ctx', key: 'a' }) < 0)
+    assert.ok(compareEntry({ context: 'ctx', key: 'a' }, { context: null, key: 'a' }) > 0)
   })
 
   it('compares by context when both contexts are defined', () => {
-    assert.equal(compareEntry({ context: 'a', key: 'x' }, { context: 'b', key: 'x' }), -1)
-    assert.equal(compareEntry({ context: 'b', key: 'x' }, { context: 'a', key: 'x' }), 1)
+    assert.ok(compareEntry({ context: 'a', key: 'x' }, { context: 'b', key: 'x' }) < 0)
+    assert.ok(compareEntry({ context: 'b', key: 'x' }, { context: 'a', key: 'x' }) > 0)
   })
 
   it('returns 0 when contexts match, regardless of key', () => {

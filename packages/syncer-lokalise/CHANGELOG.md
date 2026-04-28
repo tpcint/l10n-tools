@@ -1,5 +1,19 @@
 # Changelog
 
+## [7.4.6](https://github.com/tpcint/l10n-tools/compare/l10n-tools-syncer-lokalise-v7.4.5...l10n-tools-syncer-lokalise-v7.4.6) (2026-04-28)
+
+
+### Miscellaneous Chores
+
+* **deps:** bump es-toolkit from 1.45.1 to 1.46.0 ([#303](https://github.com/tpcint/l10n-tools/issues/303)) ([a909c3d](https://github.com/tpcint/l10n-tools/commit/a909c3d709ef72fa52a191c6299e503bd95708bf))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * peerDependencies
+    * l10n-tools-core bumped from ^7.9.1 to ^8.0.0
+
 ## [7.4.5](https://github.com/tpcint/l10n-tools/compare/l10n-tools-syncer-lokalise-v7.4.4...l10n-tools-syncer-lokalise-v7.4.5) (2026-04-16)
 
 

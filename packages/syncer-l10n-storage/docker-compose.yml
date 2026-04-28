@@ -1,0 +1,71 @@
+x-backend-image: &backend-image
+  image: ${BACKEND_IMAGE:?BACKEND_IMAGE is required (see .env.example)}
+
+services:
+  postgres:
+    image: postgres:18-alpine
+    command: ["postgres", "-c", "port=5434"]
+    environment:
+      POSTGRES_USER: test
+      POSTGRES_PASSWORD: test
+      POSTGRES_DB: devdb
+    ports:
+      - "5100:5100"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U test -d devdb -p 5434"]
+      interval: 2s
+      timeout: 5s
+      retries: 10
+
+  copy-migrations:
+    <<: *backend-image
+    entrypoint: ["sh", "-c", "mkdir -p /shared/migrations && cp tools/initdb/migrations/*.sql /shared/migrations/ && ls /shared/migrations/"]
+    volumes:
+      - migrations:/shared
+
+  migrate:
+    image: postgres:18-alpine
+    environment:
+      PGHOST: postgres
+      PGPORT: "5434"
+      PGUSER: test
+      PGPASSWORD: test
+      PGDATABASE: devdb
+    entrypoint:
+      - sh
+      - -ec
+      - |
+        for f in /shared/migrations/*.sql; do
+          case "$$(basename "$$f")" in *_rollback.sql) continue;; esac
+          echo "Applying: $$f"
+          psql -f "$$f"
+        done
+    volumes:
+      - migrations:/shared
+    depends_on:
+      postgres:
+        condition: service_healthy
+      copy-migrations:
+        condition: service_completed_successfully
+
+  app:
+    <<: *backend-image
+    network_mode: service:postgres
+    environment:
+      NODE_ENV: development
+      STAGE: sandbox
+      PORT: 5100
+      USE_LOCAL_RESOURCES: "true"
+      GOOGLE_CLOUD_PROJECT: tpc-misc
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:5100/api/test/info || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 15
+      start_period: 15s
+
+volumes:
+  migrations:

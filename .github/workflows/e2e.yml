@@ -1,0 +1,81 @@
+name: E2E Tests
+
+on:
+  pull_request:
+    types: [opened, synchronize, ready_for_review]
+
+jobs:
+  changes:
+    name: Detect changes
+    runs-on: ubuntu-latest
+    if: ${{ !startsWith(github.head_ref, 'release-please--') }}
+    outputs:
+      should_run: ${{ steps.filter.outputs.syncer_l10n_storage }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            syncer_l10n_storage:
+              - 'packages/syncer-l10n-storage/**'
+              - 'packages/core/**'
+              - 'package.json'
+              - 'package-lock.json'
+              - '.github/workflows/e2e.yml'
+
+  e2e:
+    name: E2E Tests
+    runs-on: ubuntu-latest
+    needs: changes
+    # fork PR에서는 OIDC/secrets 접근이 안 되므로 동일 리포 PR에서만 실행
+    if: |
+      needs.changes.outputs.should_run == 'true' &&
+      github.event.pull_request.head.repo.full_name == github.repository
+    concurrency:
+      group: e2e-pr${{ github.event.number }}
+      cancel-in-progress: true
+    timeout-minutes: 15
+
+    permissions:
+      contents: read
+      id-token: write
+
+    env:
+      BACKEND_IMAGE: ${{ secrets.BACKEND_IMAGE }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: projects/299329474524/locations/global/workloadIdentityPools/github/providers/my-repo
+          service_account: ci-e2e@tpc-misc.iam.gserviceaccount.com
+
+      - run: gcloud auth configure-docker --quiet
+
+      - name: Start tpc-agent backend
+        run: docker compose -f packages/syncer-l10n-storage/docker-compose.yml up -d --wait
+
+      - name: Setup node with cached node_modules
+        uses: ./.github/actions/setup-node-cached
+        with:
+          node-version: 22
+
+      - name: Build
+        run: npm run build
+
+      - name: Run E2E tests
+        env:
+          TPC_AGENT_URL: http://localhost:5100
+          TPC_AGENT_TOKEN: ${{ secrets.TPC_AGENT_DEV_TOKEN }}
+        run: npm run test:e2e -w l10n-tools-syncer-l10n-storage
+
+      - name: Backend logs (on failure)
+        if: failure()
+        run: docker compose -f packages/syncer-l10n-storage/docker-compose.yml logs
+
+      - name: Teardown backend
+        if: always()
+        run: docker compose -f packages/syncer-l10n-storage/docker-compose.yml down

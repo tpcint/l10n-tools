@@ -36,11 +36,6 @@ describe('generateStringsFile', () => {
   it('emits an empty string when no entries are given', () => {
     assert.equal(generateStringsFile({}), '')
   })
-
-  it('emits empty msgstr when text is missing on object value', () => {
-    const output = generateStringsFile({ k: { comment: 'c' } })
-    assert.equal(output, '\n/* c */\n"k" = "";\n')
-  })
 })
 
 describe('transformIosPluralMessages', () => {

@@ -6,8 +6,8 @@ import {
   compareKeyReference,
   getPluralKeys,
   type KeyEntry,
-  type TransEntry,
   toTransEntry,
+  type TransEntry,
 } from './entry.js'
 
 function makeTransEntry(overrides: Partial<TransEntry> = {}): TransEntry {

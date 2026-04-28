@@ -29,7 +29,6 @@ export type SyncTarget = 'lokalise' | 'l10n-storage'
  * python: Extract from python gettext functions
  * android: Extract from android strings.xml res files
  * ios: Extract from iOS swift files, storyboard, and xib files
- * php-gettext: Extract from php gettext functions
  */
 export type DomainType =
   'vue-gettext' |
@@ -40,8 +39,7 @@ export type DomainType =
   'i18next' |
   'python' |
   'android' |
-  'ios' |
-  'php-gettext'
+  'ios'
 
 /**
  * Keyword configuration for extraction

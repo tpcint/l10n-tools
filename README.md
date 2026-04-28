@@ -27,7 +27,6 @@ npm install l10n-tools l10n-tools-extractor-vue l10n-tools-compiler-json l10n-to
 | `l10n-tools-extractor-javascript` | Extract from JS/TS/JSX/TSX files |
 | `l10n-tools-extractor-vue` | Extract from Vue.js files (vue-gettext, vue-i18n) |
 | `l10n-tools-extractor-python` | Extract from Python gettext functions |
-| `l10n-tools-extractor-php` | Extract from PHP gettext functions |
 | `l10n-tools-plugin-android` | Extract and compile Android strings.xml |
 | `l10n-tools-plugin-ios` | Extract and compile iOS .strings files |
 | **Compilers** | |
@@ -77,7 +76,6 @@ Create a `.l10nrc` file in your project root:
 | `react` | React with i18n functions |
 | `i18next` | i18next translation functions |
 | `python` | Python gettext functions |
-| `php-gettext` | PHP gettext functions |
 | `android` | Android strings.xml resources |
 | `ios` | iOS Swift, Storyboard, and XIB files |
 

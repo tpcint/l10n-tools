@@ -44,7 +44,7 @@ jobs:
       id-token: write
 
     env:
-      BACKEND_IMAGE: ${{ secrets.BACKEND_IMAGE }}
+      BACKEND_IMAGE: gcr.io/tpc-misc/tpc-misc-tpc-agent:sandbox
 
     steps:
       - uses: actions/checkout@v4

@@ -1,6 +1,6 @@
 {
   "name": "l10n-tools",
-  "version": "7.5.3",
+  "version": "7.5.4",
   "description": "Localization tools - CLI for managing translations",
   "type": "module",
   "engines": {

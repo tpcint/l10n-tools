@@ -1,5 +1,12 @@
 # Changelog
 
+## [7.5.4](https://github.com/tpcint/l10n-tools/compare/l10n-tools-v7.5.3...l10n-tools-v7.5.4) (2026-05-04)
+
+
+### Miscellaneous Chores
+
+* **deps:** bump ajv from 8.18.0 to 8.20.0 ([#310](https://github.com/tpcint/l10n-tools/issues/310)) ([e7b0748](https://github.com/tpcint/l10n-tools/commit/e7b07485295c2c43643f1fad15e1b14a8d0f2c82))
+
 ## [7.5.3](https://github.com/tpcint/l10n-tools/compare/l10n-tools-v7.5.2...l10n-tools-v7.5.3) (2026-04-28)
 
 

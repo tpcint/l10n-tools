@@ -1,6 +1,6 @@
 {
   "name": "l10n-tools-syncer-l10n-storage",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "l10n-tools syncer for tpc-agent l10n-storage service",
   "type": "module",
   "engines": {

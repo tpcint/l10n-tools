@@ -1,5 +1,19 @@
 # Changelog
 
+## [7.2.3](https://github.com/tpcint/l10n-tools/compare/l10n-tools-extractor-vue-v7.2.2...l10n-tools-extractor-vue-v7.2.3) (2026-05-04)
+
+
+### Miscellaneous Chores
+
+* **deps:** bump typescript from 5.9.3 to 6.0.3 ([#301](https://github.com/tpcint/l10n-tools/issues/301)) ([f216b5b](https://github.com/tpcint/l10n-tools/commit/f216b5b13a8731b33631393d3bd9743fade802db))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * l10n-tools-extractor-javascript bumped from ^7.1.11 to ^7.1.12
+
 ## [7.2.2](https://github.com/tpcint/l10n-tools/compare/l10n-tools-extractor-vue-v7.2.1...l10n-tools-extractor-vue-v7.2.2) (2026-04-28)
 
 

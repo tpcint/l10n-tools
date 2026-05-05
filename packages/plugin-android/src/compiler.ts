@@ -2,6 +2,7 @@ import fsp from 'node:fs/promises'
 import log from 'npmlog'
 import * as path from 'path'
 import {
+  type CompileOptions,
   type CompilerConfig,
   EntryCollection,
   extractLocaleFromTransPath,
@@ -30,19 +31,29 @@ import {
 } from './android-xml-utils.js'
 import { getModuleName, isDefaultModule } from './extractor.js'
 
-export async function compileToAndroidXml(domainName: string, config: CompilerConfig, transDir: string) {
+export async function compileToAndroidXml(
+  domainName: string,
+  config: CompilerConfig,
+  transDir: string,
+  options?: CompileOptions,
+) {
+  const mergeKeys = options?.mergeKeys
+  if (mergeKeys != null && mergeKeys.size === 0) {
+    return
+  }
+
   const modules = config.getModules()
 
   if (modules.length > 0) {
     // Multi-module mode
-    await compileMultiModule(modules, config, transDir)
+    await compileMultiModule(modules, config, transDir, mergeKeys)
   } else {
     // Single res-dir mode (backward compatibility)
-    await compileSingleResDir(config, transDir)
+    await compileSingleResDir(config, transDir, mergeKeys)
   }
 }
 
-async function compileSingleResDir(config: CompilerConfig, transDir: string) {
+async function compileSingleResDir(config: CompilerConfig, transDir: string, mergeKeys?: Set<string>) {
   const resDir = config.getResDir()
   const defaultLocale = config.getDefaultLocale()
   log.info('compile', `generating res files '${resDir}/values-{locale}/strings.xml'`)
@@ -61,17 +72,24 @@ async function compileSingleResDir(config: CompilerConfig, transDir: string) {
   for (const transPath of transPaths) {
     const locale = extractLocaleFromTransPath(transPath)
     if (locale === defaultLocale) {
+      // The default locale's xml is the source itself; in merge mode, do not rewrite it.
+      if (mergeKeys != null) continue
       await writeXml(buildAndroidXml(builder, srcXmlJson), resDir, null)
     } else {
       const transEntries = await readTransEntries(transPath)
       const dstXml = await readXml(resDir, locale, '<?xml version="1.0" encoding="utf-8"?>\n<resources></resources>')
-      const newDstXml = await generateAndroidXml(locale, transEntries, srcXml, dstXml)
+      const newDstXml = await generateAndroidXml(locale, transEntries, srcXml, dstXml, { mergeKeys })
       await writeXml(newDstXml, resDir, locale)
     }
   }
 }
 
-async function compileMultiModule(modules: string[], config: CompilerConfig, transDir: string) {
+async function compileMultiModule(
+  modules: string[],
+  config: CompilerConfig,
+  transDir: string,
+  mergeKeys?: Set<string>,
+) {
   const defaultLocale = config.getDefaultLocale()
   const defaultModule = config.getDefaultModule()
   log.info('compile', `generating res files for ${modules.length} modules`)
@@ -106,13 +124,14 @@ async function compileMultiModule(modules: string[], config: CompilerConfig, tra
     for (const transPath of transPaths) {
       const locale = extractLocaleFromTransPath(transPath)
       if (locale === defaultLocale) {
+        if (mergeKeys != null) continue
         await writeXml(buildAndroidXml(builder, srcXmlJson), resDir, null)
       } else {
         const transEntries = await readTransEntries(transPath)
         // Filter entries for this module
         const moduleTransEntries = filterTransEntriesForModule(transEntries, module, defaultModule)
         const dstXml = await readXml(resDir, locale, '<?xml version="1.0" encoding="utf-8"?>\n<resources></resources>')
-        const newDstXml = await generateAndroidXml(locale, moduleTransEntries, srcXml, dstXml)
+        const newDstXml = await generateAndroidXml(locale, moduleTransEntries, srcXml, dstXml, { mergeKeys })
         await writeXml(newDstXml, resDir, locale)
       }
     }
@@ -136,7 +155,24 @@ export function filterTransEntriesForModule(transEntries: TransEntry[], module: 
     }))
 }
 
-export async function generateAndroidXml(locale: string, transEntries: TransEntry[], srcXml: string, dstXml: string) {
+export interface GenerateAndroidXmlOptions {
+  /**
+   * When set, only string/plurals entries that resolve to a translation in `transEntries`
+   * are updated; all other entries are taken from `dstXml` as-is. The contents of the set
+   * itself are not consulted directly (PR-N membership is implicit in `transEntries`).
+   *
+   * The presence of this option flips compileSingleResDir/compileMultiModule into "merge mode".
+   */
+  mergeKeys?: Set<string>,
+}
+
+export async function generateAndroidXml(
+  locale: string,
+  transEntries: TransEntry[],
+  srcXml: string,
+  dstXml: string,
+  options?: GenerateAndroidXmlOptions,
+) {
   const parser = getAndroidXmlParser()
   const builder = getAndroidXmlBuilder()
 
@@ -153,6 +189,8 @@ export async function generateAndroidXml(locale: string, transEntries: TransEntr
   }
 
   const trans = EntryCollection.loadEntries(transEntries)
+  const isMerge = options?.mergeKeys != null
+  const dstNodesByName = isMerge ? indexResourcesByName(dstResNode.resources as XMLNode[]) : null
 
   const dstResources: XMLNode[] = []
   let passingText = false
@@ -182,14 +220,18 @@ export async function generateAndroidXml(locale: string, transEntries: TransEntr
         continue
       }
 
-      // 번역이 없는 태그도 스킵
+      // 번역이 없는 태그도 스킵 (merge 모드에선 dstXml에서 보존)
       const transEntry = trans.find(name, null)
       if (transEntry == null) {
+        if (preserveFromDst(name, dstNodesByName, 'string', dstResources)) {
+          continue
+        }
         passingText = true
         continue
       }
       const value = transEntry.messages.other
       if (!value) {
+        // PR-N key with no translation: drop from output (do not preserve from dst).
         passingText = true
         continue
       }
@@ -211,14 +253,18 @@ export async function generateAndroidXml(locale: string, transEntries: TransEntr
         continue
       }
 
-      // 번역이 없는 태그도 스킵
+      // 번역이 없는 태그도 스킵 (merge 모드에선 dstXml에서 보존)
       const transEntry = trans.find(name, null)
       if (transEntry == null) {
+        if (preserveFromDst(name, dstNodesByName, 'plurals', dstResources)) {
+          continue
+        }
         passingText = true
         continue
       }
       const values = transEntry.messages
       if (Object.keys(values).length == 0) {
+        // PR-N key with no translation: drop from output (do not preserve from dst).
         passingText = true
         continue
       }
@@ -261,6 +307,32 @@ export async function generateAndroidXml(locale: string, transEntries: TransEntr
 
   dstResNode.resources = dstResources
   return buildAndroidXml(builder, dstXmlJson)
+}
+
+function indexResourcesByName(resources: XMLNode[]): Map<string, XMLTagNode> {
+  const map = new Map<string, XMLTagNode>()
+  for (const node of resources) {
+    if (isTextNode(node)) continue
+    if (!isTagNode(node, 'string') && !isTagNode(node, 'plurals')) continue
+    const name = getAttrValue(node, 'name')
+    if (name == null) continue
+    map.set(name, node)
+  }
+  return map
+}
+
+function preserveFromDst(
+  name: string,
+  dstNodesByName: Map<string, XMLTagNode> | null,
+  expectedTag: 'string' | 'plurals',
+  out: XMLNode[],
+): boolean {
+  if (dstNodesByName == null) return false
+  const existing = dstNodesByName.get(name)
+  if (existing == null) return false
+  if (!isTagNode(existing, expectedTag)) return false
+  out.push({ ...existing })
+  return true
 }
 
 function createValueNode(node: XMLTagNode, children: XMLNode[], value: string) {

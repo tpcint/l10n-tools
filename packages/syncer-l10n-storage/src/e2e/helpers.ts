@@ -1,4 +1,5 @@
 import { DomainConfig, L10nConfig } from 'l10n-tools-core'
+import { L10nStorageApiClient } from '../api-client.js'
 import type { CreateL10nKeyInput, L10nKeyMetadata, L10nKeyTag } from '../api-types.js'
 
 export const API_BASE = process.env.TPC_AGENT_URL ?? 'http://localhost:5100'
@@ -38,6 +39,27 @@ export async function isL10nApiAvailable(): Promise<boolean> {
     return res.ok
   } catch {
     return false
+  }
+}
+
+/**
+ * Probes whether the tag/source-scoped keys-to-serve endpoint is implemented.
+ * Creates a temporary project, calls the endpoint, and cleans up. Returns false
+ * for any failure (route not found, project not found, network error) so callers
+ * can skip the e2e suite when running against an older tpc-agent build.
+ */
+export async function isSourceFilterEndpointAvailable(): Promise<boolean> {
+  let probeProjectId: string | undefined
+  try {
+    const created = await createProject('source-filter-probe', [], 'en')
+    probeProjectId = created.projectId
+    const apiClient = new L10nStorageApiClient(API_BASE, DEV_TOKEN)
+    await apiClient.listKeysToServeByTag(probeProjectId, 'probe', undefined)
+    return true
+  } catch {
+    return false
+  } finally {
+    await deleteProject(probeProjectId)
   }
 }
 

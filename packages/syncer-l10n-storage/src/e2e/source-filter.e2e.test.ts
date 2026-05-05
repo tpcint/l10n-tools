@@ -11,10 +11,20 @@ import {
   deleteProject,
   DEV_TOKEN,
   isL10nApiAvailable,
+  isSourceFilterEndpointAvailable,
   seedKeys,
 } from './helpers.js'
 
-describe('listKeysToServeByTag (e2e)', () => {
+const apiAvailable = await isL10nApiAvailable()
+const endpointAvailable = apiAvailable ? await isSourceFilterEndpointAvailable() : false
+
+const skipReason: string | false = !apiAvailable
+  ? `tpc-agent l10n API not available at ${API_BASE}`
+  : !endpointAvailable
+      ? 'tag/source keys-to-serve endpoint not deployed in tpc-agent (run a build with the new endpoint to enable)'
+      : false
+
+describe('listKeysToServeByTag (e2e)', { skip: skipReason }, () => {
   let apiClient: L10nStorageApiClient
   let projectId: string | undefined
 
@@ -113,7 +123,7 @@ describe('listKeysToServeByTag (e2e)', () => {
   })
 })
 
-describe('sourceFilterForL10nStorage (e2e)', () => {
+describe('sourceFilterForL10nStorage (e2e)', { skip: skipReason }, () => {
   let projectId: string | undefined
 
   before(async () => {

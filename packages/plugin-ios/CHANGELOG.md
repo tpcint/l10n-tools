@@ -1,5 +1,19 @@
 # Changelog
 
+## [7.3.0](https://github.com/tpcint/l10n-tools/compare/l10n-tools-plugin-ios-v7.2.13...l10n-tools-plugin-ios-v7.3.0) (2026-05-05)
+
+
+### Features
+
+* **cli:** merge _compile --source output into existing files ([#321](https://github.com/tpcint/l10n-tools/issues/321)) ([5fb6685](https://github.com/tpcint/l10n-tools/commit/5fb668594d3abc7d86d31efa3c41944478beb73f))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * peerDependencies
+    * l10n-tools-core bumped from ^8.1.0 to ^8.2.0
+
 ## [7.2.13](https://github.com/tpcint/l10n-tools/compare/l10n-tools-plugin-ios-v7.2.12...l10n-tools-plugin-ios-v7.2.13) (2026-05-05)
 
 

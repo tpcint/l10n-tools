@@ -1,7 +1,8 @@
 import type { DomainConfig } from './config.js'
+import type { CompileOptions } from './plugin-types.js'
 import { pluginRegistry } from './plugin-registry.js'
 
-export type { CompilerFunc } from './plugin-types.js'
+export type { CompileOptions, CompilerFunc } from './plugin-types.js'
 
 /**
  * Compile translations for all configured output formats.
@@ -9,8 +10,14 @@ export type { CompilerFunc } from './plugin-types.js'
  * @param domainName - The domain identifier
  * @param domainConfig - Configuration object describing the domain
  * @param transDir - Directory containing translation files
+ * @param options - Optional compiler options (e.g., {@link CompileOptions.mergeKeys})
  */
-export async function compileAll(domainName: string, domainConfig: DomainConfig, transDir: string) {
+export async function compileAll(
+  domainName: string,
+  domainConfig: DomainConfig,
+  transDir: string,
+  options?: CompileOptions,
+) {
   const configs = domainConfig.getCompilerConfigs()
   for (const config of configs) {
     const type = config.getType()
@@ -24,6 +31,6 @@ export async function compileAll(domainName: string, domainConfig: DomainConfig,
       throw new Error(`No compiler found for type: ${type}${installHint}`)
     }
 
-    await compiler(domainName, config, transDir)
+    await compiler(domainName, config, transDir, options)
   }
 }

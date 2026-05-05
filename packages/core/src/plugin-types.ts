@@ -22,6 +22,19 @@ export interface ExtractorPlugin {
 }
 
 /**
+ * Options that may be passed to a compiler invocation.
+ */
+export interface CompileOptions {
+  /**
+   * When set, the compiler must update only the entries whose keyName is in the set
+   * and preserve any other entries that already exist in the output. An empty set
+   * means "no entries to update" — the compiler must leave existing outputs untouched.
+   * If not set, the compiler performs a full overwrite of the output (default behavior).
+   */
+  mergeKeys?: Set<string>,
+}
+
+/**
  * Compiler function signature
  * Compiles translations to platform-specific formats
  */
@@ -29,6 +42,7 @@ export type CompilerFunc = (
   domainName: string,
   config: CompilerConfig,
   transDir: string,
+  options?: CompileOptions,
 ) => Promise<void>
 
 /**

@@ -37,7 +37,7 @@ jobs:
         path: ${{ fromJson(needs.release-please.outputs.paths_released) }}
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Setup node with cached node_modules
         uses: ./.github/actions/setup-node-cached

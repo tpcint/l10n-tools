@@ -9,6 +9,8 @@ export type {
   SyncerPlugin,
   SyncerFunc,
   SyncerOptions,
+  SyncerKeySnapshot,
+  SyncerSourceFilterFunc,
 } from './plugin-types.js'
 
 export { pluginRegistry } from './plugin-registry.js'
@@ -33,6 +35,7 @@ export {
   type KeyEntry,
   type TransEntry,
   type TransMessages,
+  type TransPluralKey,
   type KeyReference,
   readKeyEntries,
   readTransEntries,
@@ -66,3 +69,4 @@ export { updateTrans, getSrcPaths } from './common.js'
 export { extractKeys } from './extractor.js'
 export { compileAll } from './compiler.js'
 export { syncTransToTarget } from './syncer.js'
+export { materializeSnapshotsToTempDir } from './source-filter.js'

@@ -12,10 +12,12 @@ import {
   getKeysPath,
   getTransPath,
   L10nConfig,
+  materializeSnapshotsToTempDir,
   pluginRegistry,
   type ProgramOptions,
   readKeyEntries,
   readTransEntries,
+  type SyncerKeySnapshot,
   type SyncerOptions,
   syncTransToTarget,
   updateTrans,
@@ -45,6 +47,21 @@ function buildSyncerOptions(opts: { tags?: string, metadata?: Record<string, str
     tagMetadata: opts.tagMetadata && Object.keys(opts.tagMetadata).length > 0 ? opts.tagMetadata : undefined,
     source: opts.source,
   }
+}
+
+async function fetchSourceSnapshots(
+  cmdName: string,
+  config: L10nConfig,
+  domainConfig: DomainConfig,
+  source: string,
+): Promise<SyncerKeySnapshot[]> {
+  const syncTarget = config.getSyncTarget()
+  const sourceFilter = pluginRegistry.getSourceFilter(syncTarget)
+  if (!sourceFilter) {
+    log.error(cmdName, `--source is not supported by sync target '${syncTarget}'`)
+    process.exit(1)
+  }
+  return await sourceFilter(config, domainConfig, domainConfig.getTag(), source)
 }
 
 /**
@@ -234,19 +251,32 @@ async function run() {
           const contextSet = opts.contexts !== undefined
             ? new Set<string>(opts.contexts.split(',').filter(Boolean))
             : null
+          const sourceKeyNameSet = opts.source
+            ? new Set((await fetchSourceSnapshots(cmd.name(), config, domainConfig, opts.source)).map(s => s.keyName))
+            : null
 
-          if (fileSet.size === 0 && contextSet == null) {
+          if (fileSet.size === 0 && contextSet == null && sourceKeyNameSet == null) {
             return null
           }
 
+          const fileOrContextActive = fileSet.size > 0 || contextSet != null
           const keyEntries = (await readKeyEntries(keysPath))
             .filter(keyEntry => {
+              if (sourceKeyNameSet != null && !sourceKeyNameSet.has(keyEntry.key)) {
+                return false
+              }
+              if (!fileOrContextActive) {
+                return true
+              }
               const matchesFile = fileSet.size > 0
                 && keyEntry.references.some(ref => fileSet.has(ref.file))
               const matchesContext = contextSet != null
                 && keyEntry.context != null && contextSet.has(keyEntry.context)
               return matchesFile || matchesContext
             })
+          if (sourceKeyNameSet != null && keyEntries.length === 0) {
+            log.warn(cmd.name(), `no local keys matched source '${opts.source}' (run 'l10n update' or 'l10n sync' to refresh local keys)`)
+          }
           return EntryCollection.loadEntries(keyEntries)
         })()
         for (const locale of locales) {
@@ -392,10 +422,24 @@ async function run() {
       })
     })
 
+  type CompileOptions = {
+    source?: string,
+  }
   program.command('_compile')
     .description('Write domain asset from translations (internal use only)')
-    .action(async (opts, cmd: Command) => {
+    .option('--source <source>', 'compile only keys belonging to this source (l10n-storage only)')
+    .action(async (opts: CompileOptions, cmd: Command) => {
       await runSubCommand(cmd.name(), async (domainName, config, domainConfig) => {
+        if (opts.source) {
+          const snapshots = await fetchSourceSnapshots(cmd.name(), config, domainConfig, opts.source)
+          const tempDir = await materializeSnapshotsToTempDir(domainName, snapshots, domainConfig.getLocales())
+          try {
+            await compileAll(domainName, domainConfig, tempDir)
+          } finally {
+            await fsp.rm(tempDir, { recursive: true, force: true })
+          }
+          return
+        }
         const cacheDir = domainConfig.getCacheDir()
         const transDir = path.join(cacheDir, domainName)
         await compileAll(domainName, domainConfig, transDir)

@@ -1,7 +1,14 @@
 import { pathToFileURL } from 'node:url'
 import path from 'node:path'
 import log from 'npmlog'
-import type { CompilerFunc, ExtractorFunc, L10nPlugin, PluginFactory, SyncerFunc } from './plugin-types.js'
+import type {
+  CompilerFunc,
+  ExtractorFunc,
+  L10nPlugin,
+  PluginFactory,
+  SyncerFunc,
+  SyncerSourceFilterFunc,
+} from './plugin-types.js'
 
 /**
  * Known plugin packages for auto-discovery
@@ -65,6 +72,7 @@ export class PluginRegistry {
   private extractors = new Map<string, ExtractorFunc>()
   private compilers = new Map<string, CompilerFunc>()
   private syncers = new Map<string, SyncerFunc>()
+  private sourceFilters = new Map<string, SyncerSourceFilterFunc>()
   private initialized = false
   private initPromise: Promise<void> | null = null
 
@@ -178,6 +186,9 @@ export class PluginRegistry {
         log.warn('plugin-registry', `Syncer for ${sync.syncTarget} already registered, overwriting`)
       }
       this.syncers.set(sync.syncTarget, sync.syncer)
+      if (sync.sourceFilter) {
+        this.sourceFilters.set(sync.syncTarget, sync.sourceFilter)
+      }
     }
   }
 
@@ -200,6 +211,13 @@ export class PluginRegistry {
    */
   getSyncer(syncTarget: string): SyncerFunc | undefined {
     return this.syncers.get(syncTarget)
+  }
+
+  /**
+   * Get a source filter for a sync target (optional capability)
+   */
+  getSourceFilter(syncTarget: string): SyncerSourceFilterFunc | undefined {
+    return this.sourceFilters.get(syncTarget)
   }
 
   /**

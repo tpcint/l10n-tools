@@ -124,15 +124,20 @@ export function createPoEntry(locale: string, transEntry: TransEntry): GetTextTr
 }
 
 /**
- * Merge `fresh` PO (built from PR-N keys) into `base` PO so that any (msgctxt, msgid)
- * with msgid in `mergeKeys` is taken from `fresh` and all other entries are preserved.
+ * Merge `fresh` PO (built from PR-N keys) into `base` PO. The merge unit is the
+ * `(msgctxt, msgid)` pair: any pair present in `fresh` replaces the corresponding pair
+ * in `base`, and every other base entry — including same-msgid entries that live under
+ * a different msgctxt — is preserved unchanged.
+ *
+ * `mergeKeys` is currently unused inside the merge but is kept on the signature for
+ * symmetry with other compilers and to enable future deletion semantics if needed.
  *
  * @internal exported for testing
  */
 export function mergePoTranslations(
   base: GetTextTranslations,
   fresh: GetTextTranslations,
-  mergeKeys: Set<string>,
+  _mergeKeys: Set<string>,
 ): GetTextTranslations {
   // Start with a deep-ish clone of base translations (one level enough since
   // each msgid maps to a fresh GetTextTranslation object reference we treat as immutable).
@@ -145,19 +150,7 @@ export function mergePoTranslations(
     merged.translations[msgctxt] = { ...entries }
   }
 
-  // Drop all (msgctxt, msgid) where msgid is a mergeKey.
-  for (const msgctxt of Object.keys(merged.translations)) {
-    for (const msgid of Object.keys(merged.translations[msgctxt])) {
-      if (mergeKeys.has(msgid)) {
-        delete merged.translations[msgctxt][msgid]
-      }
-    }
-    if (Object.keys(merged.translations[msgctxt]).length === 0 && msgctxt !== '') {
-      delete merged.translations[msgctxt]
-    }
-  }
-
-  // Add fresh entries.
+  // Replace base's (msgctxt, msgid) with fresh's value for every pair fresh actually contains.
   for (const [msgctxt, entries] of Object.entries(fresh.translations)) {
     if (merged.translations[msgctxt] == null) {
       merged.translations[msgctxt] = {}

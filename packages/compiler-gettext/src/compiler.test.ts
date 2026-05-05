@@ -129,18 +129,7 @@ describe('mergePoTranslations', () => {
     assert.equal(merged.translations[''].drop.msgstr[0], 'NEW')
   })
 
-  it('removes mergeKey msgid entries when fresh has no replacement', () => {
-    const base = createPo('d', 'en', [
-      makeTransEntry({ key: 'keep', messages: { other: 'KEEP' } }),
-      makeTransEntry({ key: 'gone', messages: { other: 'X' } }),
-    ])
-    const fresh = createPo('d', 'en', [])
-    const merged = mergePoTranslations(base, fresh, new Set(['gone']))
-    assert.equal(merged.translations[''].gone, undefined)
-    assert.equal(merged.translations[''].keep.msgstr[0], 'KEEP')
-  })
-
-  it('removes mergeKey entries across all msgctxt buckets', () => {
+  it('replaces only the (msgctxt, msgid) pairs present in fresh, preserving same-msgid in other contexts', () => {
     const base = createPo('d', 'en', [
       makeTransEntry({ context: 'menu', key: 'File', messages: { other: 'M-File' } }),
       makeTransEntry({ context: 'menu', key: 'keep', messages: { other: 'M-keep' } }),
@@ -152,8 +141,21 @@ describe('mergePoTranslations', () => {
     const merged = mergePoTranslations(base, fresh, new Set(['File']))
     assert.equal(merged.translations.menu.File.msgstr[0], 'M-File-NEW')
     assert.equal(merged.translations.menu.keep.msgstr[0], 'M-keep')
-    // Other-context entry with same msgid is removed too (no fresh replacement).
-    assert.equal(merged.translations.toolbar?.File, undefined)
+    // Same msgid in an unrelated msgctxt is preserved — fresh did not replace (toolbar, File).
+    assert.equal(merged.translations.toolbar.File.msgstr[0], 'T-File')
+  })
+
+  it('preserves base entries whose pair is not in fresh, even when msgid happens to be in mergeKeys', () => {
+    // Pins the contract: the merge unit is (msgctxt, msgid). mergeKeys never causes
+    // deletions on its own — only fresh's contents drive replacements.
+    const base = createPo('d', 'en', [
+      makeTransEntry({ key: 'keep', messages: { other: 'KEEP' } }),
+      makeTransEntry({ key: 'gone', messages: { other: 'X' } }),
+    ])
+    const fresh = createPo('d', 'en', [])
+    const merged = mergePoTranslations(base, fresh, new Set(['gone']))
+    assert.equal(merged.translations[''].gone.msgstr[0], 'X')
+    assert.equal(merged.translations[''].keep.msgstr[0], 'KEEP')
   })
 
   it('preserves base headers and ignores fresh headers entry', () => {

@@ -41,19 +41,20 @@ export async function compileToAndroidXml(
   if (mergeKeys != null && mergeKeys.size === 0) {
     return
   }
+  const isMerge = mergeKeys != null
 
   const modules = config.getModules()
 
   if (modules.length > 0) {
     // Multi-module mode
-    await compileMultiModule(modules, config, transDir, mergeKeys)
+    await compileMultiModule(modules, config, transDir, isMerge)
   } else {
     // Single res-dir mode (backward compatibility)
-    await compileSingleResDir(config, transDir, mergeKeys)
+    await compileSingleResDir(config, transDir, isMerge)
   }
 }
 
-async function compileSingleResDir(config: CompilerConfig, transDir: string, mergeKeys?: Set<string>) {
+async function compileSingleResDir(config: CompilerConfig, transDir: string, isMerge: boolean) {
   const resDir = config.getResDir()
   const defaultLocale = config.getDefaultLocale()
   log.info('compile', `generating res files '${resDir}/values-{locale}/strings.xml'`)
@@ -73,12 +74,12 @@ async function compileSingleResDir(config: CompilerConfig, transDir: string, mer
     const locale = extractLocaleFromTransPath(transPath)
     if (locale === defaultLocale) {
       // The default locale's xml is the source itself; in merge mode, do not rewrite it.
-      if (mergeKeys != null) continue
+      if (isMerge) continue
       await writeXml(buildAndroidXml(builder, srcXmlJson), resDir, null)
     } else {
       const transEntries = await readTransEntries(transPath)
       const dstXml = await readXml(resDir, locale, '<?xml version="1.0" encoding="utf-8"?>\n<resources></resources>')
-      const newDstXml = await generateAndroidXml(locale, transEntries, srcXml, dstXml, { mergeKeys })
+      const newDstXml = await generateAndroidXml(locale, transEntries, srcXml, dstXml, { merge: isMerge })
       await writeXml(newDstXml, resDir, locale)
     }
   }
@@ -88,7 +89,7 @@ async function compileMultiModule(
   modules: string[],
   config: CompilerConfig,
   transDir: string,
-  mergeKeys?: Set<string>,
+  isMerge: boolean,
 ) {
   const defaultLocale = config.getDefaultLocale()
   const defaultModule = config.getDefaultModule()
@@ -124,14 +125,14 @@ async function compileMultiModule(
     for (const transPath of transPaths) {
       const locale = extractLocaleFromTransPath(transPath)
       if (locale === defaultLocale) {
-        if (mergeKeys != null) continue
+        if (isMerge) continue
         await writeXml(buildAndroidXml(builder, srcXmlJson), resDir, null)
       } else {
         const transEntries = await readTransEntries(transPath)
         // Filter entries for this module
         const moduleTransEntries = filterTransEntriesForModule(transEntries, module, defaultModule)
         const dstXml = await readXml(resDir, locale, '<?xml version="1.0" encoding="utf-8"?>\n<resources></resources>')
-        const newDstXml = await generateAndroidXml(locale, moduleTransEntries, srcXml, dstXml, { mergeKeys })
+        const newDstXml = await generateAndroidXml(locale, moduleTransEntries, srcXml, dstXml, { merge: isMerge })
         await writeXml(newDstXml, resDir, locale)
       }
     }
@@ -157,13 +158,13 @@ export function filterTransEntriesForModule(transEntries: TransEntry[], module: 
 
 export interface GenerateAndroidXmlOptions {
   /**
-   * When set, only string/plurals entries that resolve to a translation in `transEntries`
-   * are updated; all other entries are taken from `dstXml` as-is. The contents of the set
-   * itself are not consulted directly (PR-N membership is implicit in `transEntries`).
-   *
-   * The presence of this option flips compileSingleResDir/compileMultiModule into "merge mode".
+   * When true, the output is produced by patching `dstXml` in place: only the
+   * string/plurals entries that correspond to a `transEntry` are added/updated/removed,
+   * and every other entry in `dstXml` (including its order) is preserved as-is.
+   * When false (default), the output is rebuilt from `srcXml` as the authoritative
+   * structure — every entry of dstXml is replaced.
    */
-  mergeKeys?: Set<string>,
+  merge?: boolean,
 }
 
 export async function generateAndroidXml(
@@ -188,13 +189,23 @@ export async function generateAndroidXml(
     throw new Error('no resources tag')
   }
 
-  const trans = EntryCollection.loadEntries(transEntries)
-  const isMerge = options?.mergeKeys != null
-  const dstNodesByName = isMerge ? indexResourcesByName(dstResNode.resources as XMLNode[]) : null
+  if (options?.merge) {
+    return patchAndroidXmlMerge(transEntries, resNode, dstResNode, dstXmlJson, builder)
+  }
+  return rebuildAndroidXml(transEntries, resNode, dstResNode, dstXmlJson, builder)
+}
 
+function rebuildAndroidXml(
+  transEntries: TransEntry[],
+  srcResNode: XMLTagNode,
+  dstResNode: XMLTagNode,
+  dstXmlJson: ReturnType<typeof parseAndroidXml>,
+  builder: ReturnType<typeof getAndroidXmlBuilder>,
+): string {
+  const trans = EntryCollection.loadEntries(transEntries)
   const dstResources: XMLNode[] = []
   let passingText = false
-  for (const node of resNode.resources) {
+  for (const node of srcResNode.resources) {
     if (isTextNode(node)) {
       if (passingText) {
         passingText = false
@@ -204,7 +215,6 @@ export async function generateAndroidXml(
       continue
     }
 
-    // string 태그
     if (isTagNode(node, 'string')) {
       // translatable="false" 인 태그는 스킵
       const translatable = getAttrValue(node, 'translatable')
@@ -212,94 +222,49 @@ export async function generateAndroidXml(
         passingText = true
         continue
       }
-
-      // name attr 없는 태그는 문제가 있는 것인데, 일단 스킵
       const name = getAttrValue(node, 'name')
       if (name == null) {
         passingText = true
         continue
       }
-
-      // 번역이 없는 태그도 스킵 (merge 모드에선 dstXml에서 보존)
       const transEntry = trans.find(name, null)
       if (transEntry == null) {
-        if (preserveFromDst(name, dstNodesByName, 'string', dstResources)) {
-          continue
-        }
         passingText = true
         continue
       }
       const value = transEntry.messages.other
       if (!value) {
-        // PR-N key with no translation: drop from output (do not preserve from dst).
         passingText = true
         continue
       }
-
       const valueNode = createValueNode(node, node.string, value)
       dstResources.push({ ...node, string: [valueNode] })
     } else if (isTagNode(node, 'plurals')) {
-      // translatable="false" 인 태그는 스킵
       const translatable = getAttrValue(node, 'translatable')
       if (translatable == 'false') {
         passingText = true
         continue
       }
-
-      // name attr 없는 태그는 문제가 있는 것인데, 일단 스킵
       const name = getAttrValue(node, 'name')
       if (name == null) {
         passingText = true
         continue
       }
-
-      // 번역이 없는 태그도 스킵 (merge 모드에선 dstXml에서 보존)
       const transEntry = trans.find(name, null)
       if (transEntry == null) {
-        if (preserveFromDst(name, dstNodesByName, 'plurals', dstResources)) {
-          continue
-        }
         passingText = true
         continue
       }
-      const values = transEntry.messages
-      if (Object.keys(values).length == 0) {
-        // PR-N key with no translation: drop from output (do not preserve from dst).
+      if (Object.keys(transEntry.messages).length == 0) {
         passingText = true
         continue
       }
-
-      let plFirstTextNode: XMLTextNode | null = null
-      let plLastTextNode: XMLTextNode | null = null
-      const plurals = (node as XMLTagNode).plurals
-      if (isTextNode(plurals[0])) {
-        plFirstTextNode = plurals[0]
-      }
-      if (isTextNode(plurals[plurals.length - 1])) {
-        plLastTextNode = plurals[plurals.length - 1] as XMLTextNode
-      }
-
-      let itemNode = findFirstTagNode(plurals, 'item', { quantity: 'other' })
-      if (itemNode == null) {
-        itemNode = findFirstTagNode(plurals, 'item')
-      }
-      if (itemNode == null) {
+      const pluralsNode = buildPluralsNode(node, transEntry.messages)
+      if (pluralsNode == null) {
         passingText = true
         continue
       }
-
-      const dstPlurals: XMLNode[] = []
-      for (const [key, value] of Object.entries(transEntry.messages)) {
-        if (plFirstTextNode != null) {
-          dstPlurals.push({ ...plFirstTextNode })
-        }
-        const valueNode = createValueNode(itemNode, itemNode.item, value)
-        dstPlurals.push({ ...itemNode, 'item': [valueNode], ':@': { '@_quantity': key } })
-      }
-      if (plLastTextNode != null) {
-        dstPlurals.push({ ...plLastTextNode })
-      }
-      dstResources.push({ ...node, plurals: dstPlurals })
+      dstResources.push(pluralsNode)
     } else {
       dstResources.push(node)
     }
@@ -307,6 +272,85 @@ export async function generateAndroidXml(
 
   dstResNode.resources = dstResources
   return buildAndroidXml(builder, dstXmlJson)
+}
+
+function patchAndroidXmlMerge(
+  transEntries: TransEntry[],
+  srcResNode: XMLTagNode,
+  dstResNode: XMLTagNode,
+  dstXmlJson: ReturnType<typeof parseAndroidXml>,
+  builder: ReturnType<typeof getAndroidXmlBuilder>,
+): string {
+  const srcNodesByName = indexResourcesByName(srcResNode.resources as XMLNode[])
+  const dstResources = [...dstResNode.resources as XMLNode[]]
+
+  for (const transEntry of transEntries) {
+    const name = transEntry.context
+    if (name == null) continue
+
+    const srcNode = srcNodesByName.get(name)
+    if (srcNode == null) {
+      // PR-scope key not found in default values — drop it from dst as well.
+      removeFromResourcesByName(dstResources, name)
+      continue
+    }
+
+    if (isTagNode(srcNode, 'string')) {
+      const translatable = getAttrValue(srcNode, 'translatable')
+      if (translatable === 'false') continue
+      const value = transEntry.messages.other
+      if (!value) {
+        removeFromResourcesByName(dstResources, name)
+        continue
+      }
+      const newNode = { ...srcNode, string: [createValueNode(srcNode, srcNode.string, value)] }
+      replaceOrAppendByName(dstResources, name, newNode)
+    } else if (isTagNode(srcNode, 'plurals')) {
+      const translatable = getAttrValue(srcNode, 'translatable')
+      if (translatable === 'false') continue
+      if (Object.keys(transEntry.messages).length == 0) {
+        removeFromResourcesByName(dstResources, name)
+        continue
+      }
+      const pluralsNode = buildPluralsNode(srcNode, transEntry.messages)
+      if (pluralsNode == null) continue
+      replaceOrAppendByName(dstResources, name, pluralsNode)
+    }
+  }
+
+  dstResNode.resources = dstResources
+  return buildAndroidXml(builder, dstXmlJson)
+}
+
+function buildPluralsNode(srcNode: XMLTagNode, messages: TransEntry['messages']): XMLTagNode | null {
+  let plFirstTextNode: XMLTextNode | null = null
+  let plLastTextNode: XMLTextNode | null = null
+  const plurals = srcNode.plurals
+  if (isTextNode(plurals[0])) {
+    plFirstTextNode = plurals[0]
+  }
+  if (isTextNode(plurals[plurals.length - 1])) {
+    plLastTextNode = plurals[plurals.length - 1] as XMLTextNode
+  }
+
+  let itemNode = findFirstTagNode(plurals, 'item', { quantity: 'other' })
+  if (itemNode == null) {
+    itemNode = findFirstTagNode(plurals, 'item')
+  }
+  if (itemNode == null) return null
+
+  const dstPlurals: XMLNode[] = []
+  for (const [key, value] of Object.entries(messages)) {
+    if (plFirstTextNode != null) {
+      dstPlurals.push({ ...plFirstTextNode })
+    }
+    const valueNode = createValueNode(itemNode, itemNode.item, value)
+    dstPlurals.push({ ...itemNode, 'item': [valueNode], ':@': { '@_quantity': key } })
+  }
+  if (plLastTextNode != null) {
+    dstPlurals.push({ ...plLastTextNode })
+  }
+  return { ...srcNode, plurals: dstPlurals }
 }
 
 function indexResourcesByName(resources: XMLNode[]): Map<string, XMLTagNode> {
@@ -321,18 +365,35 @@ function indexResourcesByName(resources: XMLNode[]): Map<string, XMLTagNode> {
   return map
 }
 
-function preserveFromDst(
-  name: string,
-  dstNodesByName: Map<string, XMLTagNode> | null,
-  expectedTag: 'string' | 'plurals',
-  out: XMLNode[],
-): boolean {
-  if (dstNodesByName == null) return false
-  const existing = dstNodesByName.get(name)
-  if (existing == null) return false
-  if (!isTagNode(existing, expectedTag)) return false
-  out.push({ ...existing })
-  return true
+function findIndexByName(resources: XMLNode[], name: string): number {
+  for (let i = 0; i < resources.length; i++) {
+    const node = resources[i]
+    if (isTextNode(node)) continue
+    if (!isTagNode(node, 'string') && !isTagNode(node, 'plurals')) continue
+    if (getAttrValue(node, 'name') === name) return i
+  }
+  return -1
+}
+
+function replaceOrAppendByName(resources: XMLNode[], name: string, newNode: XMLTagNode): void {
+  const idx = findIndexByName(resources, name)
+  if (idx >= 0) {
+    resources[idx] = newNode
+    return
+  }
+  resources.push(newNode)
+}
+
+function removeFromResourcesByName(resources: XMLNode[], name: string): void {
+  const idx = findIndexByName(resources, name)
+  if (idx < 0) return
+  // Also drop the immediately preceding text node (typically indentation/newline)
+  // so we don't leave a dangling whitespace-only line where the entry was.
+  if (idx > 0 && isTextNode(resources[idx - 1])) {
+    resources.splice(idx - 1, 2)
+  } else {
+    resources.splice(idx, 1)
+  }
 }
 
 function createValueNode(node: XMLTagNode, children: XMLNode[], value: string) {

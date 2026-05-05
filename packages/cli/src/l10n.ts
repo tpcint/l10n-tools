@@ -422,19 +422,20 @@ async function run() {
       })
     })
 
-  type CompileOptions = {
+  type CompileCmdOptions = {
     source?: string,
   }
   program.command('_compile')
     .description('Write domain asset from translations (internal use only)')
     .option('--source <source>', 'compile only keys belonging to this source (l10n-storage only)')
-    .action(async (opts: CompileOptions, cmd: Command) => {
+    .action(async (opts: CompileCmdOptions, cmd: Command) => {
       await runSubCommand(cmd.name(), async (domainName, config, domainConfig) => {
         if (opts.source) {
           const snapshots = await fetchSourceSnapshots(cmd.name(), config, domainConfig, opts.source)
+          const mergeKeys = new Set(snapshots.map(s => s.keyName))
           const tempDir = await materializeSnapshotsToTempDir(domainName, snapshots, domainConfig.getLocales())
           try {
-            await compileAll(domainName, domainConfig, tempDir)
+            await compileAll(domainName, domainConfig, tempDir, { mergeKeys })
           } finally {
             await fsp.rm(tempDir, { recursive: true, force: true })
           }

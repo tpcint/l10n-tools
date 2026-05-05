@@ -1,5 +1,19 @@
 # Changelog
 
+## [7.6.0](https://github.com/tpcint/l10n-tools/compare/l10n-tools-v7.5.4...l10n-tools-v7.6.0) (2026-05-05)
+
+
+### Features
+
+* add --source filter to check and _compile ([#318](https://github.com/tpcint/l10n-tools/issues/318)) ([f273e76](https://github.com/tpcint/l10n-tools/commit/f273e7684458010dceb66b0af6e6c12f31f919bb))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * l10n-tools-core bumped from ^8.0.0 to ^8.1.0
+
 ## [7.5.4](https://github.com/tpcint/l10n-tools/compare/l10n-tools-v7.5.3...l10n-tools-v7.5.4) (2026-05-04)
 
 

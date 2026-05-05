@@ -4,31 +4,60 @@ import * as gettextParser from 'gettext-parser'
 import type { GetTextTranslation, GetTextTranslations } from 'gettext-parser'
 import fsp from 'node:fs/promises'
 import {
+  type CompileOptions,
   type CompilerConfig,
   extractLocaleFromTransPath,
   getPluralKeys,
+  isErrnoException,
   listTransPaths,
   readTransEntries,
   type TransEntry,
 } from 'l10n-tools-core'
 
-export async function compileToPoJson(domainName: string, config: CompilerConfig, transDir: string) {
+export async function compileToPoJson(
+  domainName: string,
+  config: CompilerConfig,
+  transDir: string,
+  options?: CompileOptions,
+) {
   const targetDir = config.getTargetDir()
+  const mergeKeys = options?.mergeKeys
+
+  if (mergeKeys != null && mergeKeys.size === 0) {
+    return
+  }
+
   log.info('compile', `generating json files to '${targetDir}/${domainName}/{locale}.json'`)
   await fsp.mkdir(targetDir, { recursive: true })
   const transPaths = await listTransPaths(transDir)
   for (const transPath of transPaths) {
     const locale = extractLocaleFromTransPath(transPath)
     const jsonPath = path.join(targetDir, locale + '.json')
-    const po = createPo(domainName, locale, await readTransEntries(transPath))
+    let po = createPo(domainName, locale, await readTransEntries(transPath))
+
+    if (mergeKeys != null) {
+      const base = await readPoJsonIfExists(jsonPath, domainName, locale)
+      po = mergePoTranslations(base, po, mergeKeys)
+    }
 
     await fsp.mkdir(targetDir, { recursive: true })
     await fsp.writeFile(jsonPath, JSON.stringify(po, null, 2))
   }
 }
 
-export async function compileToMo(domainName: string, config: CompilerConfig, transDir: string) {
+export async function compileToMo(
+  domainName: string,
+  config: CompilerConfig,
+  transDir: string,
+  options?: CompileOptions,
+) {
   const targetDir = config.getTargetDir()
+  const mergeKeys = options?.mergeKeys
+
+  if (mergeKeys != null && mergeKeys.size === 0) {
+    return
+  }
+
   log.info('compile', `generating mo files to '${targetDir}/{locale}/LC_MESSAGES/${domainName}.mo'`)
   await fsp.mkdir(targetDir, { recursive: true })
   const transPaths = await listTransPaths(transDir)
@@ -37,7 +66,11 @@ export async function compileToMo(domainName: string, config: CompilerConfig, tr
     const moDir = path.join(targetDir, locale, 'LC_MESSAGES')
     const moPath = path.join(moDir, domainName + '.mo')
 
-    const po = createPo(domainName, locale, await readTransEntries(transPath))
+    let po = createPo(domainName, locale, await readTransEntries(transPath))
+    if (mergeKeys != null) {
+      const base = await readMoIfExists(moPath, domainName, locale)
+      po = mergePoTranslations(base, po, mergeKeys)
+    }
     const output = gettextParser.mo.compile(po)
 
     await fsp.mkdir(moDir, { recursive: true })
@@ -88,4 +121,101 @@ export function createPoEntry(locale: string, transEntry: TransEntry): GetTextTr
       msgstr: msgstr,
     }
   }
+}
+
+/**
+ * Merge `fresh` PO (built from PR-N keys) into `base` PO. The merge unit is the
+ * `(msgctxt, msgid)` pair: any pair present in `fresh` replaces the corresponding pair
+ * in `base`, and every other base entry — including same-msgid entries that live under
+ * a different msgctxt — is preserved unchanged.
+ *
+ * `mergeKeys` is currently unused inside the merge but is kept on the signature for
+ * symmetry with other compilers and to enable future deletion semantics if needed.
+ *
+ * @internal exported for testing
+ */
+export function mergePoTranslations(
+  base: GetTextTranslations,
+  fresh: GetTextTranslations,
+  _mergeKeys: Set<string>,
+): GetTextTranslations {
+  // Start with a deep-ish clone of base translations (one level enough since
+  // each msgid maps to a fresh GetTextTranslation object reference we treat as immutable).
+  const merged: GetTextTranslations = {
+    ...base,
+    headers: { ...base.headers },
+    translations: {},
+  }
+  for (const [msgctxt, entries] of Object.entries(base.translations)) {
+    merged.translations[msgctxt] = { ...entries }
+  }
+
+  // Replace base's (msgctxt, msgid) with fresh's value for every pair fresh actually contains.
+  for (const [msgctxt, entries] of Object.entries(fresh.translations)) {
+    if (merged.translations[msgctxt] == null) {
+      merged.translations[msgctxt] = {}
+    }
+    for (const [msgid, entry] of Object.entries(entries)) {
+      // gettext-parser uses an empty-msgid entry under the empty msgctxt for headers.
+      // Always keep base headers; never let fresh's headers entry leak through.
+      if (msgctxt === '' && msgid === '') {
+        continue
+      }
+      merged.translations[msgctxt][msgid] = entry
+    }
+  }
+
+  // Ensure the empty-msgid header entry under '' exists (matches createPo output shape).
+  if (merged.translations[''] == null) {
+    merged.translations[''] = {}
+  }
+
+  return merged
+}
+
+async function readPoJsonIfExists(
+  jsonPath: string,
+  domainName: string,
+  locale: string,
+): Promise<GetTextTranslations> {
+  try {
+    const text = await fsp.readFile(jsonPath, { encoding: 'utf-8' })
+    const parsed = JSON.parse(text) as GetTextTranslations
+    if (parsed.translations == null) {
+      return emptyPo(domainName, locale)
+    }
+    if (parsed.headers == null) {
+      parsed.headers = emptyPo(domainName, locale).headers
+    }
+    return parsed
+  } catch (err) {
+    if (isErrnoException(err, 'ENOENT')) {
+      return emptyPo(domainName, locale)
+    }
+    throw err
+  }
+}
+
+async function readMoIfExists(
+  moPath: string,
+  domainName: string,
+  locale: string,
+): Promise<GetTextTranslations> {
+  try {
+    const buffer = await fsp.readFile(moPath)
+    const parsed = gettextParser.mo.parse(buffer) as GetTextTranslations
+    if (parsed?.translations == null) {
+      return emptyPo(domainName, locale)
+    }
+    return parsed
+  } catch (err) {
+    if (isErrnoException(err, 'ENOENT')) {
+      return emptyPo(domainName, locale)
+    }
+    throw err
+  }
+}
+
+function emptyPo(domainName: string, locale: string): GetTextTranslations {
+  return createPo(domainName, locale, [])
 }

@@ -193,4 +193,161 @@ describe('android compiler test', () => {
       assert.equal(newDstXml, targetXml)
     })
   })
+
+  describe('merge mode', () => {
+    it('updates only PR-N entry and preserves other entries from dstXml', async () => {
+      // PR-N has only 'drop'; src has both 'keep' and 'drop'.
+      const transEntries: TransEntry[] = [
+        { context: 'drop', key: 'Old', messages: { other: 'NEW' }, flag: null },
+      ]
+      const srcXml = `<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="keep">Keep</string>
+    <string name="drop">Old</string>
+</resources>`
+      const dstXml = `<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="keep">기존유지</string>
+    <string name="drop">기존낡음</string>
+</resources>`
+      const targetXml = `<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="keep">기존유지</string>
+    <string name="drop">NEW</string>
+</resources>`
+
+      const newDstXml = await generateAndroidXml('en', transEntries, srcXml, dstXml, { merge: true })
+      assert.equal(newDstXml, targetXml)
+    })
+
+    it('removes a PR-N entry from dst when its translation is empty', async () => {
+      const transEntries: TransEntry[] = [
+        { context: 'drop', key: 'Old', messages: {}, flag: null },
+      ]
+      const srcXml = `<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="keep">Keep</string>
+    <string name="drop">Old</string>
+</resources>`
+      const dstXml = `<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="keep">기존유지</string>
+    <string name="drop">기존낡음</string>
+</resources>`
+
+      const newDstXml = await generateAndroidXml('en', transEntries, srcXml, dstXml, { merge: true })
+      assert.match(newDstXml, /<string name="keep">기존유지<\/string>/)
+      assert.equal(/<string name="drop">/.test(newDstXml), false)
+    })
+
+    it('returns dst-only translations untouched when no PR-N keys belong to this xml', async () => {
+      const transEntries: TransEntry[] = []
+      const srcXml = `<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="keep">Keep</string>
+    <string name="other">Other</string>
+</resources>`
+      const dstXml = `<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="keep">기존유지</string>
+    <string name="other">기존다른</string>
+</resources>`
+      const targetXml = `<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="keep">기존유지</string>
+    <string name="other">기존다른</string>
+</resources>`
+
+      const newDstXml = await generateAndroidXml('en', transEntries, srcXml, dstXml, { merge: true })
+      assert.equal(newDstXml, targetXml)
+    })
+
+    it('adds a PR-N entry that does not yet exist in dst', async () => {
+      const transEntries: TransEntry[] = [
+        { context: 'newly_added', key: 'NewSrc', messages: { other: '신규' }, flag: null },
+      ]
+      const srcXml = `<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="keep">Keep</string>
+    <string name="newly_added">NewSrc</string>
+</resources>`
+      const dstXml = `<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="keep">기존유지</string>
+</resources>`
+
+      const newDstXml = await generateAndroidXml('en', transEntries, srcXml, dstXml, { merge: true })
+      assert.match(newDstXml, /<string name="keep">기존유지<\/string>/)
+      assert.match(newDstXml, /<string name="newly_added">신규<\/string>/)
+    })
+
+    it('updates a PR-N plurals entry and preserves other plurals from dst', async () => {
+      const transEntries: TransEntry[] = [
+        { context: 'item_plurals', key: '%d item', messages: { one: '%d 항목 NEW', other: '%d 항목들 NEW' }, flag: null },
+      ]
+      const srcXml = `<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <plurals name="item_plurals">
+        <item quantity="one">%d item</item>
+        <item quantity="other">%d items</item>
+    </plurals>
+    <plurals name="other_plurals">
+        <item quantity="one">%d other</item>
+        <item quantity="other">%d others</item>
+    </plurals>
+</resources>`
+      const dstXml = `<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <plurals name="item_plurals">
+        <item quantity="one">%d 항목 OLD</item>
+        <item quantity="other">%d 항목들 OLD</item>
+    </plurals>
+    <plurals name="other_plurals">
+        <item quantity="one">%d 다른 OLD</item>
+        <item quantity="other">%d 다른들 OLD</item>
+    </plurals>
+</resources>`
+      const newDstXml = await generateAndroidXml('en', transEntries, srcXml, dstXml, { merge: true })
+      // `item_plurals` updated to NEW values; `other_plurals` preserved as OLD.
+      assert.match(newDstXml, /%d 항목 NEW/)
+      assert.match(newDstXml, /%d 항목들 NEW/)
+      assert.match(newDstXml, /%d 다른 OLD/)
+      assert.match(newDstXml, /%d 다른들 OLD/)
+      // No leak of source default text.
+      assert.equal(/%d items?</.test(newDstXml), false)
+    })
+
+    it('preserves dst ordering and entries that do not exist in src', async () => {
+      // Regression for: merge mode used to rebuild from srcXml, which would reorder
+      // (and drop) any dst-only entries when src and dst diverged. dst-only entries
+      // and ordering must survive.
+      const transEntries: TransEntry[] = [
+        { context: 'b_key', key: 'B', messages: { other: 'B-NEW' }, flag: null },
+      ]
+      const srcXml = `<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="a_key">A</string>
+    <string name="b_key">B</string>
+</resources>`
+      // Note: dst orders b_key first, has c_key only (not in src), and lacks a_key entirely.
+      const dstXml = `<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="b_key">B-OLD</string>
+    <string name="c_key">C-OLD</string>
+</resources>`
+
+      const newDstXml = await generateAndroidXml('en', transEntries, srcXml, dstXml, { merge: true })
+
+      const bIdx = newDstXml.indexOf('name="b_key"')
+      const cIdx = newDstXml.indexOf('name="c_key"')
+      assert.notEqual(bIdx, -1)
+      assert.notEqual(cIdx, -1)
+      // dst ordering preserved: b_key still before c_key.
+      assert.ok(bIdx < cIdx, 'expected b_key to remain before c_key in merge output')
+      // b_key updated, c_key (dst-only) preserved, a_key (src-only without trans) absent.
+      assert.match(newDstXml, /<string name="b_key">B-NEW<\/string>/)
+      assert.match(newDstXml, /<string name="c_key">C-OLD<\/string>/)
+      assert.equal(newDstXml.includes('name="a_key"'), false)
+    })
+  })
 })

@@ -1,6 +1,11 @@
 import { describe, it } from 'node:test'
 import assert from 'node:assert/strict'
-import { generateStringsFile, transformIosPluralMessages } from './compiler.js'
+import fsp from 'node:fs/promises'
+import os from 'node:os'
+import path from 'node:path'
+import i18nStringsFiles from 'i18n-strings-files'
+import { CompilerConfig, type TransEntry, writeTransEntries } from 'l10n-tools-core'
+import { compileToIosStrings, generateStringsFile, shouldProcessKey, transformIosPluralMessages } from './compiler.js'
 
 describe('generateStringsFile', () => {
   it('emits a "msgid" = "msgstr"; pair for plain string values', () => {
@@ -66,5 +71,162 @@ describe('transformIosPluralMessages', () => {
       () => transformIosPluralMessages('ko', 'apple', { other: 'apples' }),
       /\[ko\] "other" of "apple"/,
     )
+  })
+})
+
+describe('shouldProcessKey', () => {
+  const transEntries: TransEntry[] = [
+    { context: 'NSCameraUsageDescription', key: 'Need camera', messages: { other: '카메라' }, flag: null },
+    { context: null, key: 'Hello', messages: { other: '안녕' }, flag: null },
+  ]
+
+  it('always processes keys when mergeKeys is undefined', () => {
+    assert.equal(shouldProcessKey('AnyKey', transEntries, undefined), true)
+  })
+
+  it('matches by context when entry has a context', () => {
+    assert.equal(shouldProcessKey('NSCameraUsageDescription', transEntries, new Set(['Need camera'])), true)
+  })
+
+  it('matches by key when entry has no context', () => {
+    assert.equal(shouldProcessKey('Hello', transEntries, new Set(['Hello'])), true)
+  })
+
+  it('returns false when no trans entry corresponds to the key', () => {
+    assert.equal(shouldProcessKey('UnrelatedKey', transEntries, new Set(['Need camera', 'Hello'])), false)
+  })
+})
+
+async function makeTempDir(prefix: string): Promise<string> {
+  return await fsp.mkdtemp(path.join(os.tmpdir(), prefix))
+}
+
+function makeIosConfig(srcDir: string): CompilerConfig {
+  return new CompilerConfig({ 'type': 'ios', 'src-dir': srcDir } as never)
+}
+
+async function writeTransFiles(dir: string, perLocale: { [locale: string]: TransEntry[] }): Promise<void> {
+  for (const [locale, entries] of Object.entries(perLocale)) {
+    await writeTransEntries(path.join(dir, `trans-${locale}.json`), entries)
+  }
+}
+
+describe('compileToIosStrings InfoPlist with mergeKeys', () => {
+  it('updates only PR-N InfoPlist entry, preserving others', async () => {
+    const dir = await makeTempDir('compile-ios-merge-')
+    try {
+      const srcDir = path.join(dir, 'src')
+      const transDir = path.join(dir, 'trans')
+      const lprojDir = path.join(srcDir, 'ko.lproj')
+      await fsp.mkdir(lprojDir, { recursive: true })
+      await fsp.mkdir(transDir)
+      const stringsPath = path.join(lprojDir, 'InfoPlist.strings')
+
+      // Base output: two keys translated.
+      await fsp.writeFile(stringsPath,
+        '\n"NSCameraUsageDescription" = "기존카메라";\n' +
+        '\n"NSMicrophoneUsageDescription" = "기존마이크";\n',
+        { encoding: 'utf-8' },
+      )
+
+      // PR-N has only NSCameraUsageDescription.
+      await writeTransFiles(transDir, {
+        ko: [{ context: 'NSCameraUsageDescription', key: 'Camera', messages: { other: '새카메라' }, flag: null }],
+      })
+
+      await compileToIosStrings('d', makeIosConfig(srcDir), transDir, {
+        mergeKeys: new Set(['Camera']),
+      })
+
+      const after = i18nStringsFiles.readFileSync(stringsPath, { encoding: 'utf-8', wantsComments: true })
+      assert.equal(after.NSCameraUsageDescription.text, '새카메라')
+      assert.equal(after.NSMicrophoneUsageDescription.text, '기존마이크')
+    } finally {
+      await fsp.rm(dir, { recursive: true, force: true })
+    }
+  })
+
+  it('removes a PR-N InfoPlist entry from base when its translation is empty', async () => {
+    const dir = await makeTempDir('compile-ios-merge-')
+    try {
+      const srcDir = path.join(dir, 'src')
+      const transDir = path.join(dir, 'trans')
+      const lprojDir = path.join(srcDir, 'ko.lproj')
+      await fsp.mkdir(lprojDir, { recursive: true })
+      await fsp.mkdir(transDir)
+      const stringsPath = path.join(lprojDir, 'InfoPlist.strings')
+
+      await fsp.writeFile(stringsPath,
+        '\n"NSCameraUsageDescription" = "기존카메라";\n' +
+        '\n"NSMicrophoneUsageDescription" = "기존마이크";\n',
+        { encoding: 'utf-8' },
+      )
+
+      await writeTransFiles(transDir, {
+        ko: [{ context: 'NSCameraUsageDescription', key: 'Camera', messages: {}, flag: null }],
+      })
+
+      await compileToIosStrings('d', makeIosConfig(srcDir), transDir, {
+        mergeKeys: new Set(['Camera']),
+      })
+
+      const after = i18nStringsFiles.readFileSync(stringsPath, { encoding: 'utf-8', wantsComments: true })
+      assert.equal(after.NSCameraUsageDescription, undefined)
+      assert.equal(after.NSMicrophoneUsageDescription.text, '기존마이크')
+    } finally {
+      await fsp.rm(dir, { recursive: true, force: true })
+    }
+  })
+
+  it('does not touch the InfoPlist when mergeKeys is empty', async () => {
+    const dir = await makeTempDir('compile-ios-merge-')
+    try {
+      const srcDir = path.join(dir, 'src')
+      const transDir = path.join(dir, 'trans')
+      const lprojDir = path.join(srcDir, 'ko.lproj')
+      await fsp.mkdir(lprojDir, { recursive: true })
+      await fsp.mkdir(transDir)
+      const stringsPath = path.join(lprojDir, 'InfoPlist.strings')
+
+      const original = '\n"NSCameraUsageDescription" = "기존카메라";\n'
+      await fsp.writeFile(stringsPath, original, { encoding: 'utf-8' })
+
+      await writeTransFiles(transDir, { ko: [] })
+
+      await compileToIosStrings('d', makeIosConfig(srcDir), transDir, {
+        mergeKeys: new Set(),
+      })
+
+      const after = await fsp.readFile(stringsPath, { encoding: 'utf-8' })
+      assert.equal(after, original)
+    } finally {
+      await fsp.rm(dir, { recursive: true, force: true })
+    }
+  })
+
+  it('writes only PR-N keys when the InfoPlist file does not exist yet', async () => {
+    const dir = await makeTempDir('compile-ios-merge-')
+    try {
+      const srcDir = path.join(dir, 'src')
+      const transDir = path.join(dir, 'trans')
+      const lprojDir = path.join(srcDir, 'ko.lproj')
+      await fsp.mkdir(lprojDir, { recursive: true })
+      await fsp.mkdir(transDir)
+      const stringsPath = path.join(lprojDir, 'InfoPlist.strings')
+      await fsp.writeFile(stringsPath, '', { encoding: 'utf-8' })
+
+      await writeTransFiles(transDir, {
+        ko: [{ context: 'NSCameraUsageDescription', key: 'Camera', messages: { other: '새카메라' }, flag: null }],
+      })
+
+      await compileToIosStrings('d', makeIosConfig(srcDir), transDir, {
+        mergeKeys: new Set(['Camera']),
+      })
+
+      const after = i18nStringsFiles.readFileSync(stringsPath, { encoding: 'utf-8', wantsComments: true })
+      assert.equal(after.NSCameraUsageDescription.text, '새카메라')
+    } finally {
+      await fsp.rm(dir, { recursive: true, force: true })
+    }
   })
 })

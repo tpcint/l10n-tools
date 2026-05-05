@@ -6,6 +6,7 @@ export type {
   ExtractorFunc,
   CompilerPlugin,
   CompilerFunc,
+  CompileOptions,
   SyncerPlugin,
   SyncerFunc,
   SyncerOptions,

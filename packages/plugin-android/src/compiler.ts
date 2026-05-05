@@ -131,6 +131,10 @@ async function compileMultiModule(
         const transEntries = await readTransEntries(transPath)
         // Filter entries for this module
         const moduleTransEntries = filterTransEntriesForModule(transEntries, module, defaultModule)
+        // In merge mode, skip module/locale combinations with no PR-scope entries —
+        // otherwise an empty fallback XML would be written to a missing locale file,
+        // creating a brand-new values-{locale}/strings.xml unrelated to the PR scope.
+        if (isMerge && moduleTransEntries.length === 0) continue
         const dstXml = await readXml(resDir, locale, '<?xml version="1.0" encoding="utf-8"?>\n<resources></resources>')
         const newDstXml = await generateAndroidXml(locale, moduleTransEntries, srcXml, dstXml, { merge: isMerge })
         await writeXml(newDstXml, resDir, locale)

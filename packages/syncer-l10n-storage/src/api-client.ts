@@ -62,6 +62,38 @@ export class L10nStorageApiClient {
     return allKeys
   }
 
+  async listKeysToServeByTag(
+    projectId: string,
+    tag: string,
+    source?: string,
+  ): Promise<L10nKeyToServe[]> {
+    const allKeys: L10nKeyToServe[] = []
+    let cursor: string | undefined
+    let previousCursor: string | undefined
+    const encodedTag = encodeURIComponent(tag)
+    do {
+      log.info(
+        'l10n-storage-api',
+        `listing keys (tag: ${tag}${source ? `, source: ${source}` : ''}${cursor ? `, cursor: ${cursor}` : ''})`,
+      )
+      const params = new URLSearchParams({ limit: '500' })
+      if (cursor) params.set('cursor', cursor)
+      if (source) params.set('source', source)
+      const response = await this.request<ListKeysToServeResponse>(
+        'GET',
+        `/api/l10n/projects/${projectId}/tags/${encodedTag}/keys-to-serve?${params}`,
+      )
+      allKeys.push(...response.keys)
+      previousCursor = cursor
+      cursor = response.nextCursor ?? undefined
+      if (cursor && cursor === previousCursor) {
+        throw new Error(`L10n Storage API pagination loop detected: cursor ${cursor} repeated`)
+      }
+      log.info('l10n-storage-api', `fetched ${response.keys.length} keys (total: ${allKeys.length})`)
+    } while (cursor)
+    return allKeys
+  }
+
   async createKeys(projectId: string, keys: CreateL10nKeyInput[]): Promise<void> {
     await this.request('POST', `/api/l10n/projects/${projectId}/keys`, { keys })
   }

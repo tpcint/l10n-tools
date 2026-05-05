@@ -1,5 +1,5 @@
 import type { CompilerConfig, DomainConfig, L10nConfig } from './config.js'
-import type { KeyEntry, TransEntry } from './entry.js'
+import type { KeyEntry, TransEntry, TransMessages } from './entry.js'
 
 /**
  * Extractor function signature
@@ -70,6 +70,32 @@ export type SyncerFunc = (
 ) => Promise<void>
 
 /**
+ * Snapshot of a key fetched from the sync target, used by source-filtering features
+ * (e.g., `check --source` and `_compile --source`). Locale codes are local-side
+ * (after applying any locale sync map).
+ */
+export interface SyncerKeySnapshot {
+  keyName: string,
+  isPlural: boolean,
+  /** Contexts the key is associated with under this tag. Always at least one entry. */
+  contexts: (string | null)[],
+  /** Translations keyed by local locale code. */
+  translations: { [locale: string]: TransMessages },
+}
+
+/**
+ * Optional capability: fetch keys narrowed by tag (and optionally source).
+ * Implemented by syncers whose backend supports source/tag-based filtering
+ * (currently l10n-storage).
+ */
+export type SyncerSourceFilterFunc = (
+  config: L10nConfig,
+  domainConfig: DomainConfig,
+  tag: string,
+  source: string | undefined,
+) => Promise<SyncerKeySnapshot[]>
+
+/**
  * Syncer plugin definition
  */
 export interface SyncerPlugin {
@@ -77,6 +103,8 @@ export interface SyncerPlugin {
   syncTarget: string,
   /** The syncer function */
   syncer: SyncerFunc,
+  /** Optional: fetch keys narrowed by (tag, source). */
+  sourceFilter?: SyncerSourceFilterFunc,
 }
 
 /**

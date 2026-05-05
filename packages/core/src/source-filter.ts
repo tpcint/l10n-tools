@@ -16,8 +16,10 @@ export async function materializeSnapshotsToTempDir(
   snapshots: SyncerKeySnapshot[],
   locales: string[],
 ): Promise<string> {
-  const tempDir = path.join(getTempDir(), `compile-source-${Date.now()}-${domainName}`)
-  await fsp.mkdir(tempDir, { recursive: true })
+  const safeDomain = domainName.replace(/[^a-zA-Z0-9._-]+/g, '_')
+  const baseDir = getTempDir()
+  await fsp.mkdir(baseDir, { recursive: true })
+  const tempDir = await fsp.mkdtemp(path.join(baseDir, `compile-source-${safeDomain}-`))
 
   for (const locale of locales) {
     const entries: TransEntry[] = []

@@ -204,6 +204,27 @@ describe('mergeJsonTrans', () => {
     const result = mergeJsonTrans(base, fresh, new Set(['item']), 'i18next')
     assert.deepEqual(result, { item_one: 'one', other_one: 'X' })
   })
+
+  it('does not let fresh keys outside mergeKeys overwrite base', () => {
+    // Defensive: fresh is normally produced from PR-scope trans only, but if an
+    // unrelated key ever leaks in, the merge must not propagate it.
+    const base = { keep: 'BASE' }
+    const fresh = { keep: 'LEAKED', drop: 'NEW' }
+    const result = mergeJsonTrans(base, fresh, new Set(['drop']))
+    assert.deepEqual(result, { keep: 'BASE', drop: 'NEW' })
+  })
+
+  it('does not let fresh i18next plural keys outside mergeKeys overwrite base', () => {
+    const base = { keep_one: 'BASE-one', keep_other: 'BASE-many' }
+    const fresh = { keep_one: 'LEAKED', drop_one: 'NEW-one', drop_other: 'NEW-many' }
+    const result = mergeJsonTrans(base, fresh, new Set(['drop']), 'i18next')
+    assert.deepEqual(result, {
+      keep_one: 'BASE-one',
+      keep_other: 'BASE-many',
+      drop_one: 'NEW-one',
+      drop_other: 'NEW-many',
+    })
+  })
 })
 
 describe('compileToJson with mergeKeys', () => {

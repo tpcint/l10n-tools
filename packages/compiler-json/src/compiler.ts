@@ -150,7 +150,11 @@ export function jsonKeyMatchesMergeKeys(
 
 /**
  * Merge `fresh` (output for PR-N keys only) into `base` (existing output) such that
- * keys in `mergeKeys` are taken from `fresh` and all other keys are preserved.
+ * only keys in `mergeKeys` are taken from `fresh` and all other keys are preserved.
+ *
+ * Both the deletion sweep on `base` and the assignment from `fresh` are gated by
+ * {@link jsonKeyMatchesMergeKeys}, so an unrelated key that happens to leak into
+ * `fresh` cannot overwrite `base` in merge mode.
  *
  * @internal exported for testing
  */
@@ -167,6 +171,9 @@ export function mergeJsonTrans(
     }
   }
   for (const [key, value] of Object.entries(fresh)) {
+    if (!jsonKeyMatchesMergeKeys(key, mergeKeys, pluralType)) {
+      continue
+    }
     result[key] = value
   }
   return result

@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.3.0](https://github.com/tpcint/l10n-tools/compare/l10n-tools-syncer-l10n-storage-v1.2.1...l10n-tools-syncer-l10n-storage-v1.3.0) (2026-05-05)
+
+
+### Features
+
+* add --source filter to check and _compile ([#318](https://github.com/tpcint/l10n-tools/issues/318)) ([f273e76](https://github.com/tpcint/l10n-tools/commit/f273e7684458010dceb66b0af6e6c12f31f919bb))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * peerDependencies
+    * l10n-tools-core bumped from ^8.0.0 to ^8.1.0
+
 ## [1.2.1](https://github.com/tpcint/l10n-tools/compare/l10n-tools-syncer-l10n-storage-v1.2.0...l10n-tools-syncer-l10n-storage-v1.2.1) (2026-05-04)
 
 

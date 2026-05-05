@@ -1,5 +1,12 @@
 # Changelog
 
+## [8.2.0](https://github.com/tpcint/l10n-tools/compare/l10n-tools-core-v8.1.0...l10n-tools-core-v8.2.0) (2026-05-05)
+
+
+### Features
+
+* **cli:** merge _compile --source output into existing files ([#321](https://github.com/tpcint/l10n-tools/issues/321)) ([5fb6685](https://github.com/tpcint/l10n-tools/commit/5fb668594d3abc7d86d31efa3c41944478beb73f))
+
 ## [8.1.0](https://github.com/tpcint/l10n-tools/compare/l10n-tools-core-v8.0.0...l10n-tools-core-v8.1.0) (2026-05-05)
 
 

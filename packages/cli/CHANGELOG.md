@@ -1,5 +1,13 @@
 # Changelog
 
+## [7.8.1](https://github.com/tpcint/l10n-tools/compare/l10n-tools-v7.8.0...l10n-tools-v7.8.1) (2026-05-06)
+
+
+### Bug Fixes
+
+* **cli:** drop conflicting -s short alias from internal _count/_remoteCount/_cat --spec ([#329](https://github.com/tpcint/l10n-tools/issues/329)) ([7629cd0](https://github.com/tpcint/l10n-tools/commit/7629cd0ab6482612e95ede6df23846b378a201a3))
+* **cli:** use snapshot-based merge for `sync --source` compile ([#331](https://github.com/tpcint/l10n-tools/issues/331)) ([ee389e6](https://github.com/tpcint/l10n-tools/commit/ee389e6084c534063ca17cf61387c9fb91e976e3))
+
 ## [7.8.0](https://github.com/tpcint/l10n-tools/compare/l10n-tools-v7.7.0...l10n-tools-v7.8.0) (2026-05-06)
 
 

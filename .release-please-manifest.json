@@ -1,6 +1,6 @@
 {
   "packages/core": "8.2.0",
-  "packages/cli": "7.8.0",
+  "packages/cli": "7.8.1",
   "packages/plugin-android": "7.5.0",
   "packages/plugin-ios": "7.3.0",
   "packages/extractor-javascript": "7.1.14",

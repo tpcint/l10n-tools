@@ -179,6 +179,51 @@ Options:
   -t, --tags <tags>                  Additional tags for keys (comma separated)
 ```
 
+## Internal commands
+
+These commands are prefixed with `_` and are intended for scripting / automation, not day-to-day use. Their flags and output are kept stable but their purpose is to be composed by other tooling.
+
+### `_remoteCount` — Count translations on the sync target
+
+Query the sync target directly and report translation counts per locale, without downloading translations into the local cache. Useful for verifying upload completeness or driving dashboards.
+
+```bash
+# Sum across all domains (locale union)
+l10n _remoteCount --source web
+
+# Specific domain
+l10n -d web _remoteCount --source web
+
+# Multiple domains → one line per domain
+l10n -d web,mobile _remoteCount --source web
+
+# Filter by spec
+l10n _remoteCount --source web -s untranslated
+l10n _remoteCount --source web -s translated,untranslated
+
+# Specific locales
+l10n _remoteCount --source web -l en,ko
+```
+
+Options:
+
+| Option | Description |
+|--------|-------------|
+| `--source <source>` | Source identifier to filter by. Omit to count all keys for the domain's tag. |
+| `-l, --locales <locales>` | Comma-separated locales (default: each domain's configured locales). |
+| `-s, --spec <spec>` | Comma-separated specs, `!` prefix to negate. Supported: `total` (default), `translated`, `untranslated`. |
+
+Output format:
+
+- One line per domain: `<domain>,<locale>:<count>,<locale>:<count>,...`
+- When `-d/--domains` is omitted, a single aggregate line is emitted with `*` as the domain name. Locales are the union of each domain's locales (insertion order); a locale's count is the sum across the domains that include it.
+
+Notes:
+
+- Requires a sync target that supports source listing (currently `l10n-storage`).
+- Counts are by `(context, key)` pair, matching `_count` semantics — a key with multiple contexts is counted per context.
+- The l10n-storage backend has no `unverified` flag, so `unverified` / `!unverified` specs always behave as if all entries are verified.
+
 ## Requirements
 
 - Node.js >= 22.19.0

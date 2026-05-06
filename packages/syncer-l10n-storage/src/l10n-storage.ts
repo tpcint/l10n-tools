@@ -8,7 +8,7 @@ import {
   type TransEntry,
   type TransMessages,
 } from 'l10n-tools-core'
-import { chunk, invert, isEqual } from 'es-toolkit/compat'
+import { chunk, isEqual } from 'es-toolkit/compat'
 import { L10nStorageApiClient } from './api-client.js'
 import type {
   CreateL10nKeyInput,
@@ -64,7 +64,6 @@ export async function syncTransToL10nStorage(
 
   const localeSyncMap = storageConfig.getLocaleSyncMap()
   if (localeSyncMap) assertBijectiveLocaleSyncMap(localeSyncMap)
-  const invertedSyncMap = localeSyncMap ? invert(localeSyncMap) : undefined
 
   const apiClient = new L10nStorageApiClient(url, token)
 
@@ -81,7 +80,7 @@ export async function syncTransToL10nStorage(
   )
 
   // 3. 서버 번역을 로컬에 반영
-  updateTransEntries(tag, allTransData, listedKeyMap, invertedSyncMap)
+  updateTransEntries(keyEntries, allTransData, listedKeyMap, localeSyncMap)
 
   // 4. l10n-storage에 업로드
   await uploadToL10nStorage(apiClient, projectId, creatingKeys, updatingKeys, skipUpload)
@@ -319,43 +318,48 @@ export function buildKeyChanges(
 
 // --- Download translations to local ---
 
-function updateTransEntries(
-  tag: string,
+/** @internal exported for testing */
+export function updateTransEntries(
+  keyEntries: KeyEntry[],
   allTransEntries: { [locale: string]: TransEntry[] },
   listedKeyMap: { [keyName: string]: L10nKeyToServe },
-  invertedSyncMap?: { [locale: string]: string },
+  localeSyncMap?: { [locale: string]: string },
 ) {
-  // keys-to-serve가 locale별 정책(serveSuggestions)을 이미 적용해 단일 translations로 내려주므로
-  // 클라이언트는 그대로 반영하기만 하면 된다. unverified flag는 더 이상 사용하지 않는다.
-  for (const [keyName, key] of Object.entries(listedKeyMap)) {
-    for (const tr of key.translations) {
-      const locale = invertedSyncMap?.[tr.locale] ?? tr.locale
-      if (allTransEntries[locale] == null) continue
+  // 로컬 keyEntries(소스의 한국어 원문 기준)를 순회하며, 같은 한국어 keyName을 가진 서버 키의
+  // 번역을 strings.xml(values-{locale}) 라인에 적용한다. 서버 데이터에 같은 named key가 여러
+  // keyName 항목 context에 동시에 등록된 부정합이 있어도, 로컬 소스의 한국어 원문이 매칭을
+  // 결정하므로 결과가 안정적이다. keys-to-serve는 이미 locale별 정책이 적용된 단일 translations만
+  // 내려주므로 클라이언트는 그대로 반영하기만 하면 된다. unverified flag는 더 이상 사용하지 않는다.
+  for (const [locale, transEntries] of Object.entries(allTransEntries)) {
+    const serverLocale = localeSyncMap?.[locale] ?? locale
+    const trans = EntryCollection.loadEntries(transEntries)
 
-      const trans = EntryCollection.loadEntries(allTransEntries[locale])
-      const contexts = [...getContextsFromMetadata(key.metadata, tag), null]
+    for (const keyEntry of keyEntries) {
+      const listedKey = listedKeyMap[keyEntry.key]
+      if (listedKey == null) continue
 
-      for (const keyContext of contexts) {
-        const transEntry = trans.find(keyContext, keyName)
-        if (!transEntry) continue
+      const tr = listedKey.translations.find(t => t.locale === serverLocale)
+      if (tr == null) continue
 
-        transEntry.flag = null
+      const transEntry = trans.find(keyEntry.context, keyEntry.key)
+      if (transEntry == null) continue
 
-        if (key.isPlural) {
-          const translations: Record<string, string> = {}
-          for (const [form, value] of Object.entries(tr.translation)) {
-            if (value) translations[form] = value
-          }
-          if (Object.keys(translations).length > 0 && !isEqual(transEntry.messages, translations)) {
-            log.verbose('updateTransEntries', `updating ${locale} value of ${keyName}`)
-            transEntry.messages = translations as TransMessages
-          }
-        } else {
-          const value = tr.translation.other
-          if (value && value !== transEntry.messages.other) {
-            log.verbose('updateTransEntries', `updating ${locale} value of ${keyName}`)
-            transEntry.messages = { other: value }
-          }
+      transEntry.flag = null
+
+      if (listedKey.isPlural) {
+        const translations: Record<string, string> = {}
+        for (const [form, value] of Object.entries(tr.translation)) {
+          if (value) translations[form] = value
+        }
+        if (Object.keys(translations).length > 0 && !isEqual(transEntry.messages, translations)) {
+          log.verbose('updateTransEntries', `updating ${locale} value of ${keyEntry.key}`)
+          transEntry.messages = translations as TransMessages
+        }
+      } else {
+        const value = tr.translation.other
+        if (value && value !== transEntry.messages.other) {
+          log.verbose('updateTransEntries', `updating ${locale} value of ${keyEntry.key}`)
+          transEntry.messages = { other: value }
         }
       }
     }

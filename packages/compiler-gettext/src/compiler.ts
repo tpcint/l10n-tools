@@ -41,7 +41,7 @@ export async function compileToPoJson(
     }
 
     await fsp.mkdir(targetDir, { recursive: true })
-    await fsp.writeFile(jsonPath, JSON.stringify(po, null, 2))
+    await fsp.writeFile(jsonPath, JSON.stringify(po, null, 2) + '\n')
   }
 }
 

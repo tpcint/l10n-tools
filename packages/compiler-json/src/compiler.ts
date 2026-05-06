@@ -44,7 +44,7 @@ export async function compileToJson(
       translations[locale] = fresh
     }
   }
-  await fsp.writeFile(targetPath, JSON.stringify(translations, null, 2))
+  await fsp.writeFile(targetPath, JSON.stringify(translations, null, 2) + '\n')
 }
 
 export type JsonPluralType = 'vue-i18n' | 'node-i18n' | 'i18next'
@@ -78,9 +78,9 @@ export function compileToJsonDir(pluralType?: JsonPluralType) {
         finalJson = mergeJsonTrans(base, fresh, mergeKeys, pluralType)
       }
       if (useLocaleKey) {
-        await fsp.writeFile(jsonPath, JSON.stringify({ [locale]: finalJson }, null, 2))
+        await fsp.writeFile(jsonPath, JSON.stringify({ [locale]: finalJson }, null, 2) + '\n')
       } else {
-        await fsp.writeFile(jsonPath, JSON.stringify(finalJson, null, 2))
+        await fsp.writeFile(jsonPath, JSON.stringify(finalJson, null, 2) + '\n')
       }
     }
   }

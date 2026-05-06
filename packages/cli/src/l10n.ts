@@ -357,7 +357,7 @@ async function run() {
     .description('Count translations (internal use only)')
     .option('--trans-dir [transDir]', 'directory to load translation files')
     .option('-l, --locales [locales]', 'locales to count (comma separated)')
-    .option('-s, --spec [spec]', 'spec to count (required, negate if starting with !, comma separated) supported: total,translated,untranslated,<flag>')
+    .option('--spec [spec]', 'spec to count (required, negate if starting with !, comma separated) supported: total,translated,untranslated,<flag>')
     .action(async (opts: CountOptions, cmd: Command) => {
       await runSubCommand(cmd.name(), async (domainName, config, domainConfig) => {
         const cacheDir = domainConfig.getCacheDir()
@@ -389,7 +389,7 @@ async function run() {
   program.command('_remoteCount')
     .description('Count remote translations from sync target (internal use only)')
     .option('-l, --locales [locales]', 'locales to count (comma separated)')
-    .option('-s, --spec [spec]', 'spec to count (required, negate if starting with !, comma separated) supported: total,translated,untranslated')
+    .option('--spec [spec]', 'spec to count (required, negate if starting with !, comma separated) supported: total,translated,untranslated')
     .option('--source <source>', 'source identifier to filter (l10n-storage); omit to count all keys for the tag')
     .action(async (opts: RemoteCountOptions, cmd: Command) => {
       const supportedSpecs = new Set(['total', 'translated', 'untranslated'])
@@ -460,7 +460,7 @@ async function run() {
     .description('Print translation entries (internal use only)')
     .option('--trans-dir [transDir]', 'directory to read translations')
     .option('-l, --locale [locale]', 'locale to print (required)')
-    .option('-s, --spec [spec]', 'spec to print (required, negate if starting with !, comma separated) supported: total,translated,untranslated,<flag>')
+    .option('--spec [spec]', 'spec to print (required, negate if starting with !, comma separated) supported: total,translated,untranslated,<flag>')
     .action(async (opts: CatOptions, cmd: Command) => {
       await runSubCommand(cmd.name(), async (domainName, config, domainConfig) => {
         if (!opts['locale']) {

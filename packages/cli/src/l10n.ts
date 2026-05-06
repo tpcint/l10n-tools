@@ -20,6 +20,7 @@ import {
   type SyncerKeySnapshot,
   type SyncerOptions,
   syncTransToTarget,
+  type TransEntry,
   updateTrans,
 } from 'l10n-tools-core'
 import * as path from 'path'
@@ -378,6 +379,69 @@ async function run() {
         }
         process.stdout.write(`${domainName},${counts.join(',')}\n`)
       })
+    })
+
+  type RemoteCountOptions = {
+    locales?: string,
+    spec?: string,
+    source?: string,
+  }
+  program.command('_remoteCount')
+    .description('Count remote translations from sync target (internal use only)')
+    .option('-l, --locales [locales]', 'locales to count (comma separated)')
+    .option('-s, --spec [spec]', 'spec to count (required, negate if starting with !, comma separated) supported: total,translated,untranslated')
+    .option('--source <source>', 'source identifier to filter (l10n-storage); omit to count all keys for the tag')
+    .action(async (opts: RemoteCountOptions, cmd: Command) => {
+      const isAggregate = !program.opts<ProgramOptions>()['domains']
+      const aggregate = new Map<string, number>()
+
+      await runSubCommand(cmd.name(), async (domainName, config, domainConfig) => {
+        const syncTarget = config.getSyncTarget()
+        const sourceFilter = pluginRegistry.getSourceFilter(syncTarget)
+        if (!sourceFilter) {
+          log.error(cmd.name(), `sync target '${syncTarget}' does not support remote listing`)
+          process.exit(1)
+        }
+
+        const tag = domainConfig.getTag()
+        const locales: string[] = opts['locales'] ? opts['locales'].split(',') : domainConfig.getLocales()
+        const specs = opts['spec'] ? opts['spec'].split(',') : ['total']
+
+        const snapshots = await sourceFilter(config, domainConfig, tag, opts.source)
+
+        const counts: string[] = []
+        for (const locale of locales) {
+          const useUnverified = config.useUnverified(locale)
+          let count = 0
+          for (const snapshot of snapshots) {
+            const messages = snapshot.translations[locale] ?? {}
+            for (const context of snapshot.contexts) {
+              const transEntry: TransEntry = {
+                context,
+                key: snapshot.keyName,
+                messages,
+                flag: null,
+              }
+              if (checkTransEntrySpecs(transEntry, specs, useUnverified)) {
+                count++
+              }
+            }
+          }
+          if (isAggregate) {
+            aggregate.set(locale, (aggregate.get(locale) ?? 0) + count)
+          } else {
+            counts.push(locale + ':' + count)
+          }
+        }
+        if (!isAggregate) {
+          process.stdout.write(`${domainName},${counts.join(',')}\n`)
+        }
+      })
+
+      if (isAggregate) {
+        const counts = [...aggregate.entries()].map(([l, c]) => `${l}:${c}`)
+        process.stdout.write(`*,${counts.join(',')}\n`)
+      }
     })
 
   type CatOptions = {

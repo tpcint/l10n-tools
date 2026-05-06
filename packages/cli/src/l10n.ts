@@ -392,6 +392,14 @@ async function run() {
     .option('-s, --spec [spec]', 'spec to count (required, negate if starting with !, comma separated) supported: total,translated,untranslated')
     .option('--source <source>', 'source identifier to filter (l10n-storage); omit to count all keys for the tag')
     .action(async (opts: RemoteCountOptions, cmd: Command) => {
+      const supportedSpecs = new Set(['total', 'translated', 'untranslated'])
+      const specs = opts['spec'] ? opts['spec'].split(',') : ['total']
+      const invalidSpecs = specs.filter(s => !supportedSpecs.has(s.startsWith('!') ? s.slice(1) : s))
+      if (invalidSpecs.length > 0) {
+        log.error(cmd.name(), `unsupported spec(s): ${invalidSpecs.join(',')}; supported: ${[...supportedSpecs].join(', ')}`)
+        process.exit(1)
+      }
+
       const isAggregate = !program.opts<ProgramOptions>()['domains']
       const aggregate = new Map<string, number>()
 
@@ -405,7 +413,6 @@ async function run() {
 
         const tag = domainConfig.getTag()
         const locales: string[] = opts['locales'] ? opts['locales'].split(',') : domainConfig.getLocales()
-        const specs = opts['spec'] ? opts['spec'].split(',') : ['total']
 
         const snapshots = await sourceFilter(config, domainConfig, tag, opts.source)
 

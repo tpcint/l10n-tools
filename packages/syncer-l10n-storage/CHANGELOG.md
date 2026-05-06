@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.2](https://github.com/tpcint/l10n-tools/compare/l10n-tools-syncer-l10n-storage-v1.3.1...l10n-tools-syncer-l10n-storage-v1.3.2) (2026-05-06)
+
+
+### Bug Fixes
+
+* **syncer-l10n-storage:** match server keys by local source text on download ([#324](https://github.com/tpcint/l10n-tools/issues/324)) ([efdd579](https://github.com/tpcint/l10n-tools/commit/efdd579587b20a3f19f7a04e3ed5d1d4195cd119))
+
 ## [1.3.1](https://github.com/tpcint/l10n-tools/compare/l10n-tools-syncer-l10n-storage-v1.3.0...l10n-tools-syncer-l10n-storage-v1.3.1) (2026-05-05)
 
 

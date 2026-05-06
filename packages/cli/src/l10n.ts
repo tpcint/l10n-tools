@@ -66,6 +66,28 @@ async function fetchSourceSnapshots(
 }
 
 /**
+ * Compile a source-scoped subset of keys into the existing target file(s) by merging
+ * the snapshot output on top of the current output. Used by both `sync --source` and
+ * `_compile --source` so the merge semantics stay identical between the two paths.
+ */
+async function compileFromSource(
+  cmdName: string,
+  config: L10nConfig,
+  domainConfig: DomainConfig,
+  domainName: string,
+  source: string,
+): Promise<void> {
+  const snapshots = await fetchSourceSnapshots(cmdName, config, domainConfig, source)
+  const mergeKeys = new Set(snapshots.map(s => s.keyName))
+  const tempDir = await materializeSnapshotsToTempDir(domainName, snapshots, domainConfig.getLocales())
+  try {
+    await compileAll(domainName, domainConfig, tempDir, { mergeKeys })
+  } finally {
+    await fsp.rm(tempDir, { recursive: true, force: true })
+  }
+}
+
+/**
  * Configure the CLI, register l10n commands and options, and parse process arguments.
  *
  * Sets up global options and commands (update, upload, sync, check and internal helpers),
@@ -202,7 +224,11 @@ async function run() {
         await syncTransToTarget(config, domainConfig, tag, keysPath, transDir, skipUpload, syncerOptions)
         await updateTrans(keysPath, transDir, transDir, locales, validationConfig)
 
-        await compileAll(domainName, domainConfig, transDir)
+        if (opts.source) {
+          await compileFromSource(cmd.name(), config, domainConfig, domainName, opts.source)
+        } else {
+          await compileAll(domainName, domainConfig, transDir)
+        }
       })
     })
 
@@ -502,14 +528,7 @@ async function run() {
     .action(async (opts: CompileCmdOptions, cmd: Command) => {
       await runSubCommand(cmd.name(), async (domainName, config, domainConfig) => {
         if (opts.source) {
-          const snapshots = await fetchSourceSnapshots(cmd.name(), config, domainConfig, opts.source)
-          const mergeKeys = new Set(snapshots.map(s => s.keyName))
-          const tempDir = await materializeSnapshotsToTempDir(domainName, snapshots, domainConfig.getLocales())
-          try {
-            await compileAll(domainName, domainConfig, tempDir, { mergeKeys })
-          } finally {
-            await fsp.rm(tempDir, { recursive: true, force: true })
-          }
+          await compileFromSource(cmd.name(), config, domainConfig, domainName, opts.source)
           return
         }
         const cacheDir = domainConfig.getCacheDir()

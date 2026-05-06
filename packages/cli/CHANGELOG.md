@@ -1,5 +1,12 @@
 # Changelog
 
+## [7.8.0](https://github.com/tpcint/l10n-tools/compare/l10n-tools-v7.7.0...l10n-tools-v7.8.0) (2026-05-06)
+
+
+### Features
+
+* **cli:** add _remoteCount internal command ([#326](https://github.com/tpcint/l10n-tools/issues/326)) ([1e60f08](https://github.com/tpcint/l10n-tools/commit/1e60f08ccf9814104c632b84b16c568e93071e2b))
+
 ## [7.7.0](https://github.com/tpcint/l10n-tools/compare/l10n-tools-v7.6.0...l10n-tools-v7.7.0) (2026-05-05)
 
 

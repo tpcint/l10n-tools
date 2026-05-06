@@ -390,6 +390,24 @@ describe('updateTransEntries', () => {
     assert.deepEqual(allTransEntries.en[0].messages, { one: 'one item', other: '%d items' })
   })
 
+  it('clears flag even when server value equals current value', () => {
+    const keyEntries = [createKeyEntry('공개 범위', { context: 'post_editor_access_config_title' })]
+    const listedKeyMap = {
+      '공개 범위': createL10nKey('공개 범위', {
+        translations: [
+          { locale: 'en', translation: { other: 'Media Access' } },
+        ],
+      }),
+    }
+    const allTransEntries = {
+      en: [createTransEntry('공개 범위', { other: 'Media Access' }, { context: 'post_editor_access_config_title', flag: 'unverified' })],
+    }
+
+    updateTransEntries(keyEntries, allTransEntries, listedKeyMap)
+
+    assert.equal(allTransEntries.en[0].flag, null)
+  })
+
   it('does not overwrite when server value equals current value', () => {
     const keyEntries = [createKeyEntry('공개 범위', { context: 'post_editor_access_config_title' })]
     const listedKeyMap = {

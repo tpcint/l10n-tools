@@ -1,5 +1,12 @@
 # Changelog
 
+## [7.2.0](https://github.com/tpcint/l10n-tools/compare/l10n-tools-compiler-json-v7.1.0...l10n-tools-compiler-json-v7.2.0) (2026-05-06)
+
+
+### Features
+
+* **compiler:** append trailing newline to JSON output files ([#332](https://github.com/tpcint/l10n-tools/issues/332)) ([d9073ff](https://github.com/tpcint/l10n-tools/commit/d9073ffb0dabef7d932f2a36227402faee2d2eee))
+
 ## [7.1.0](https://github.com/tpcint/l10n-tools/compare/l10n-tools-compiler-json-v7.0.11...l10n-tools-compiler-json-v7.1.0) (2026-05-05)
 
 

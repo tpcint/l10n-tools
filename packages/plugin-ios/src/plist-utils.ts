@@ -1,4 +1,4 @@
-import { type PlistValue } from 'plist'
+import type { PlistValue } from 'plist'
 
 export function isPlistDict(v: PlistValue): v is { [key: string]: PlistValue } {
   return v !== null

@@ -6,6 +6,7 @@ import i18nStringsFiles, { type CommentedI18nStringsMsg, type I18nStringsMsg } f
 import PQueue from 'p-queue'
 import os from 'os'
 import { build as buildPlist, parse as parsePlist } from 'plist'
+import { isPlistDict } from './plist-utils.js'
 import {
   type CompileOptions,
   type CompilerConfig,
@@ -225,8 +226,8 @@ async function readStringsIfExists(stringsPath: string): Promise<CommentedI18nSt
 async function readStringsDictIfExists(stringsDictPath: string): Promise<StringsDict> {
   try {
     const text = await fsp.readFile(stringsDictPath, { encoding: 'utf-8' })
-    const parsed = parsePlist(text) as unknown
-    if (parsed != null && typeof parsed === 'object') {
+    const parsed = parsePlist(text)
+    if (isPlistDict(parsed)) {
       return parsed as StringsDict
     }
     return {}

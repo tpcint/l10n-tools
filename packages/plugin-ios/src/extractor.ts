@@ -2,7 +2,8 @@ import log from 'npmlog'
 import fsp from 'node:fs/promises'
 import * as path from 'path'
 import i18nStringsFiles from 'i18n-strings-files'
-import { parse as parsePlist, type PlistValue } from 'plist'
+import { parse as parsePlist } from 'plist'
+import { isPlistDict } from './plist-utils.js'
 import { glob } from 'tinyglobby'
 import PQueue from 'p-queue'
 import os from 'os'
@@ -138,14 +139,6 @@ export async function extractIosKeys(domainName: string, config: DomainConfig, k
 
   await writeKeyEntries(keysPath, extractor.keys.toEntries())
   await fsp.rm(tempDir, { force: true, recursive: true })
-}
-
-function isPlistDict(v: PlistValue): v is { [key: string]: PlistValue } {
-  return v !== null
-    && typeof v === 'object'
-    && !Array.isArray(v)
-    && !(v instanceof Date)
-    && !(v instanceof Uint8Array)
 }
 
 async function getInfoPlistPath(srcDir: string) {

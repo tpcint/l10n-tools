@@ -225,8 +225,7 @@ async function readStringsIfExists(stringsPath: string): Promise<CommentedI18nSt
 
 async function readStringsDictIfExists(stringsDictPath: string): Promise<StringsDict> {
   try {
-    const text = await fsp.readFile(stringsDictPath, { encoding: 'utf-8' })
-    const parsed = parsePlist(text)
+    const parsed = parsePlist(new Uint8Array(await fsp.readFile(stringsDictPath)))
     if (isPlistDict(parsed)) {
       return parsed as StringsDict
     }

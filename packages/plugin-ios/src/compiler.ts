@@ -223,9 +223,12 @@ async function readStringsIfExists(stringsPath: string): Promise<CommentedI18nSt
   }
 }
 
-async function readStringsDictIfExists(stringsDictPath: string): Promise<StringsDict> {
+/**
+ * @internal exported for testing
+ */
+export async function readStringsDictIfExists(stringsDictPath: string): Promise<StringsDict> {
   try {
-    const parsed = parsePlist(new Uint8Array(await fsp.readFile(stringsDictPath)))
+    const parsed = parsePlist(await fsp.readFile(stringsDictPath, { encoding: 'utf-8' }))
     if (isPlistDict(parsed)) {
       return parsed as StringsDict
     }

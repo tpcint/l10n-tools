@@ -102,7 +102,7 @@ export async function extractIosKeys(domainName: string, config: DomainConfig, k
 
   log.info('extractKeys', 'extracting from info.plist')
   const infoPlistPath = await getInfoPlistPath(srcDir)
-  const infoPlist = parsePlist(new Uint8Array(await fsp.readFile(infoPlistPath)))
+  const infoPlist = parsePlist(await fsp.readFile(infoPlistPath, { encoding: 'utf-8' }))
   if (!isPlistDict(infoPlist)) {
     throw new Error(`Invalid Info.plist root: ${infoPlistPath}`)
   }

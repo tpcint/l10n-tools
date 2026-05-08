@@ -5,7 +5,14 @@ import os from 'node:os'
 import path from 'node:path'
 import i18nStringsFiles from 'i18n-strings-files'
 import { CompilerConfig, type TransEntry, writeTransEntries } from 'l10n-tools-core'
-import { compileToIosStrings, generateStringsFile, shouldProcessKey, transformIosPluralMessages } from './compiler.js'
+import { build as buildPlist } from 'plist'
+import {
+  compileToIosStrings,
+  generateStringsFile,
+  readStringsDictIfExists,
+  shouldProcessKey,
+  transformIosPluralMessages,
+} from './compiler.js'
 
 describe('generateStringsFile', () => {
   it('emits a "msgid" = "msgstr"; pair for plain string values', () => {
@@ -110,6 +117,55 @@ async function writeTransFiles(dir: string, perLocale: { [locale: string]: Trans
     await writeTransEntries(path.join(dir, `trans-${locale}.json`), entries)
   }
 }
+
+describe('readStringsDictIfExists', () => {
+  const sampleEntry = {
+    greeting: {
+      NSStringLocalizedFormatKey: '%#@format@',
+      format: {
+        NSStringFormatSpecTypeKey: 'NSStringPluralRuleType',
+        NSStringFormatValueTypeKey: 'li',
+        other: '%d 개',
+      },
+    },
+  }
+
+  it('parses an XML stringsdict file', async () => {
+    const dir = await makeTempDir('read-stringsdict-')
+    try {
+      const stringsDictPath = path.join(dir, 'Localizable.stringsdict')
+      await fsp.writeFile(stringsDictPath, buildPlist(sampleEntry), { encoding: 'utf-8' })
+
+      const result = await readStringsDictIfExists(stringsDictPath)
+      assert.deepEqual(result, sampleEntry)
+    } finally {
+      await fsp.rm(dir, { recursive: true, force: true })
+    }
+  })
+
+  it('returns an empty object when the file does not exist', async () => {
+    const dir = await makeTempDir('read-stringsdict-')
+    try {
+      const result = await readStringsDictIfExists(path.join(dir, 'missing.stringsdict'))
+      assert.deepEqual(result, {})
+    } finally {
+      await fsp.rm(dir, { recursive: true, force: true })
+    }
+  })
+
+  it('returns an empty object when the plist root is not a dict', async () => {
+    const dir = await makeTempDir('read-stringsdict-')
+    try {
+      const stringsDictPath = path.join(dir, 'Localizable.stringsdict')
+      await fsp.writeFile(stringsDictPath, buildPlist(['just', 'an', 'array']), { encoding: 'utf-8' })
+
+      const result = await readStringsDictIfExists(stringsDictPath)
+      assert.deepEqual(result, {})
+    } finally {
+      await fsp.rm(dir, { recursive: true, force: true })
+    }
+  })
+})
 
 describe('compileToIosStrings InfoPlist with mergeKeys', () => {
   it('updates only PR-N InfoPlist entry, preserving others', async () => {

@@ -2,7 +2,8 @@ import log from 'npmlog'
 import fsp from 'node:fs/promises'
 import * as path from 'path'
 import i18nStringsFiles from 'i18n-strings-files'
-import plist, { type PlistObject } from 'plist'
+import { parse as parsePlist } from 'plist'
+import { isPlistDict } from './plist-utils.js'
 import { glob } from 'tinyglobby'
 import PQueue from 'p-queue'
 import os from 'os'
@@ -101,10 +102,14 @@ export async function extractIosKeys(domainName: string, config: DomainConfig, k
 
   log.info('extractKeys', 'extracting from info.plist')
   const infoPlistPath = await getInfoPlistPath(srcDir)
-  const infoPlist = plist.parse(await fsp.readFile(infoPlistPath, { encoding: 'utf-8' })) as PlistObject
+  const infoPlist = parsePlist(await fsp.readFile(infoPlistPath, { encoding: 'utf-8' }))
+  if (!isPlistDict(infoPlist)) {
+    throw new Error(`Invalid Info.plist root: ${infoPlistPath}`)
+  }
   for (const key of infoPlistKeys) {
-    if (infoPlist[key] != null) {
-      extractor.addMessage({ filename: 'info.plist', line: key }, infoPlist[key] as string, { context: key })
+    const value = infoPlist[key]
+    if (typeof value === 'string') {
+      extractor.addMessage({ filename: 'info.plist', line: key }, value, { context: key })
     }
   }
 

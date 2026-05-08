@@ -5,7 +5,8 @@ import * as path from 'path'
 import i18nStringsFiles, { type CommentedI18nStringsMsg, type I18nStringsMsg } from 'i18n-strings-files'
 import PQueue from 'p-queue'
 import os from 'os'
-import plist from 'plist'
+import { build as buildPlist, parse as parsePlist } from 'plist'
+import { isPlistDict } from './plist-utils.js'
 import {
   type CompileOptions,
   type CompilerConfig,
@@ -136,7 +137,7 @@ export async function compileToIosStrings(
         }
 
         const output = generateStringsFile(strings)
-        const stringsDictOutput = plist.build(stringsDict)
+        const stringsDictOutput = buildPlist(stringsDict)
 
         await fsp.writeFile(stringsPath, output, { encoding: 'utf-8' })
         await fsp.writeFile(stringsDictPath, stringsDictOutput, { encoding: 'utf-8' })
@@ -222,11 +223,13 @@ async function readStringsIfExists(stringsPath: string): Promise<CommentedI18nSt
   }
 }
 
-async function readStringsDictIfExists(stringsDictPath: string): Promise<StringsDict> {
+/**
+ * @internal exported for testing
+ */
+export async function readStringsDictIfExists(stringsDictPath: string): Promise<StringsDict> {
   try {
-    const text = await fsp.readFile(stringsDictPath, { encoding: 'utf-8' })
-    const parsed = plist.parse(text) as unknown
-    if (parsed != null && typeof parsed === 'object') {
+    const parsed = parsePlist(await fsp.readFile(stringsDictPath, { encoding: 'utf-8' }))
+    if (isPlistDict(parsed)) {
       return parsed as StringsDict
     }
     return {}

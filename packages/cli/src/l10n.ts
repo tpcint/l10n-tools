@@ -1,5 +1,7 @@
 #!/usr/bin/env node
 
+import './dotenv-bootstrap.js'
+
 import { Command } from 'commander'
 import log from 'npmlog'
 import {

@@ -65,6 +65,8 @@ Create a `.l10nrc` file in your project root:
 }
 ```
 
+> The CLI automatically loads a `.env` file from the current working directory on startup if one exists. Existing environment variables take precedence, so values exported in your shell are not overridden.
+
 ### Domain Types
 
 | Type | Description |

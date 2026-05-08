@@ -5,7 +5,14 @@ import os from 'node:os'
 import path from 'node:path'
 import * as gettextParser from 'gettext-parser'
 import { CompilerConfig, type TransEntry, writeTransEntries } from 'l10n-tools-core'
-import { compileToMo, compileToPoJson, createPo, createPoEntry, mergePoTranslations } from './compiler.js'
+import {
+  compileToMo,
+  compileToPoJson,
+  createPo,
+  createPoEntry,
+  mergePoTranslations,
+  sortPoTranslations,
+} from './compiler.js'
 
 function makeTransEntry(overrides: Partial<TransEntry> = {}): TransEntry {
   return {
@@ -177,6 +184,204 @@ describe('mergePoTranslations', () => {
     ])
     mergePoTranslations(base, fresh, new Set(['drop']))
     assert.equal(base.translations[''].drop.msgstr[0], 'OLD')
+  })
+})
+
+describe('sortPoTranslations', () => {
+  it('keeps the empty msgctxt (header bucket) first and orders other msgctxts alphabetically', () => {
+    const po = createPo('d', 'en', [
+      makeTransEntry({ context: 'toolbar', key: 'a', messages: { other: 'A' } }),
+      makeTransEntry({ context: 'menu', key: 'b', messages: { other: 'B' } }),
+      makeTransEntry({ context: null, key: 'c', messages: { other: 'C' } }),
+    ])
+    const sorted = sortPoTranslations(po)
+    assert.deepEqual(Object.keys(sorted.translations), ['', 'menu', 'toolbar'])
+  })
+
+  it('orders msgids alphabetically within each msgctxt', () => {
+    const po = createPo('d', 'en', [
+      makeTransEntry({ context: null, key: 'banana', messages: { other: 'B' } }),
+      makeTransEntry({ context: null, key: 'apple', messages: { other: 'A' } }),
+      makeTransEntry({ context: 'menu', key: 'zebra', messages: { other: 'Z' } }),
+      makeTransEntry({ context: 'menu', key: 'aardvark', messages: { other: 'X' } }),
+    ])
+    const sorted = sortPoTranslations(po)
+    assert.deepEqual(Object.keys(sorted.translations['']), ['apple', 'banana'])
+    assert.deepEqual(Object.keys(sorted.translations['menu']), ['aardvark', 'zebra'])
+  })
+
+  it('handles po with only the empty msgctxt bucket (no headers entry yet)', () => {
+    // createPo lazily populates the header msgid '' under the empty msgctxt only when headers are emitted.
+    const po = createPo('d', 'en', [
+      makeTransEntry({ key: 'b', messages: { other: 'B' } }),
+      makeTransEntry({ key: 'a', messages: { other: 'A' } }),
+    ])
+    const sorted = sortPoTranslations(po)
+    assert.deepEqual(Object.keys(sorted.translations), [''])
+    assert.deepEqual(Object.keys(sorted.translations['']), ['a', 'b'])
+  })
+
+  it('preserves headers and entry values', () => {
+    const po = createPo('d', 'en', [
+      makeTransEntry({ key: 'b', messages: { other: 'B' } }),
+      makeTransEntry({ key: 'a', messages: { other: 'A' } }),
+    ])
+    const sorted = sortPoTranslations(po)
+    assert.equal(sorted.headers['Project-Id-Version'], 'd')
+    assert.equal(sorted.translations[''].a.msgstr[0], 'A')
+    assert.equal(sorted.translations[''].b.msgstr[0], 'B')
+  })
+
+  it('does not mutate the input po', () => {
+    const po = createPo('d', 'en', [
+      makeTransEntry({ context: 'toolbar', key: 'a', messages: { other: 'A' } }),
+      makeTransEntry({ context: 'menu', key: 'b', messages: { other: 'B' } }),
+    ])
+    const beforeOuter = Object.keys(po.translations)
+    sortPoTranslations(po)
+    assert.deepEqual(Object.keys(po.translations), beforeOuter)
+  })
+})
+
+describe('key order — compileToPoJson', () => {
+  it('writes msgctxts and msgids in alphabetical order in non-merge mode', async () => {
+    const dir = await makeTempDir('compile-pojson-order-')
+    try {
+      const targetDir = path.join(dir, 'out')
+      const transDir = path.join(dir, 'trans')
+      await fsp.mkdir(targetDir)
+      await fsp.mkdir(transDir)
+      await writeTransFiles(transDir, {
+        ko: [
+          makeTransEntry({ context: 'toolbar', key: 'a', messages: { other: 'TA' } }),
+          makeTransEntry({ context: null, key: 'banana', messages: { other: 'B' } }),
+          makeTransEntry({ context: 'menu', key: 'b', messages: { other: 'MB' } }),
+          makeTransEntry({ context: null, key: 'apple', messages: { other: 'A' } }),
+        ],
+      })
+
+      await compileToPoJson('d', makePoJsonConfig(targetDir), transDir)
+
+      const written = JSON.parse(await fsp.readFile(path.join(targetDir, 'ko.json'), 'utf-8'))
+      assert.deepEqual(Object.keys(written.translations), ['', 'menu', 'toolbar'])
+      assert.deepEqual(Object.keys(written.translations['']), ['apple', 'banana'])
+    } finally {
+      await fsp.rm(dir, { recursive: true, force: true })
+    }
+  })
+
+  it('produces the same key order in merge mode as in non-merge mode', async () => {
+    // Regression: sync --source previously preserved the base file's msgid order
+    // while `sync` produced compareEntry-sorted output, so the two paths could
+    // diverge over time. Both paths must now converge on alphabetical order.
+    const dir = await makeTempDir('compile-pojson-order-')
+    try {
+      const fullDir = path.join(dir, 'full')
+      const mergeDir = path.join(dir, 'merge')
+      const transDir = path.join(dir, 'trans')
+      await fsp.mkdir(fullDir)
+      await fsp.mkdir(mergeDir)
+      await fsp.mkdir(transDir)
+      await writeTransFiles(transDir, {
+        ko: [
+          makeTransEntry({ key: 'banana', messages: { other: 'B' } }),
+          makeTransEntry({ key: 'apple', messages: { other: 'A' } }),
+          makeTransEntry({ key: 'cherry', messages: { other: 'C' } }),
+        ],
+      })
+
+      await compileToPoJson('d', makePoJsonConfig(fullDir), transDir)
+
+      // Seed merge target with deliberately shuffled msgid order.
+      const baseShuffled = createPo('d', 'ko', [
+        makeTransEntry({ key: 'cherry', messages: { other: 'OLD-C' } }),
+        makeTransEntry({ key: 'banana', messages: { other: 'OLD-B' } }),
+        makeTransEntry({ key: 'apple', messages: { other: 'OLD-A' } }),
+      ])
+      await fsp.writeFile(path.join(mergeDir, 'ko.json'), JSON.stringify(baseShuffled, null, 2))
+      await compileToPoJson('d', makePoJsonConfig(mergeDir), transDir, {
+        mergeKeys: new Set(['apple', 'banana', 'cherry']),
+      })
+
+      const fullJson = JSON.parse(await fsp.readFile(path.join(fullDir, 'ko.json'), 'utf-8'))
+      const mergeJson = JSON.parse(await fsp.readFile(path.join(mergeDir, 'ko.json'), 'utf-8'))
+      assert.deepEqual(
+        Object.keys(mergeJson.translations['']),
+        Object.keys(fullJson.translations['']),
+      )
+      assert.deepEqual(
+        Object.keys(mergeJson.translations['']),
+        ['apple', 'banana', 'cherry'],
+      )
+    } finally {
+      await fsp.rm(dir, { recursive: true, force: true })
+    }
+  })
+})
+
+describe('key order — compileToMo', () => {
+  it('writes msgids in alphabetical order in non-merge mode', async () => {
+    const dir = await makeTempDir('compile-mo-order-')
+    try {
+      const targetDir = path.join(dir, 'out')
+      const transDir = path.join(dir, 'trans')
+      await fsp.mkdir(transDir)
+      await writeTransFiles(transDir, {
+        ko: [
+          makeTransEntry({ key: 'banana', messages: { other: 'B' } }),
+          makeTransEntry({ key: 'apple', messages: { other: 'A' } }),
+          makeTransEntry({ key: 'cherry', messages: { other: 'C' } }),
+        ],
+      })
+
+      await compileToMo('d', makeMoConfig(targetDir), transDir)
+
+      const buf = await fsp.readFile(path.join(targetDir, 'ko', 'LC_MESSAGES', 'd.mo'))
+      const parsed = gettextParser.mo.parse(buf)
+      const msgids = Object.keys(parsed.translations['']).filter(id => id !== '')
+      assert.deepEqual(msgids, ['apple', 'banana', 'cherry'])
+    } finally {
+      await fsp.rm(dir, { recursive: true, force: true })
+    }
+  })
+
+  it('produces the same .mo bytes whether compiled fresh or via merge from a shuffled base', async () => {
+    // End-to-end regression: with sortPoTranslations applied on both paths, the
+    // .mo output is byte-identical regardless of how the base file was ordered.
+    const dir = await makeTempDir('compile-mo-order-')
+    try {
+      const fullDir = path.join(dir, 'full')
+      const mergeDir = path.join(dir, 'merge')
+      const transDir = path.join(dir, 'trans')
+      await fsp.mkdir(transDir)
+      await writeTransFiles(transDir, {
+        ko: [
+          makeTransEntry({ key: 'banana', messages: { other: 'B' } }),
+          makeTransEntry({ key: 'apple', messages: { other: 'A' } }),
+        ],
+      })
+
+      await compileToMo('d', makeMoConfig(fullDir), transDir)
+
+      // Seed merge target with shuffled msgid order.
+      const moDir = path.join(mergeDir, 'ko', 'LC_MESSAGES')
+      await fsp.mkdir(moDir, { recursive: true })
+      const baseShuffled = createPo('d', 'ko', [
+        makeTransEntry({ key: 'banana', messages: { other: 'OLD-B' } }),
+        makeTransEntry({ key: 'apple', messages: { other: 'OLD-A' } }),
+      ])
+      await fsp.writeFile(path.join(moDir, 'd.mo'), gettextParser.mo.compile(baseShuffled))
+
+      await compileToMo('d', makeMoConfig(mergeDir), transDir, {
+        mergeKeys: new Set(['apple', 'banana']),
+      })
+
+      const fullBytes = await fsp.readFile(path.join(fullDir, 'ko', 'LC_MESSAGES', 'd.mo'))
+      const mergeBytes = await fsp.readFile(path.join(moDir, 'd.mo'))
+      assert.deepEqual(Buffer.from(mergeBytes), Buffer.from(fullBytes))
+    } finally {
+      await fsp.rm(dir, { recursive: true, force: true })
+    }
   })
 })
 

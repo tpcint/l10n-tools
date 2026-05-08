@@ -43,6 +43,7 @@ export async function compileToJson(
     } else {
       translations[locale] = fresh
     }
+    translations[locale] = sortJsonTrans(translations[locale])
   }
   await fsp.writeFile(targetPath, JSON.stringify(translations, null, 2) + '\n')
 }
@@ -77,6 +78,7 @@ export function compileToJsonDir(pluralType?: JsonPluralType) {
         const base = await readJsonDirBase(jsonPath, useLocaleKey, locale)
         finalJson = mergeJsonTrans(base, fresh, mergeKeys, pluralType)
       }
+      finalJson = sortJsonTrans(finalJson)
       if (useLocaleKey) {
         await fsp.writeFile(jsonPath, JSON.stringify({ [locale]: finalJson }, null, 2) + '\n')
       } else {
@@ -177,6 +179,21 @@ export function mergeJsonTrans(
     result[key] = value
   }
   return result
+}
+
+/**
+ * Returns a copy of `trans` with keys reinserted in alphabetical order so the
+ * compiled output is deterministic regardless of how merge mode shuffled the
+ * underlying object.
+ *
+ * @internal exported for testing
+ */
+export function sortJsonTrans(trans: JsonTrans): JsonTrans {
+  const sorted: JsonTrans = {}
+  for (const key of Object.keys(trans).sort()) {
+    sorted[key] = trans[key]
+  }
+  return sorted
 }
 
 async function readJsonIfExists(filePath: string): Promise<unknown | null> {

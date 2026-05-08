@@ -4,7 +4,14 @@ import fsp from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
 import { CompilerConfig, type TransEntry, writeTransEntries } from 'l10n-tools-core'
-import { buildJsonTrans, compileToJson, compileToJsonDir, jsonKeyMatchesMergeKeys, mergeJsonTrans } from './compiler.js'
+import {
+  buildJsonTrans,
+  compileToJson,
+  compileToJsonDir,
+  jsonKeyMatchesMergeKeys,
+  mergeJsonTrans,
+  sortJsonTrans,
+} from './compiler.js'
 
 function makeTransEntry(overrides: Partial<TransEntry> = {}): TransEntry {
   return {
@@ -224,6 +231,222 @@ describe('mergeJsonTrans', () => {
       drop_one: 'NEW-one',
       drop_other: 'NEW-many',
     })
+  })
+})
+
+describe('sortJsonTrans', () => {
+  it('reinserts keys in alphabetical order', () => {
+    const sorted = sortJsonTrans({ b: 'B', a: 'A', c: 'C' })
+    assert.deepEqual(Object.keys(sorted), ['a', 'b', 'c'])
+  })
+
+  it('preserves the value for each key', () => {
+    const sorted = sortJsonTrans({ b: 'B', a: 'A' })
+    assert.deepEqual(sorted, { a: 'A', b: 'B' })
+  })
+
+  it('does not mutate the input object', () => {
+    const input = { b: 'B', a: 'A' }
+    sortJsonTrans(input)
+    assert.deepEqual(Object.keys(input), ['b', 'a'])
+  })
+
+  it('handles object values (node-i18n shape)', () => {
+    const sorted = sortJsonTrans({ b: { other: 'B' }, a: { one: '1', other: 'A' } })
+    assert.deepEqual(Object.keys(sorted), ['a', 'b'])
+  })
+})
+
+describe('key order — compileToJson', () => {
+  it('writes keys in alphabetical order in non-merge mode', async () => {
+    const dir = await makeTempDir('compile-json-order-')
+    try {
+      const targetPath = path.join(dir, 'out.json')
+      const transDir = path.join(dir, 'trans')
+      await fsp.mkdir(transDir)
+      await writeTransFiles(transDir, {
+        ko: [
+          makeTransEntry({ key: 'banana', messages: { other: 'B' } }),
+          makeTransEntry({ key: 'apple', messages: { other: 'A' } }),
+          makeTransEntry({ key: 'cherry', messages: { other: 'C' } }),
+        ],
+      })
+
+      await compileToJson('d', makeJsonConfig(targetPath), transDir)
+
+      const written = JSON.parse(await fsp.readFile(targetPath, 'utf-8'))
+      assert.deepEqual(Object.keys(written.ko), ['apple', 'banana', 'cherry'])
+    } finally {
+      await fsp.rm(dir, { recursive: true, force: true })
+    }
+  })
+
+  it('produces the same key order in merge mode as in non-merge mode', async () => {
+    // Regression: `sync --source` (merge mode) used to leave merged keys at the
+    // end of the object, producing a different order than `sync` (non-merge).
+    // Both paths must converge on the same alphabetical key order.
+    const dir = await makeTempDir('compile-json-order-')
+    try {
+      const transDir = path.join(dir, 'trans')
+      await fsp.mkdir(transDir)
+      await writeTransFiles(transDir, {
+        ko: [
+          makeTransEntry({ key: 'banana', messages: { other: 'B' } }),
+          makeTransEntry({ key: 'apple', messages: { other: 'A' } }),
+          makeTransEntry({ key: 'cherry', messages: { other: 'C' } }),
+        ],
+      })
+
+      const fullPath = path.join(dir, 'full.json')
+      await compileToJson('d', makeJsonConfig(fullPath), transDir)
+
+      // Merge path: start with a base file whose keys are deliberately in a
+      // different (non-alphabetical) order, then merge in the same set.
+      const mergePath = path.join(dir, 'merge.json')
+      await fsp.writeFile(mergePath, JSON.stringify({
+        ko: { cherry: 'OLD-C', banana: 'OLD-B', apple: 'OLD-A' },
+      }, null, 2))
+      await compileToJson('d', makeJsonConfig(mergePath), transDir, {
+        mergeKeys: new Set(['apple', 'banana', 'cherry']),
+      })
+
+      const fullJson = JSON.parse(await fsp.readFile(fullPath, 'utf-8'))
+      const mergeJson = JSON.parse(await fsp.readFile(mergePath, 'utf-8'))
+      assert.deepEqual(Object.keys(mergeJson.ko), Object.keys(fullJson.ko))
+      assert.deepEqual(Object.keys(mergeJson.ko), ['apple', 'banana', 'cherry'])
+    } finally {
+      await fsp.rm(dir, { recursive: true, force: true })
+    }
+  })
+
+  it('sorts a partial merge so PR keys interleave with preserved base keys', async () => {
+    const dir = await makeTempDir('compile-json-order-')
+    try {
+      const targetPath = path.join(dir, 'out.json')
+      const transDir = path.join(dir, 'trans')
+      await fsp.mkdir(transDir)
+      await fsp.writeFile(targetPath, JSON.stringify({
+        ko: { cherry: 'C', apple: 'A' },
+      }, null, 2))
+      await writeTransFiles(transDir, {
+        ko: [makeTransEntry({ key: 'banana', messages: { other: 'B' } })],
+      })
+
+      await compileToJson('d', makeJsonConfig(targetPath), transDir, {
+        mergeKeys: new Set(['banana']),
+      })
+
+      const written = JSON.parse(await fsp.readFile(targetPath, 'utf-8'))
+      assert.deepEqual(Object.keys(written.ko), ['apple', 'banana', 'cherry'])
+    } finally {
+      await fsp.rm(dir, { recursive: true, force: true })
+    }
+  })
+})
+
+describe('key order — compileToJsonDir', () => {
+  it('writes keys in alphabetical order in non-merge mode', async () => {
+    const dir = await makeTempDir('compile-jsondir-order-')
+    try {
+      const targetDir = path.join(dir, 'out')
+      const transDir = path.join(dir, 'trans')
+      await fsp.mkdir(transDir)
+      await writeTransFiles(transDir, {
+        ko: [
+          makeTransEntry({ key: 'banana', messages: { other: 'B' } }),
+          makeTransEntry({ key: 'apple', messages: { other: 'A' } }),
+        ],
+      })
+
+      await compileToJsonDir()('d', makeJsonDirConfig(targetDir), transDir)
+
+      const written = JSON.parse(await fsp.readFile(path.join(targetDir, 'ko.json'), 'utf-8'))
+      assert.deepEqual(Object.keys(written), ['apple', 'banana'])
+    } finally {
+      await fsp.rm(dir, { recursive: true, force: true })
+    }
+  })
+
+  it('matches non-merge order in merge mode despite a shuffled base file', async () => {
+    const dir = await makeTempDir('compile-jsondir-order-')
+    try {
+      const fullDir = path.join(dir, 'full')
+      const mergeDir = path.join(dir, 'merge')
+      const transDir = path.join(dir, 'trans')
+      await fsp.mkdir(fullDir)
+      await fsp.mkdir(mergeDir)
+      await fsp.mkdir(transDir)
+      await writeTransFiles(transDir, {
+        ko: [
+          makeTransEntry({ key: 'banana', messages: { other: 'B' } }),
+          makeTransEntry({ key: 'apple', messages: { other: 'A' } }),
+        ],
+      })
+
+      await compileToJsonDir()('d', makeJsonDirConfig(fullDir), transDir)
+
+      await fsp.writeFile(path.join(mergeDir, 'ko.json'),
+        JSON.stringify({ banana: 'OLD-B', apple: 'OLD-A' }, null, 2))
+      await compileToJsonDir()('d', makeJsonDirConfig(mergeDir), transDir, {
+        mergeKeys: new Set(['apple', 'banana']),
+      })
+
+      const fullJson = JSON.parse(await fsp.readFile(path.join(fullDir, 'ko.json'), 'utf-8'))
+      const mergeJson = JSON.parse(await fsp.readFile(path.join(mergeDir, 'ko.json'), 'utf-8'))
+      assert.deepEqual(Object.keys(mergeJson), Object.keys(fullJson))
+      assert.deepEqual(Object.keys(mergeJson), ['apple', 'banana'])
+    } finally {
+      await fsp.rm(dir, { recursive: true, force: true })
+    }
+  })
+
+  it('sorts i18next plural-suffixed keys alphabetically alongside non-plural keys', async () => {
+    const dir = await makeTempDir('compile-jsondir-order-')
+    try {
+      const targetDir = path.join(dir, 'out')
+      const transDir = path.join(dir, 'trans')
+      await fsp.mkdir(transDir)
+      await writeTransFiles(transDir, {
+        en: [
+          makeTransEntry({ key: 'item', messages: { one: '1', other: 'many' } }),
+          makeTransEntry({ key: 'apple', messages: { other: 'A' } }),
+          makeTransEntry({ key: 'zebra', messages: { other: 'Z' } }),
+        ],
+      })
+
+      await compileToJsonDir('i18next')('d', new CompilerConfig({
+        'type': 'i18next',
+        'target-dir': targetDir,
+      } as never), transDir)
+
+      const written = JSON.parse(await fsp.readFile(path.join(targetDir, 'en.json'), 'utf-8'))
+      assert.deepEqual(Object.keys(written), ['apple', 'item_one', 'item_other', 'zebra'])
+    } finally {
+      await fsp.rm(dir, { recursive: true, force: true })
+    }
+  })
+
+  it('preserves the locale key wrapper when sorting', async () => {
+    const dir = await makeTempDir('compile-jsondir-order-')
+    try {
+      const targetDir = path.join(dir, 'out')
+      const transDir = path.join(dir, 'trans')
+      await fsp.mkdir(transDir)
+      await writeTransFiles(transDir, {
+        ko: [
+          makeTransEntry({ key: 'banana', messages: { other: 'B' } }),
+          makeTransEntry({ key: 'apple', messages: { other: 'A' } }),
+        ],
+      })
+
+      await compileToJsonDir()('d', makeJsonDirConfig(targetDir, true), transDir)
+
+      const written = JSON.parse(await fsp.readFile(path.join(targetDir, 'ko.json'), 'utf-8'))
+      assert.deepEqual(Object.keys(written), ['ko'])
+      assert.deepEqual(Object.keys(written.ko), ['apple', 'banana'])
+    } finally {
+      await fsp.rm(dir, { recursive: true, force: true })
+    }
   })
 })
 

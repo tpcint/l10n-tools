@@ -39,6 +39,7 @@ export async function compileToPoJson(
       const base = await readPoJsonIfExists(jsonPath, domainName, locale)
       po = mergePoTranslations(base, po, mergeKeys)
     }
+    po = sortPoTranslations(po)
 
     await fsp.mkdir(targetDir, { recursive: true })
     await fsp.writeFile(jsonPath, JSON.stringify(po, null, 2) + '\n')
@@ -71,6 +72,7 @@ export async function compileToMo(
       const base = await readMoIfExists(moPath, domainName, locale)
       po = mergePoTranslations(base, po, mergeKeys)
     }
+    po = sortPoTranslations(po)
     const output = gettextParser.mo.compile(po)
 
     await fsp.mkdir(moDir, { recursive: true })
@@ -171,6 +173,38 @@ export function mergePoTranslations(
   }
 
   return merged
+}
+
+/**
+ * Returns a copy of `po` with `translations` reinserted in a deterministic order:
+ * the empty msgctxt (header bucket) first, then remaining msgctxts alphabetically;
+ * within each msgctxt, msgids are reinserted in alphabetical order. This matches
+ * the order produced by a non-merge sync, where input trans entries are already
+ * sorted by `compareEntry` (context-null first, then context alphabetically; key
+ * alphabetically within each group).
+ *
+ * @internal exported for testing
+ */
+export function sortPoTranslations(po: GetTextTranslations): GetTextTranslations {
+  const sorted: GetTextTranslations['translations'] = {}
+  const msgctxts = Object.keys(po.translations)
+  if (msgctxts.includes('')) {
+    sorted[''] = sortMsgidEntries(po.translations[''])
+  }
+  for (const msgctxt of msgctxts.filter(c => c !== '').sort()) {
+    sorted[msgctxt] = sortMsgidEntries(po.translations[msgctxt])
+  }
+  return { ...po, translations: sorted }
+}
+
+function sortMsgidEntries(
+  entries: { [msgid: string]: GetTextTranslation },
+): { [msgid: string]: GetTextTranslation } {
+  const sorted: { [msgid: string]: GetTextTranslation } = {}
+  for (const msgid of Object.keys(entries).sort()) {
+    sorted[msgid] = entries[msgid]
+  }
+  return sorted
 }
 
 async function readPoJsonIfExists(

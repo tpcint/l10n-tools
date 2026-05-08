@@ -1,5 +1,12 @@
 # Changelog
 
+## [7.5.1](https://github.com/tpcint/l10n-tools/compare/l10n-tools-plugin-android-v7.5.0...l10n-tools-plugin-android-v7.5.1) (2026-05-08)
+
+
+### Miscellaneous Chores
+
+* **deps:** bump fast-xml-parser from 5.7.1 to 5.7.3 ([#336](https://github.com/tpcint/l10n-tools/issues/336)) ([9af70f9](https://github.com/tpcint/l10n-tools/commit/9af70f9916c03763cfe85acddf5c1a0e0f75d7ef))
+
 ## [7.5.0](https://github.com/tpcint/l10n-tools/compare/l10n-tools-plugin-android-v7.4.9...l10n-tools-plugin-android-v7.5.0) (2026-05-05)
 
 

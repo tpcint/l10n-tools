@@ -1,5 +1,12 @@
 # Changelog
 
+## [7.2.1](https://github.com/tpcint/l10n-tools/compare/l10n-tools-compiler-json-v7.2.0...l10n-tools-compiler-json-v7.2.1) (2026-05-08)
+
+
+### Bug Fixes
+
+* **compiler:** sort output keys to keep sync diffs stable ([#339](https://github.com/tpcint/l10n-tools/issues/339)) ([84e276a](https://github.com/tpcint/l10n-tools/commit/84e276ab20ec09222d9353e2f134598870ad3f2c))
+
 ## [7.2.0](https://github.com/tpcint/l10n-tools/compare/l10n-tools-compiler-json-v7.1.0...l10n-tools-compiler-json-v7.2.0) (2026-05-06)
 
 

@@ -1,5 +1,12 @@
 # Changelog
 
+## [7.9.0](https://github.com/tpcint/l10n-tools/compare/l10n-tools-v7.8.1...l10n-tools-v7.9.0) (2026-05-08)
+
+
+### Features
+
+* **cli:** auto-load .env from cwd at CLI startup ([#338](https://github.com/tpcint/l10n-tools/issues/338)) ([07318ee](https://github.com/tpcint/l10n-tools/commit/07318ee187b2a9049f3dc12af0ed057bbc773cc7))
+
 ## [7.8.1](https://github.com/tpcint/l10n-tools/compare/l10n-tools-v7.8.0...l10n-tools-v7.8.1) (2026-05-06)
 
 

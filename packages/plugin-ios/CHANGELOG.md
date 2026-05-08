@@ -1,5 +1,12 @@
 # Changelog
 
+## [7.3.1](https://github.com/tpcint/l10n-tools/compare/l10n-tools-plugin-ios-v7.3.0...l10n-tools-plugin-ios-v7.3.1) (2026-05-08)
+
+
+### Miscellaneous Chores
+
+* **deps:** bump plist from 3.1.0 to 5.0.0 ([#335](https://github.com/tpcint/l10n-tools/issues/335)) ([1c18d89](https://github.com/tpcint/l10n-tools/commit/1c18d8904bfb50c5f6f0ba397c3dd8e05cfc113e))
+
 ## [7.3.0](https://github.com/tpcint/l10n-tools/compare/l10n-tools-plugin-ios-v7.2.13...l10n-tools-plugin-ios-v7.3.0) (2026-05-05)
 
 

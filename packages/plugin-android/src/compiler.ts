@@ -385,7 +385,28 @@ function replaceOrAppendByName(resources: XMLNode[], name: string, newNode: XMLT
     resources[idx] = newNode
     return
   }
-  resources.push(newNode)
+  // Append: keep <resources> whitespace stable. Insert before any trailing whitespace
+  // text node (so </resources> stays on its own line), preceded by an inter-element
+  // whitespace node sampled from the existing children (so the new entry lines up
+  // with the surrounding indentation).
+  const indent = sampleInterElementWhitespace(resources) ?? '\n    '
+  const lastIdx = resources.length - 1
+  const last = lastIdx >= 0 ? resources[lastIdx] : null
+  if (last != null && isTextNode(last)) {
+    resources.splice(lastIdx, 0, createTextNode(indent), newNode)
+  } else {
+    resources.push(createTextNode(indent), newNode, createTextNode('\n'))
+  }
+}
+
+function sampleInterElementWhitespace(resources: XMLNode[]): string | null {
+  for (const node of resources) {
+    if (!isTextNode(node)) continue
+    // Look for an indentation pattern (newline followed by non-empty whitespace).
+    // Skip pure '\n' which is typical of the closing </resources> margin.
+    if (/^\n[ \t]+$/.test(node['#text'])) return node['#text']
+  }
+  return null
 }
 
 function removeFromResourcesByName(resources: XMLNode[], name: string): void {

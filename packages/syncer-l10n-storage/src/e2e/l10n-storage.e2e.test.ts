@@ -89,7 +89,7 @@ describe('syncTransToL10nStorage (e2e)', () => {
     assert.deepEqual(tagPair(bye), [{ tag: 'web', source: 'main' }])
   })
 
-  it('adds tag to existing key without duplicating', async () => {
+  it('claims (tag, source) when another source already owns the same tag', async () => {
     await seedKeys(projectId!, [{
       keyName: 'shared.key',
       tags: [{ tag: 'web', source: 'other' }],
@@ -101,10 +101,13 @@ describe('syncTransToL10nStorage (e2e)', () => {
     )
 
     const [k] = await apiClient.listAllKeysToServe(projectId!)
-    // 같은 tag가 다른 source로 이미 있으면 syncer는 태그를 또 붙이지 않는다.
-    assert.equal(k.tags.length, 1)
-    assert.equal(k.tags[0].tag, 'web')
-    assert.equal(k.tags[0].source, 'other')
+    // Per-source ownership: 'main' references the key locally so it claims its own
+    // (tag, source) tag alongside the existing one — otherwise the source filter for
+    // 'main' would not include this key.
+    const pairs = k.tags.map(t => ({ tag: t.tag, source: t.source }))
+    assert.equal(pairs.length, 2)
+    assert.ok(pairs.some(p => p.tag === 'web' && p.source === 'other'))
+    assert.ok(pairs.some(p => p.tag === 'web' && p.source === 'main'))
   })
 
   it('downloads server translations into local trans entries', async () => {

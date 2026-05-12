@@ -395,6 +395,54 @@ describe('buildKeyChanges', () => {
     assert.equal(updatingKeys.length, 0)
   })
 
+  it('Pass 2: clears stale references metadata when this sync produces no refs but server has stale ones', () => {
+    // 이전 sync에 file:loc가 남아 있고, 이번 sync의 entries에는 references가 없는 경우,
+    // 기존 메타가 그대로 남으면 stale `file:loc`가 계속 보존되므로 빈 array로 명시적 cleanup이 필요하다.
+    const keyEntries: KeyEntry[] = [
+      { ...createKeyEntry('취소', { context: 'a' }), references: [] },
+    ]
+    const listedKeyMap = {
+      취소: createL10nKey('취소', {
+        tags: [{ tag: 'android-likey', source: 'main' }],
+        metadata: [
+          { tag: 'android-likey', metaKey: 'context', metaValue: JSON.stringify(['a']) },
+          {
+            tag: 'android-likey',
+            metaKey: 'references',
+            metaValue: JSON.stringify([{ file: 'app/values/strings.xml', loc: '12' }]),
+          },
+        ],
+      }),
+    }
+
+    const { updatingKeys } = buildKeyChanges(
+      'main', 'android-likey', keyEntries, {}, listedKeyMap,
+    )
+
+    assert.equal(updatingKeys.length, 1)
+    const refsMeta = updatingKeys[0].setMetadata?.find(m => m.metaKey === 'references')
+    assert.ok(refsMeta != null)
+    assert.deepEqual(JSON.parse(refsMeta.metaValue), [])
+  })
+
+  it('Pass 2: does not touch references metadata when both this sync and server have no refs', () => {
+    const keyEntries: KeyEntry[] = [
+      { ...createKeyEntry('취소', { context: 'a' }), references: [] },
+    ]
+    const listedKeyMap = {
+      취소: createL10nKey('취소', {
+        tags: [{ tag: 'android-likey', source: 'main' }],
+        metadata: [{ tag: 'android-likey', metaKey: 'context', metaValue: JSON.stringify(['a']) }],
+      }),
+    }
+
+    const { updatingKeys } = buildKeyChanges(
+      'main', 'android-likey', keyEntries, {}, listedKeyMap,
+    )
+
+    assert.equal(updatingKeys.length, 0)
+  })
+
   it('Pass 2: accumulates contexts when same keyName appears with multiple contexts (new key)', () => {
     // 새 키 생성 분기에서도 같은 keyName의 여러 entry가 group으로 처리되어 모든 context가 들어가야 한다.
     const keyEntries = [

@@ -260,11 +260,13 @@ export function buildKeyChanges(
 
       // references는 group의 모든 entry refs를 합산해 매 sync 단위로 replace한다.
       // 이전 sync의 references는 base로 누적시키지 않는다(file:line이 stale일 수 있음).
+      // 이번 sync에서 refs가 0건이지만 서버에 기존 entry가 있으면, stale `file:loc`이 남지 않도록
+      // 빈 array("[]")로 명시적으로 replace한다.
       const mergedRefs = mergeReferences(entries.flatMap(e => e.references))
-      const refMeta = buildReferencesMetadata(tag, mergedRefs)
+      const mergedRefsValue = JSON.stringify(mergedRefs)
       const existingRefEntry = listedKey.metadata.find(m => m.tag === tag && m.metaKey === 'references')
-      const refsChanged = refMeta != null
-        && (existingRefEntry == null || existingRefEntry.metaValue !== refMeta.metaValue)
+      const refsChanged = (mergedRefs.length > 0 || existingRefEntry != null)
+        && (existingRefEntry == null || existingRefEntry.metaValue !== mergedRefsValue)
 
       const needsTagAdd = !hasTag(listedKey.tags, tag, source)
 
@@ -280,8 +282,8 @@ export function buildKeyChanges(
         for (const u of metaUpdates) {
           pushSetMetadata(updating, u)
         }
-        if (refsChanged && refMeta) {
-          pushSetMetadata(updating, refMeta)
+        if (refsChanged) {
+          pushSetMetadata(updating, { tag, metaKey: 'references', metaValue: mergedRefsValue })
         }
       }
     } else {

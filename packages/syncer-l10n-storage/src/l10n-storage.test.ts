@@ -275,6 +275,191 @@ describe('buildKeyChanges', () => {
     assert.equal(updatingKeys.length, 0)
   })
 
+  it('Pass 2: accumulates contexts when same keyName appears with multiple contexts (existing key)', () => {
+    // Android에서 동일 원문이 여러 <string name>에 쓰이는 흔한 패턴. 한 번의 sync에서 같은 keyName이
+    // 서로 다른 context로 여러 KeyEntry로 들어와도 setMetadata의 (tag, 'context') 엔트리가 서로를
+    // 덮어쓰지 않고 두 context가 모두 누적되어야 한다.
+    const keyEntries = [
+      createKeyEntry('취소', { context: 'a:cancel_button' }),
+      createKeyEntry('취소', { context: 'b:dialog_cancel' }),
+    ]
+    const listedKeyMap = {
+      취소: createL10nKey('취소', {
+        tags: [{ tag: 'android-likey', source: 'main' }],
+        metadata: [{ tag: 'android-likey', metaKey: 'context', metaValue: JSON.stringify(['legacy_ctx']) }],
+      }),
+    }
+
+    const { updatingKeys } = buildKeyChanges(
+      'main', 'android-likey', keyEntries, {}, listedKeyMap,
+    )
+
+    assert.equal(updatingKeys.length, 1)
+    const contextMeta = updatingKeys[0].setMetadata?.find(m => m.metaKey === 'context')
+    assert.ok(contextMeta != null)
+    assert.deepEqual(
+      JSON.parse(contextMeta.metaValue),
+      ['legacy_ctx', 'a:cancel_button', 'b:dialog_cancel'],
+    )
+  })
+
+  it('Pass 2: addTags pushes (tag, source) only once across multiple entries with same keyName', () => {
+    // 같은 keyName이 여러 context로 들어와도 addTags에 동일 (tag, source)가 여러 번 push되면 안 된다.
+    const keyEntries = [
+      createKeyEntry('취소', { context: 'a:one' }),
+      createKeyEntry('취소', { context: 'b:two' }),
+      createKeyEntry('취소', { context: 'c:three' }),
+    ]
+    const listedKeyMap = {
+      취소: createL10nKey('취소', {
+        tags: [{ tag: 'android-likey', source: 'main' }],
+      }),
+    }
+
+    const { updatingKeys } = buildKeyChanges(
+      'PR-77', 'android-likey', keyEntries, {}, listedKeyMap,
+    )
+
+    assert.equal(updatingKeys.length, 1)
+    assert.deepEqual(updatingKeys[0].addTags, [{ tag: 'android-likey', source: 'PR-77' }])
+  })
+
+  it('Pass 2: merges description comments across multiple entries with same keyName', () => {
+    const keyEntries: KeyEntry[] = [
+      { ...createKeyEntry('취소', { context: 'a' }), comments: ['Used on the cancel button'] },
+      { ...createKeyEntry('취소', { context: 'b' }), comments: ['Also used in confirmation dialog'] },
+    ]
+    const listedKeyMap = {
+      취소: createL10nKey('취소', {
+        tags: [{ tag: 'android-likey', source: 'main' }],
+        metadata: [{ tag: 'android-likey', metaKey: 'description', metaValue: 'Pre-existing note' }],
+      }),
+    }
+
+    const { updatingKeys } = buildKeyChanges(
+      'main', 'android-likey', keyEntries, {}, listedKeyMap,
+    )
+
+    assert.equal(updatingKeys.length, 1)
+    const descMeta = updatingKeys[0].setMetadata?.find(m => m.metaKey === 'description')
+    assert.ok(descMeta != null)
+    assert.equal(
+      descMeta.metaValue,
+      'Pre-existing note\nUsed on the cancel button\nAlso used in confirmation dialog',
+    )
+  })
+
+  it('Pass 2: merges references across multiple entries with same keyName into one setMetadata', () => {
+    const keyEntries: KeyEntry[] = [
+      { ...createKeyEntry('취소', { context: 'a' }), references: [{ file: 'app/values/strings.xml', loc: '12' }] },
+      { ...createKeyEntry('취소', { context: 'b' }), references: [{ file: 'lib/values/strings.xml', loc: '7' }] },
+    ]
+    const listedKeyMap = {
+      취소: createL10nKey('취소', {
+        tags: [{ tag: 'android-likey', source: 'main' }],
+      }),
+    }
+
+    const { updatingKeys } = buildKeyChanges(
+      'main', 'android-likey', keyEntries, {}, listedKeyMap,
+    )
+
+    assert.equal(updatingKeys.length, 1)
+    const refsMetaList = updatingKeys[0].setMetadata?.filter(m => m.metaKey === 'references') ?? []
+    assert.equal(refsMetaList.length, 1)
+    assert.deepEqual(JSON.parse(refsMetaList[0].metaValue), [
+      { file: 'app/values/strings.xml', loc: '12' },
+      { file: 'lib/values/strings.xml', loc: '7' },
+    ])
+  })
+
+  it('Pass 2: skips references setMetadata when value is unchanged', () => {
+    const sameRefs = [{ file: 'app/values/strings.xml', loc: '12' }]
+    const keyEntries: KeyEntry[] = [
+      { ...createKeyEntry('취소', { context: 'a' }), references: sameRefs },
+    ]
+    const listedKeyMap = {
+      취소: createL10nKey('취소', {
+        tags: [{ tag: 'android-likey', source: 'main' }],
+        metadata: [
+          { tag: 'android-likey', metaKey: 'context', metaValue: JSON.stringify(['a']) },
+          { tag: 'android-likey', metaKey: 'references', metaValue: JSON.stringify(sameRefs) },
+        ],
+      }),
+    }
+
+    const { updatingKeys } = buildKeyChanges(
+      'main', 'android-likey', keyEntries, {}, listedKeyMap,
+    )
+
+    assert.equal(updatingKeys.length, 0)
+  })
+
+  it('Pass 2: clears stale references metadata when this sync produces no refs but server has stale ones', () => {
+    // 이전 sync에 file:loc가 남아 있고, 이번 sync의 entries에는 references가 없는 경우,
+    // 기존 메타가 그대로 남으면 stale `file:loc`가 계속 보존되므로 빈 array로 명시적 cleanup이 필요하다.
+    const keyEntries: KeyEntry[] = [
+      { ...createKeyEntry('취소', { context: 'a' }), references: [] },
+    ]
+    const listedKeyMap = {
+      취소: createL10nKey('취소', {
+        tags: [{ tag: 'android-likey', source: 'main' }],
+        metadata: [
+          { tag: 'android-likey', metaKey: 'context', metaValue: JSON.stringify(['a']) },
+          {
+            tag: 'android-likey',
+            metaKey: 'references',
+            metaValue: JSON.stringify([{ file: 'app/values/strings.xml', loc: '12' }]),
+          },
+        ],
+      }),
+    }
+
+    const { updatingKeys } = buildKeyChanges(
+      'main', 'android-likey', keyEntries, {}, listedKeyMap,
+    )
+
+    assert.equal(updatingKeys.length, 1)
+    const refsMeta = updatingKeys[0].setMetadata?.find(m => m.metaKey === 'references')
+    assert.ok(refsMeta != null)
+    assert.deepEqual(JSON.parse(refsMeta.metaValue), [])
+  })
+
+  it('Pass 2: does not touch references metadata when both this sync and server have no refs', () => {
+    const keyEntries: KeyEntry[] = [
+      { ...createKeyEntry('취소', { context: 'a' }), references: [] },
+    ]
+    const listedKeyMap = {
+      취소: createL10nKey('취소', {
+        tags: [{ tag: 'android-likey', source: 'main' }],
+        metadata: [{ tag: 'android-likey', metaKey: 'context', metaValue: JSON.stringify(['a']) }],
+      }),
+    }
+
+    const { updatingKeys } = buildKeyChanges(
+      'main', 'android-likey', keyEntries, {}, listedKeyMap,
+    )
+
+    assert.equal(updatingKeys.length, 0)
+  })
+
+  it('Pass 2: accumulates contexts when same keyName appears with multiple contexts (new key)', () => {
+    // 새 키 생성 분기에서도 같은 keyName의 여러 entry가 group으로 처리되어 모든 context가 들어가야 한다.
+    const keyEntries = [
+      createKeyEntry('취소', { context: 'a:one' }),
+      createKeyEntry('취소', { context: 'b:two' }),
+    ]
+
+    const { creatingKeys } = buildKeyChanges(
+      'main', 'android-likey', keyEntries, {}, {},
+    )
+
+    assert.equal(creatingKeys.length, 1)
+    const contextMeta = creatingKeys[0].metadata?.find(m => m.metaKey === 'context')
+    assert.ok(contextMeta != null)
+    assert.deepEqual(JSON.parse(contextMeta.metaValue), ['a:one', 'b:two'])
+  })
+
   it('Pass 1: should be skipped for non-authoritative source (add-only)', () => {
     // A PR source claimed the key on a previous sync. On a later PR sync where the PR's
     // local no longer references one of the contexts, Pass 1 must NOT strip it: contexts

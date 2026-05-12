@@ -92,10 +92,6 @@ function hasTag(tags: L10nKeyTag[], tag: string, source: string): boolean {
   return tags.some(t => t.tag === tag && t.source === source)
 }
 
-function hasTagName(tags: L10nKeyTag[], tag: string): boolean {
-  return tags.some(t => t.tag === tag)
-}
-
 function hasTranslation(key: L10nKeyToServe, locale: string): boolean {
   return key.translations.some(t => t.locale === locale)
 }
@@ -213,7 +209,7 @@ export function buildKeyChanges(
     const listedKey = listedKeyMap[entryKey]
 
     if (listedKey != null) {
-      const needsTagAdd = !hasTagName(listedKey.tags, tag)
+      const needsTagAdd = !hasTag(listedKey.tags, tag, source)
       const needsContextUpdate = !metadataContainsContext(listedKey.metadata, tag, keyEntry.context)
       const needsDescriptionUpdate = !metadataContainsDescription(listedKey.metadata, tag, keyEntry.comments)
 

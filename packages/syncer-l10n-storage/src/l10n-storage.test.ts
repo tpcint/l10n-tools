@@ -53,11 +53,31 @@ describe('buildKeyChanges', () => {
     assert.deepEqual(creatingKeys[0].tags, [{ tag: 'backend', source: 'main' }])
   })
 
-  it('should not add tag when key already has the tag with any source', () => {
+  it('should add tag when key has the tag with another source (per-source tagging)', () => {
+    // A PR referencing a key that main already owns must still claim its own
+    // (tag, source) ownership; otherwise the source filter cannot return the key
+    // back to this PR's apply step.
     const keyEntries = [createKeyEntry('existing.key')]
     const listedKeyMap = {
       'existing.key': createL10nKey('existing.key', {
         tags: [{ tag: 'backend', source: 'main' }],
+      }),
+    }
+
+    const { creatingKeys, updatingKeys } = buildKeyChanges(
+      'PR-123', 'backend', keyEntries, {}, listedKeyMap,
+    )
+
+    assert.equal(creatingKeys.length, 0)
+    assert.equal(updatingKeys.length, 1)
+    assert.deepEqual(updatingKeys[0].addTags, [{ tag: 'backend', source: 'PR-123' }])
+  })
+
+  it('should not add tag when key already has the tag with the same source', () => {
+    const keyEntries = [createKeyEntry('existing.key')]
+    const listedKeyMap = {
+      'existing.key': createL10nKey('existing.key', {
+        tags: [{ tag: 'backend', source: 'PR-123' }],
       }),
     }
 
@@ -84,6 +104,33 @@ describe('buildKeyChanges', () => {
     assert.equal(creatingKeys.length, 0)
     assert.equal(updatingKeys.length, 1)
     assert.deepEqual(updatingKeys[0].addTags, [{ tag: 'backend', source: 'main' }])
+  })
+
+  it('should add (tag, source) when a new context is added to an existing keyName', () => {
+    // Regression: a PR that adds a new Android `name` reusing existing translation
+    // text must tag the server key with (tag, source) so that the PR's source
+    // filter can include the key for compile-from-source. Previously only the
+    // context metadata was updated, leaving the source filter blind to this key.
+    const keyEntries = [
+      createKeyEntry('취소', { context: 'prsnt_membership_coupon_issue_cancel' }),
+    ]
+    const listedKeyMap = {
+      취소: createL10nKey('취소', {
+        tags: [{ tag: 'android-likey', source: 'main' }],
+        metadata: [{ tag: 'android-likey', metaKey: 'context', metaValue: JSON.stringify(['cancel']) }],
+      }),
+    }
+
+    const { creatingKeys, updatingKeys } = buildKeyChanges(
+      'PR-99', 'android-likey', keyEntries, {}, listedKeyMap,
+    )
+
+    assert.equal(creatingKeys.length, 0)
+    assert.equal(updatingKeys.length, 1)
+    assert.deepEqual(updatingKeys[0].addTags, [{ tag: 'android-likey', source: 'PR-99' }])
+    const contextMeta = updatingKeys[0].setMetadata?.find(m => m.metaKey === 'context')
+    assert.ok(contextMeta != null)
+    assert.deepEqual(JSON.parse(contextMeta.metaValue), ['cancel', 'prsnt_membership_coupon_issue_cancel'])
   })
 
   it('should attach suggestions for new keys with translations', () => {
@@ -223,6 +270,30 @@ describe('buildKeyChanges', () => {
 
     const { updatingKeys } = buildKeyChanges(
       'main', 'backend', keyEntries, {}, listedKeyMap,
+    )
+
+    assert.equal(updatingKeys.length, 0)
+  })
+
+  it('Pass 1: should be skipped for non-authoritative source (add-only)', () => {
+    // A PR source claimed the key on a previous sync. On a later PR sync where the PR's
+    // local no longer references one of the contexts, Pass 1 must NOT strip it: contexts
+    // are shared across sources via tag-level metadata, so the PR could otherwise remove
+    // a context that 'main' still uses. Only the authoritative source may clean up.
+    const keyEntries: KeyEntry[] = []
+    const listedKeyMap = {
+      'shared.key': createL10nKey('shared.key', {
+        id: 'key-1',
+        tags: [
+          { tag: 'backend', source: 'main' },
+          { tag: 'backend', source: 'PR-7' },
+        ],
+        metadata: [{ tag: 'backend', metaKey: 'context', metaValue: '["main_ctx", "pr_ctx"]' }],
+      }),
+    }
+
+    const { updatingKeys } = buildKeyChanges(
+      'PR-7', 'backend', keyEntries, {}, listedKeyMap, undefined, undefined, /* isAuthoritativeSource */ false,
     )
 
     assert.equal(updatingKeys.length, 0)

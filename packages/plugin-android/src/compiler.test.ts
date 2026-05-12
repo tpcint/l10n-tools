@@ -281,6 +281,55 @@ describe('android compiler test', () => {
       assert.match(newDstXml, /<string name="newly_added">신규<\/string>/)
     })
 
+    it('appends a new entry with the surrounding indentation and keeps </resources> on its own line', async () => {
+      // Regression: previously the append path simply pushed the new node, so
+      // </string><string>…</string></resources> ran together on a single line.
+      const transEntries: TransEntry[] = [
+        { context: 'cancel', key: '취소', messages: { other: 'Cancel' }, flag: null },
+        { context: 'prsnt_membership_coupon_issue_cancel', key: '취소', messages: { other: 'Cancel' }, flag: null },
+      ]
+      const srcXml = `<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="cancel">취소</string>
+    <string name="prsnt_membership_coupon_issue_cancel">취소</string>
+</resources>`
+      const dstXml = `<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="cancel">Cancel</string>
+</resources>`
+
+      const expected = `<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="cancel">Cancel</string>
+    <string name="prsnt_membership_coupon_issue_cancel">Cancel</string>
+</resources>`
+
+      const newDstXml = await generateAndroidXml('en', transEntries, srcXml, dstXml, { merge: true })
+      assert.equal(newDstXml, expected)
+    })
+
+    it('appends into an empty <resources></resources> with a newline before the closing tag', async () => {
+      // Regression: previously an empty dst produced `<resources><string …/></resources>`
+      // on one line. The append path now lays out indentation and a trailing newline.
+      const transEntries: TransEntry[] = [
+        { context: 'cancel', key: '취소', messages: { other: 'Cancel' }, flag: null },
+      ]
+      const srcXml = `<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="cancel">취소</string>
+</resources>`
+      const dstXml = `<?xml version="1.0" encoding="utf-8"?>
+<resources></resources>`
+
+      const expected = `<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="cancel">Cancel</string>
+</resources>`
+
+      const newDstXml = await generateAndroidXml('en', transEntries, srcXml, dstXml, { merge: true })
+      assert.equal(newDstXml, expected)
+    })
+
     it('updates a PR-N plurals entry and preserves other plurals from dst', async () => {
       const transEntries: TransEntry[] = [
         { context: 'item_plurals', key: '%d item', messages: { one: '%d 항목 NEW', other: '%d 항목들 NEW' }, flag: null },

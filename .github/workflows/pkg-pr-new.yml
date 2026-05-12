@@ -1,0 +1,29 @@
+name: pkg-pr-new
+
+permissions:
+  contents: read
+  pull-requests: write
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+
+jobs:
+  publish:
+    name: Publish preview
+    runs-on: ubuntu-latest
+    concurrency:
+      group: pkg-pr-new-pr${{ github.event.number }}
+      cancel-in-progress: true
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v6
+      - name: Setup node with cached node_modules
+        uses: ./.github/actions/setup-node-cached
+        with:
+          node-version: 24
+      - name: Build
+        run: npm run build
+      - name: Publish to pkg.pr.new
+        run: npx pkg-pr-new publish './packages/*'

@@ -274,6 +274,30 @@ describe('buildKeyChanges', () => {
 
     assert.equal(updatingKeys.length, 0)
   })
+
+  it('Pass 1: should be skipped for non-authoritative source (add-only)', () => {
+    // A PR source claimed the key on a previous sync. On a later PR sync where the PR's
+    // local no longer references one of the contexts, Pass 1 must NOT strip it: contexts
+    // are shared across sources via tag-level metadata, so the PR could otherwise remove
+    // a context that 'main' still uses. Only the authoritative source may clean up.
+    const keyEntries: KeyEntry[] = []
+    const listedKeyMap = {
+      'shared.key': createL10nKey('shared.key', {
+        id: 'key-1',
+        tags: [
+          { tag: 'backend', source: 'main' },
+          { tag: 'backend', source: 'PR-7' },
+        ],
+        metadata: [{ tag: 'backend', metaKey: 'context', metaValue: '["main_ctx", "pr_ctx"]' }],
+      }),
+    }
+
+    const { updatingKeys } = buildKeyChanges(
+      'PR-7', 'backend', keyEntries, {}, listedKeyMap, undefined, undefined, /* isAuthoritativeSource */ false,
+    )
+
+    assert.equal(updatingKeys.length, 0)
+  })
 })
 
 describe('updateTransEntries', () => {

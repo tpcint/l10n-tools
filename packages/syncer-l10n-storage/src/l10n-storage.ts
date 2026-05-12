@@ -54,7 +54,12 @@ export async function syncTransToL10nStorage(
 ) {
   const storageConfig = config.getL10nStorageConfig()
   const projectId = storageConfig.getProjectId()
-  const source = options?.source ?? storageConfig.getSource()
+  const configSource = storageConfig.getSource()
+  const source = options?.source ?? configSource
+  // The configured source (e.g. 'main') is the authoritative one that owns metadata cleanup.
+  // Ephemeral sources like a PR scope must be add-only so they cannot strip contexts that
+  // other sources (notably 'main') still use — context metadata is shared per tag.
+  const isAuthoritativeSource = source === configSource
   const url = storageConfig.getUrl()
 
   const token = process.env.TPC_AGENT_TOKEN
@@ -76,7 +81,7 @@ export async function syncTransToL10nStorage(
 
   // 2. 로컬과 비교하여 create/update 대상 분류
   const { creatingKeys, updatingKeys } = buildKeyChanges(
-    source, tag, keyEntries, allTransData, listedKeyMap, localeSyncMap, options,
+    source, tag, keyEntries, allTransData, listedKeyMap, localeSyncMap, options, isAuthoritativeSource,
   )
 
   // 3. 서버 번역을 로컬에 반영
@@ -163,6 +168,7 @@ export function buildKeyChanges(
   listedKeyMap: { [keyName: string]: L10nKeyToServe },
   localeSyncMap?: { [locale: string]: string },
   options?: SyncerOptions,
+  isAuthoritativeSource: boolean = true,
 ): {
   creatingKeys: CreateL10nKeyInput[],
   updatingKeys: UpdateL10nKeyInput[],
@@ -175,29 +181,34 @@ export function buildKeyChanges(
   const globalMetadata = options?.globalMetadata
   const tagMetadata = options?.tagMetadata
 
-  // Pass 1: 서버에 있고 우리 source 태그가 있는 키 → 로컬에 없는 context 제거
-  for (const [keyName, listedKey] of Object.entries(listedKeyMap)) {
-    if (!hasTag(listedKey.tags, tag, source)) continue
+  // Pass 1: 서버에 있고 우리 source 태그가 있는 키 → 로컬에 없는 context 제거.
+  // Context metadata는 (tag) 단위로 모든 source가 공유하므로, 권위가 없는 source(예: PR-N)가
+  // cleanup을 수행하면 다른 source의 context를 의도치 않게 지울 수 있다.
+  // 따라서 권위 source(config의 source)일 때만 Pass 1을 활성화한다. 임시 source는 add-only.
+  if (isAuthoritativeSource) {
+    for (const [keyName, listedKey] of Object.entries(listedKeyMap)) {
+      if (!hasTag(listedKey.tags, tag, source)) continue
 
-    for (const keyContext of getContextsFromMetadata(listedKey.metadata, tag)) {
-      const keyEntry = keys.find(keyContext, keyName)
-      if (keyEntry == null) {
-        let updating = updatingKeyMap[keyName]
-        if (!updating) {
-          updating = { keyId: listedKey.id }
-          updatingKeyMap[keyName] = updating
-        }
-        const contextMeta = buildContextMetadataRemoving(listedKey.metadata, tag, keyContext)
-        if (contextMeta) {
-          pushSetMetadata(updating, contextMeta)
-        }
-        // 모든 context가 제거되면 태그도 제거
-        const remaining = getContextsFromMetadata(
-          mergeMetadata(listedKey.metadata, updating.setMetadata ?? []),
-          tag,
-        )
-        if (remaining.length === 0) {
-          pushRemoveTag(updating, { tag, source })
+      for (const keyContext of getContextsFromMetadata(listedKey.metadata, tag)) {
+        const keyEntry = keys.find(keyContext, keyName)
+        if (keyEntry == null) {
+          let updating = updatingKeyMap[keyName]
+          if (!updating) {
+            updating = { keyId: listedKey.id }
+            updatingKeyMap[keyName] = updating
+          }
+          const contextMeta = buildContextMetadataRemoving(listedKey.metadata, tag, keyContext)
+          if (contextMeta) {
+            pushSetMetadata(updating, contextMeta)
+          }
+          // 모든 context가 제거되면 태그도 제거
+          const remaining = getContextsFromMetadata(
+            mergeMetadata(listedKey.metadata, updating.setMetadata ?? []),
+            tag,
+          )
+          if (remaining.length === 0) {
+            pushRemoveTag(updating, { tag, source })
+          }
         }
       }
     }

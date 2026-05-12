@@ -48,10 +48,18 @@ export function metadataContainsDescription(metadata: L10nKeyMetadata[], tag: st
   return comments.every(c => !c || existing.has(c))
 }
 
-export function buildDescriptionMetadata(tag: string, comments: string[]): L10nKeyMetadata | null {
+// existingMetadata에 누락된 comments만 더해서 누적된 description 메타를 만든다.
+// 같은 keyName이 여러 KeyEntry(서로 다른 context)로 들어올 때, 마지막 entry의 comments만 살아남는 회귀를 막기 위함.
+export function buildDescriptionMetadata(existingMetadata: L10nKeyMetadata[], tag: string, comments: string[]): L10nKeyMetadata | null {
   const filtered = comments.filter(Boolean)
   if (filtered.length === 0) return null
-  return { tag, metaKey: 'description', metaValue: filtered.join('\n') }
+  const existing = getDescriptionFromMetadata(existingMetadata, tag)
+  const merged = [...existing]
+  for (const c of filtered) {
+    if (!merged.includes(c)) merged.push(c)
+  }
+  if (merged.length === existing.length) return null
+  return { tag, metaKey: 'description', metaValue: merged.join('\n') }
 }
 
 // --- References ---

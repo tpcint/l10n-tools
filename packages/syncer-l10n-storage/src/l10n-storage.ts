@@ -3,6 +3,7 @@ import {
   type DomainConfig,
   EntryCollection,
   type KeyEntry,
+  type KeyReference,
   type L10nConfig,
   type SyncerOptions,
   type TransEntry,
@@ -26,8 +27,6 @@ import {
   buildReferencesMetadata,
   buildTagMetadata,
   getContextsFromMetadata,
-  metadataContainsContext,
-  metadataContainsDescription,
 } from './metadata.js'
 
 function assertBijectiveLocaleSyncMap(localeSyncMap: { [locale: string]: string }): void {
@@ -159,6 +158,19 @@ function mergeMetadata(existing: L10nKeyMetadata[], updates: L10nKeyMetadata[]):
   return result
 }
 
+function mergeReferences(refs: KeyReference[]): KeyReference[] {
+  const seen = new Set<string>()
+  const result: KeyReference[] = []
+  for (const r of refs) {
+    const k = `${r.file}\0${r.loc ?? ''}`
+    if (!seen.has(k)) {
+      seen.add(k)
+      result.push(r)
+    }
+  }
+  return result
+}
+
 /** @internal exported for testing */
 export function buildKeyChanges(
   source: string,
@@ -214,17 +226,49 @@ export function buildKeyChanges(
     }
   }
 
-  // Pass 2: 로컬 keyEntries → 새 키 생성 또는 기존 키 업데이트
-  for (const keyEntry of keyEntries) {
-    const entryKey = keyEntry.key
+  // Pass 2: 로컬 keyEntries → 새 키 생성 또는 기존 키 업데이트.
+  // 같은 keyName이 서로 다른 context로 여러 KeyEntry로 들어오는 패턴(Android에서 동일 원문이 여러
+  // <string name>에 쓰이는 경우 등)을 한 번에 처리하기 위해 keyName 단위로 group한다. 이렇게 하면
+  // setMetadata의 (tag, 'context')/(tag, 'description') 엔트리가 동일 group 내에서 서로를 덮어쓰지
+  // 않고 누적되며, addTags도 (tag, source) 단위로 한 번만 push된다.
+  const entriesByKeyName = new Map<string, KeyEntry[]>()
+  for (const ke of keyEntries) {
+    const arr = entriesByKeyName.get(ke.key)
+    if (arr) arr.push(ke)
+    else entriesByKeyName.set(ke.key, [ke])
+  }
+
+  for (const [entryKey, entries] of entriesByKeyName) {
     const listedKey = listedKeyMap[entryKey]
 
     if (listedKey != null) {
-      const needsTagAdd = !hasTag(listedKey.tags, tag, source)
-      const needsContextUpdate = !metadataContainsContext(listedKey.metadata, tag, keyEntry.context)
-      const needsDescriptionUpdate = !metadataContainsDescription(listedKey.metadata, tag, keyEntry.comments)
+      let baseMetadata: L10nKeyMetadata[] = listedKey.metadata
+      const metaUpdates: L10nKeyMetadata[] = []
 
-      if (needsTagAdd || needsContextUpdate || needsDescriptionUpdate) {
+      for (const ke of entries) {
+        const contextMeta = buildContextMetadata(baseMetadata, tag, ke.context)
+        if (contextMeta) {
+          metaUpdates.push(contextMeta)
+          baseMetadata = mergeMetadata(baseMetadata, [contextMeta])
+        }
+        const descMeta = buildDescriptionMetadata(baseMetadata, tag, ke.comments)
+        if (descMeta) {
+          metaUpdates.push(descMeta)
+          baseMetadata = mergeMetadata(baseMetadata, [descMeta])
+        }
+      }
+
+      // references는 group의 모든 entry refs를 합산해 매 sync 단위로 replace한다.
+      // 이전 sync의 references는 base로 누적시키지 않는다(file:line이 stale일 수 있음).
+      const mergedRefs = mergeReferences(entries.flatMap(e => e.references))
+      const refMeta = buildReferencesMetadata(tag, mergedRefs)
+      const existingRefEntry = listedKey.metadata.find(m => m.tag === tag && m.metaKey === 'references')
+      const refsChanged = refMeta != null
+        && (existingRefEntry == null || existingRefEntry.metaValue !== refMeta.metaValue)
+
+      const needsTagAdd = !hasTag(listedKey.tags, tag, source)
+
+      if (needsTagAdd || metaUpdates.length > 0 || refsChanged) {
         let updating = updatingKeyMap[entryKey]
         if (!updating) {
           updating = { keyId: listedKey.id }
@@ -233,33 +277,34 @@ export function buildKeyChanges(
         if (needsTagAdd) {
           pushAddTag(updating, { tag, source })
         }
-        if (needsContextUpdate) {
-          const contextMeta = buildContextMetadata(listedKey.metadata, tag, keyEntry.context)
-          if (contextMeta) pushSetMetadata(updating, contextMeta)
+        for (const u of metaUpdates) {
+          pushSetMetadata(updating, u)
         }
-        if (needsDescriptionUpdate) {
-          const descMeta = buildDescriptionMetadata(tag, keyEntry.comments)
-          if (descMeta) pushSetMetadata(updating, descMeta)
+        if (refsChanged && refMeta) {
+          pushSetMetadata(updating, refMeta)
         }
-      }
-      // references는 항상 갱신
-      const refMeta = buildReferencesMetadata(tag, keyEntry.references)
-      if (refMeta) {
-        let updating = updatingKeyMap[entryKey]
-        if (!updating) {
-          updating = { keyId: listedKey.id }
-          updatingKeyMap[entryKey] = updating
-        }
-        pushSetMetadata(updating, refMeta)
       }
     } else {
-      // 새 키 생성
+      // 새 키 — group의 모든 entry 데이터를 한 번에 모은다.
       const metadata: L10nKeyMetadata[] = []
-      const contextMeta = buildContextMetadata([], tag, keyEntry.context)
-      if (contextMeta) metadata.push(contextMeta)
-      const descMeta = buildDescriptionMetadata(tag, keyEntry.comments)
-      if (descMeta) metadata.push(descMeta)
-      const refMeta = buildReferencesMetadata(tag, keyEntry.references)
+
+      for (const ke of entries) {
+        const contextMeta = buildContextMetadata(metadata, tag, ke.context)
+        if (contextMeta) {
+          const idx = metadata.findIndex(m => m.tag === contextMeta.tag && m.metaKey === contextMeta.metaKey)
+          if (idx >= 0) metadata[idx] = contextMeta
+          else metadata.push(contextMeta)
+        }
+        const descMeta = buildDescriptionMetadata(metadata, tag, ke.comments)
+        if (descMeta) {
+          const idx = metadata.findIndex(m => m.tag === descMeta.tag && m.metaKey === descMeta.metaKey)
+          if (idx >= 0) metadata[idx] = descMeta
+          else metadata.push(descMeta)
+        }
+      }
+
+      const mergedRefs = mergeReferences(entries.flatMap(e => e.references))
+      const refMeta = buildReferencesMetadata(tag, mergedRefs)
       if (refMeta) metadata.push(refMeta)
 
       if (globalMetadata) {
@@ -278,7 +323,7 @@ export function buildKeyChanges(
 
       creatingKeyMap[entryKey] = {
         keyName: entryKey,
-        isPlural: keyEntry.isPlural,
+        isPlural: entries[0].isPlural,
         tags,
         metadata: metadata.length > 0 ? metadata : undefined,
       }

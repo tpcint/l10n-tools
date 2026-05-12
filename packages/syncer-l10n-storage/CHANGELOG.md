@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.3](https://github.com/tpcint/l10n-tools/compare/l10n-tools-syncer-l10n-storage-v1.3.2...l10n-tools-syncer-l10n-storage-v1.3.3) (2026-05-12)
+
+
+### Bug Fixes
+
+* propagate new Android names to localized strings.xml on PR apply ([#341](https://github.com/tpcint/l10n-tools/issues/341)) ([55d6c92](https://github.com/tpcint/l10n-tools/commit/55d6c921144973702986f5939ec541109a3736df))
+
 ## [1.3.2](https://github.com/tpcint/l10n-tools/compare/l10n-tools-syncer-l10n-storage-v1.3.1...l10n-tools-syncer-l10n-storage-v1.3.2) (2026-05-06)
 
 

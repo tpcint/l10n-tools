@@ -53,10 +53,11 @@ describe('buildKeyChanges', () => {
     assert.deepEqual(creatingKeys[0].tags, [{ tag: 'backend', source: 'main' }])
   })
 
-  it('should add tag when key has the tag with another source (per-source tagging)', () => {
-    // A PR referencing a key that main already owns must still claim its own
-    // (tag, source) ownership; otherwise the source filter cannot return the key
-    // back to this PR's apply step.
+  it('should NOT claim (tag, source) for non-authoritative source when no new context is added', () => {
+    // A PR-scoped sync (non-authoritative source) extracts the entire local file, so every
+    // key flows through Pass 2 even if the PR did not touch it. To avoid PR-N claiming every
+    // key in the project — which previously caused ~2000-key "upload" notifications on
+    // PRs that only deleted a handful of strings — claim must require an actual new context.
     const keyEntries = [createKeyEntry('existing.key')]
     const listedKeyMap = {
       'existing.key': createL10nKey('existing.key', {
@@ -65,12 +66,61 @@ describe('buildKeyChanges', () => {
     }
 
     const { creatingKeys, updatingKeys } = buildKeyChanges(
-      'PR-123', 'backend', keyEntries, {}, listedKeyMap,
+      'PR-123', 'backend', keyEntries, {}, listedKeyMap, undefined, undefined, /* isAuthoritativeSource */ false,
     )
 
     assert.equal(creatingKeys.length, 0)
+    assert.equal(updatingKeys.length, 0)
+  })
+
+  it('should NOT claim (tag, source) for non-authoritative source when only references change', () => {
+    // References (file:line) drift with PR diffs but are not exposed by the source filter,
+    // so PR-N must not claim ownership just because file locations changed.
+    const keyEntries: KeyEntry[] = [
+      { ...createKeyEntry('취소', { context: 'a' }), references: [{ file: 'app/values/strings.xml', loc: '99' }] },
+    ]
+    const listedKeyMap = {
+      취소: createL10nKey('취소', {
+        tags: [{ tag: 'android-likey', source: 'main' }],
+        metadata: [
+          { tag: 'android-likey', metaKey: 'context', metaValue: JSON.stringify(['a']) },
+          { tag: 'android-likey', metaKey: 'references', metaValue: JSON.stringify([{ file: 'app/values/strings.xml', loc: '12' }]) },
+        ],
+      }),
+    }
+
+    const { updatingKeys } = buildKeyChanges(
+      'PR-1692', 'android-likey', keyEntries, {}, listedKeyMap, undefined, undefined, /* isAuthoritativeSource */ false,
+    )
+
+    // refs are updated, but no (tag, source) claim
     assert.equal(updatingKeys.length, 1)
-    assert.deepEqual(updatingKeys[0].addTags, [{ tag: 'backend', source: 'PR-123' }])
+    assert.equal(updatingKeys[0].addTags, undefined)
+    const refsMeta = updatingKeys[0].setMetadata?.find(m => m.metaKey === 'references')
+    assert.ok(refsMeta != null)
+  })
+
+  it('should NOT claim (tag, source) for non-authoritative source when only description changes', () => {
+    // Description metadata is not exposed by the source filter either, so a description-only
+    // change does not warrant a PR-N claim.
+    const keyEntries: KeyEntry[] = [
+      { ...createKeyEntry('취소', { context: 'a' }), comments: ['New developer note'] },
+    ]
+    const listedKeyMap = {
+      취소: createL10nKey('취소', {
+        tags: [{ tag: 'android-likey', source: 'main' }],
+        metadata: [{ tag: 'android-likey', metaKey: 'context', metaValue: JSON.stringify(['a']) }],
+      }),
+    }
+
+    const { updatingKeys } = buildKeyChanges(
+      'PR-42', 'android-likey', keyEntries, {}, listedKeyMap, undefined, undefined, /* isAuthoritativeSource */ false,
+    )
+
+    assert.equal(updatingKeys.length, 1)
+    assert.equal(updatingKeys[0].addTags, undefined)
+    const descMeta = updatingKeys[0].setMetadata?.find(m => m.metaKey === 'description')
+    assert.ok(descMeta != null)
   })
 
   it('should not add tag when key already has the tag with the same source', () => {
@@ -82,7 +132,7 @@ describe('buildKeyChanges', () => {
     }
 
     const { creatingKeys, updatingKeys } = buildKeyChanges(
-      'PR-123', 'backend', keyEntries, {}, listedKeyMap,
+      'PR-123', 'backend', keyEntries, {}, listedKeyMap, undefined, undefined, /* isAuthoritativeSource */ false,
     )
 
     assert.equal(creatingKeys.length, 0)
@@ -122,7 +172,7 @@ describe('buildKeyChanges', () => {
     }
 
     const { creatingKeys, updatingKeys } = buildKeyChanges(
-      'PR-99', 'android-likey', keyEntries, {}, listedKeyMap,
+      'PR-99', 'android-likey', keyEntries, {}, listedKeyMap, undefined, undefined, /* isAuthoritativeSource */ false,
     )
 
     assert.equal(creatingKeys.length, 0)
@@ -317,7 +367,7 @@ describe('buildKeyChanges', () => {
     }
 
     const { updatingKeys } = buildKeyChanges(
-      'PR-77', 'android-likey', keyEntries, {}, listedKeyMap,
+      'PR-77', 'android-likey', keyEntries, {}, listedKeyMap, undefined, undefined, /* isAuthoritativeSource */ false,
     )
 
     assert.equal(updatingKeys.length, 1)

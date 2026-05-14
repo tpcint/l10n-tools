@@ -244,12 +244,14 @@ export function buildKeyChanges(
     if (listedKey != null) {
       let baseMetadata: L10nKeyMetadata[] = listedKey.metadata
       const metaUpdates: L10nKeyMetadata[] = []
+      let contextAdded = false
 
       for (const ke of entries) {
         const contextMeta = buildContextMetadata(baseMetadata, tag, ke.context)
         if (contextMeta) {
           metaUpdates.push(contextMeta)
           baseMetadata = mergeMetadata(baseMetadata, [contextMeta])
+          contextAdded = true
         }
         const descMeta = buildDescriptionMetadata(baseMetadata, tag, ke.comments)
         if (descMeta) {
@@ -268,7 +270,14 @@ export function buildKeyChanges(
       const refsChanged = (mergedRefs.length > 0 || existingRefEntry != null)
         && (existingRefEntry == null || existingRefEntry.metaValue !== mergedRefsValue)
 
-      const needsTagAdd = !hasTag(listedKey.tags, tag, source)
+      // 비권위 source(PR-N 등)는 키에 새 context를 추가하는 경우에만 (tag, source)를 claim한다.
+      // 비권위 source가 단순히 keyEntries에 키를 포함시킨 것만으로 모든 키에 PR-N 태그를 붙이면,
+      // PR scope sync마다 모든 키가 update 대상으로 잡혀 storage에 폭주 알림이 발생한다.
+      // source filter는 contexts/translations만 노출하므로, description/references 변경은
+      // PR apply 단계에 propagate할 필요가 없어 claim 대상에서 제외한다. 권위 source(예: main)는
+      // tag ownership 관리 책임이 있으므로 기존대로 자기 (tag, source) 태그가 없으면 항상 claim.
+      const hasOwnSourceTag = hasTag(listedKey.tags, tag, source)
+      const needsTagAdd = !hasOwnSourceTag && (isAuthoritativeSource || contextAdded)
 
       if (needsTagAdd || metaUpdates.length > 0 || refsChanged) {
         let updating = updatingKeyMap[entryKey]

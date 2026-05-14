@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.3.4](https://github.com/tpcint/l10n-tools/compare/l10n-tools-syncer-l10n-storage-v1.3.3...l10n-tools-syncer-l10n-storage-v1.3.4) (2026-05-14)
+
+
+### Bug Fixes
+
+* **syncer-l10n-storage:** accumulate metadata across multi-context keyNames ([#344](https://github.com/tpcint/l10n-tools/issues/344)) ([2e98a15](https://github.com/tpcint/l10n-tools/commit/2e98a1552a9775ea288ae12638901015f8a4142e))
+* **syncer-l10n-storage:** scope PR-source claim to actual context additions ([#346](https://github.com/tpcint/l10n-tools/issues/346)) ([df4069c](https://github.com/tpcint/l10n-tools/commit/df4069c6d4b32f980c843d934bb6dee33b164cbc))
+
 ## [1.3.3](https://github.com/tpcint/l10n-tools/compare/l10n-tools-syncer-l10n-storage-v1.3.2...l10n-tools-syncer-l10n-storage-v1.3.3) (2026-05-12)
 
 

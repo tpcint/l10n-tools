@@ -24,7 +24,7 @@
     "dist"
   ],
   "dependencies": {
-    "@lokalise/node-api": "^15.3.1",
+    "@lokalise/node-api": "^16.0.0",
     "es-toolkit": "^1.46.1",
     "npmlog": "^7.0.1",
     "p-queue": "^9.2.0"

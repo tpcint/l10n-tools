@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.5](https://github.com/tpcint/l10n-tools/compare/l10n-tools-syncer-l10n-storage-v1.3.4...l10n-tools-syncer-l10n-storage-v1.3.5) (2026-05-17)
+
+
+### Performance Improvements
+
+* **syncer-l10n-storage:** raise list keys page size from 500 to 5000 ([#354](https://github.com/tpcint/l10n-tools/issues/354)) ([0579940](https://github.com/tpcint/l10n-tools/commit/0579940ddd09bd0e47e86aba4badeb6936ec30a2))
+
 ## [1.3.4](https://github.com/tpcint/l10n-tools/compare/l10n-tools-syncer-l10n-storage-v1.3.3...l10n-tools-syncer-l10n-storage-v1.3.4) (2026-05-14)
 
 

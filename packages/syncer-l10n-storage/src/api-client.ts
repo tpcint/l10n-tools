@@ -45,7 +45,7 @@ export class L10nStorageApiClient {
     let previousCursor: string | undefined
     do {
       log.info('l10n-storage-api', `listing keys${cursor ? ` (cursor: ${cursor})` : ''}`)
-      const params = new URLSearchParams({ limit: '500' })
+      const params = new URLSearchParams({ limit: '5000' })
       if (cursor) params.set('cursor', cursor)
       const response = await this.request<ListKeysToServeResponse>(
         'GET',
@@ -76,7 +76,7 @@ export class L10nStorageApiClient {
         'l10n-storage-api',
         `listing keys (tag: ${tag}${source ? `, source: ${source}` : ''}${cursor ? `, cursor: ${cursor}` : ''})`,
       )
-      const params = new URLSearchParams({ limit: '500' })
+      const params = new URLSearchParams({ limit: '5000' })
       if (cursor) params.set('cursor', cursor)
       if (source) params.set('source', source)
       const response = await this.request<ListKeysToServeResponse>(

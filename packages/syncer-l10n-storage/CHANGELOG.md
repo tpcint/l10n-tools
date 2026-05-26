@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.6](https://github.com/tpcint/l10n-tools/compare/l10n-tools-syncer-l10n-storage-v1.3.5...l10n-tools-syncer-l10n-storage-v1.3.6) (2026-05-26)
+
+
+### Bug Fixes
+
+* **syncer-l10n-storage:** claim and clean up PR-source tags in context-less domains ([#358](https://github.com/tpcint/l10n-tools/issues/358)) ([623a61c](https://github.com/tpcint/l10n-tools/commit/623a61c74d62fb4596549b345224e884fb3aff22))
+
 ## [1.3.5](https://github.com/tpcint/l10n-tools/compare/l10n-tools-syncer-l10n-storage-v1.3.4...l10n-tools-syncer-l10n-storage-v1.3.5) (2026-05-17)
 
 

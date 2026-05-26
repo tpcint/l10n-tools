@@ -510,11 +510,12 @@ describe('buildKeyChanges', () => {
     assert.deepEqual(JSON.parse(contextMeta.metaValue), ['a:one', 'b:two'])
   })
 
-  it('Pass 1: should be skipped for non-authoritative source (add-only)', () => {
-    // A PR source claimed the key on a previous sync. On a later PR sync where the PR's
-    // local no longer references one of the contexts, Pass 1 must NOT strip it: contexts
-    // are shared across sources via tag-level metadata, so the PR could otherwise remove
-    // a context that 'main' still uses. Only the authoritative source may clean up.
+  it('Pass 1: non-authoritative source drops its own orphan (tag, source) but never touches shared context', () => {
+    // A PR source claimed the key on a previous sync, but the PR's local no longer extracts it.
+    // The PR-N tag is now an orphan: it keeps _remoteCount/source filter surfacing the key,
+    // freezing the check run on "Translations are not applied". So the PR's own (tag, source)
+    // must be removed. Crucially, the shared context metadata (["main_ctx", "pr_ctx"]) must NOT
+    // be touched — contexts are shared across sources per tag, and 'main' still uses them.
     const keyEntries: KeyEntry[] = []
     const listedKeyMap = {
       'shared.key': createL10nKey('shared.key', {
@@ -531,7 +532,136 @@ describe('buildKeyChanges', () => {
       'PR-7', 'backend', keyEntries, {}, listedKeyMap, undefined, undefined, /* isAuthoritativeSource */ false,
     )
 
+    assert.equal(updatingKeys.length, 1)
+    assert.equal(updatingKeys[0].keyId, 'key-1')
+    assert.deepEqual(updatingKeys[0].removeTags, [{ tag: 'backend', source: 'PR-7' }])
+    // shared context metadata untouched
+    assert.equal(updatingKeys[0].setMetadata, undefined)
+    assert.equal(updatingKeys[0].addTags, undefined)
+  })
+
+  it('non-authoritative source claims an existing key first introduced by this tag (no context, e.g. web4)', () => {
+    // Regression (#346): a context-less domain like likey-web-4 vue-i18n never produces a new
+    // context, so the old `contextAdded`-only rule meant a PR could never claim an existing key.
+    // When the key already exists on the server under another tag (created by a different repo)
+    // and this tag has never owned it, the PR-N source must claim (tag, source) so the source
+    // filter / _remoteCount surface it for compile-from-source.
+    const keyEntries = [createKeyEntry('취소')] // context null
+    const listedKeyMap = {
+      취소: createL10nKey('취소', {
+        tags: [{ tag: 'web', source: 'main' }], // owned by 'web', never by 'web4'
+      }),
+    }
+
+    const { creatingKeys, updatingKeys } = buildKeyChanges(
+      'PR-1', 'web4', keyEntries, {}, listedKeyMap, undefined, undefined, /* isAuthoritativeSource */ false,
+    )
+
+    assert.equal(creatingKeys.length, 0)
+    assert.equal(updatingKeys.length, 1)
+    assert.deepEqual(updatingKeys[0].addTags, [{ tag: 'web4', source: 'PR-1' }])
+  })
+
+  it('non-authoritative source does NOT claim an existing key this tag already owns (no flood)', () => {
+    // "불러오는 중..." 유형: main이 이미 (web4, main)으로 소유하고 번역까지 끝난 키. PR이 단순히
+    // 추출에 포함시켰다고 claim하면 PR마다 모든 web4 키가 잡혀 #346 폭주가 재현된다. 자기 태그가
+    // 이미 있으므로 claim하지 않아야 한다.
+    const keyEntries = [createKeyEntry('불러오는 중...')] // context null
+    const listedKeyMap = {
+      '불러오는 중...': createL10nKey('불러오는 중...', {
+        tags: [{ tag: 'web4', source: 'main' }],
+      }),
+    }
+
+    const { creatingKeys, updatingKeys } = buildKeyChanges(
+      'PR-1', 'web4', keyEntries, {}, listedKeyMap, undefined, undefined, /* isAuthoritativeSource */ false,
+    )
+
+    assert.equal(creatingKeys.length, 0)
     assert.equal(updatingKeys.length, 0)
+  })
+
+  it('non-authoritative source still claims when a new context is added (context-ful domain, e.g. Android)', () => {
+    // Regression guard for the original #346 fix: in a context-ful domain, adding a brand-new
+    // context to an existing key must still claim (tag, source) via the contextAdded path,
+    // independent of the new hasAnyOwnTag path.
+    const keyEntries = [createKeyEntry('취소', { context: 'b' })]
+    const listedKeyMap = {
+      취소: createL10nKey('취소', {
+        tags: [{ tag: 'android-likey', source: 'main' }],
+        metadata: [{ tag: 'android-likey', metaKey: 'context', metaValue: JSON.stringify(['a']) }],
+      }),
+    }
+
+    const { creatingKeys, updatingKeys } = buildKeyChanges(
+      'PR-9', 'android-likey', keyEntries, {}, listedKeyMap, undefined, undefined, /* isAuthoritativeSource */ false,
+    )
+
+    assert.equal(creatingKeys.length, 0)
+    assert.equal(updatingKeys.length, 1)
+    assert.deepEqual(updatingKeys[0].addTags, [{ tag: 'android-likey', source: 'PR-9' }])
+    const contextMeta = updatingKeys[0].setMetadata?.find(m => m.metaKey === 'context')
+    assert.ok(contextMeta != null)
+    assert.deepEqual(JSON.parse(contextMeta.metaValue), ['a', 'b'])
+  })
+
+  it('Pass 1 (non-authoritative): does NOT remove tag for a key still present in local extraction', () => {
+    // The key carries its own (tag, source) claim and is still extracted locally → it is a live
+    // claim, not an orphan, so Pass 1 must leave it alone (Pass 2 keeps the claim).
+    const keyEntries = [createKeyEntry('살아있는키')]
+    const listedKeyMap = {
+      살아있는키: createL10nKey('살아있는키', {
+        id: 'live-1',
+        tags: [{ tag: 'web4', source: 'PR-1' }],
+      }),
+    }
+
+    const { updatingKeys } = buildKeyChanges(
+      'PR-1', 'web4', keyEntries, {}, listedKeyMap, undefined, undefined, /* isAuthoritativeSource */ false,
+    )
+
+    const removeTagUpdates = updatingKeys.filter(u => u.removeTags != null)
+    assert.equal(removeTagUpdates.length, 0)
+  })
+
+  it('Pass 1 (non-authoritative): leaves the key itself (and other-source tags) intact when dropping an orphan', () => {
+    // Removing the orphan PR-1 tag must not remove the (web4, main) tag nor delete the key.
+    const keyEntries: KeyEntry[] = []
+    const listedKeyMap = {
+      지워진키: createL10nKey('지워진키', {
+        id: 'orphan-1',
+        tags: [{ tag: 'web4', source: 'PR-1' }, { tag: 'web4', source: 'main' }],
+        metadata: [{ tag: 'web4', metaKey: 'context', metaValue: JSON.stringify(['shared']) }],
+      }),
+    }
+
+    const { creatingKeys, updatingKeys } = buildKeyChanges(
+      'PR-1', 'web4', keyEntries, {}, listedKeyMap, undefined, undefined, /* isAuthoritativeSource */ false,
+    )
+
+    assert.equal(creatingKeys.length, 0)
+    assert.equal(updatingKeys.length, 1)
+    assert.deepEqual(updatingKeys[0].removeTags, [{ tag: 'web4', source: 'PR-1' }])
+    // (web4, main) is not removed and shared context is untouched
+    assert.equal(updatingKeys[0].setMetadata, undefined)
+  })
+
+  it('Pass 1 (authoritative): unaffected by 수정 A/B — claims own tag for a key it does not yet own', () => {
+    // main is authoritative; even with the new hasAnyOwnTag path, authoritative short-circuits
+    // first, so a key it doesn't own yet is still claimed exactly as before.
+    const keyEntries = [createKeyEntry('취소')] // context null
+    const listedKeyMap = {
+      취소: createL10nKey('취소', {
+        tags: [{ tag: 'web', source: 'main' }],
+      }),
+    }
+
+    const { updatingKeys } = buildKeyChanges(
+      'main', 'web4', keyEntries, {}, listedKeyMap, // isAuthoritativeSource defaults to true
+    )
+
+    assert.equal(updatingKeys.length, 1)
+    assert.deepEqual(updatingKeys[0].addTags, [{ tag: 'web4', source: 'main' }])
   })
 })
 

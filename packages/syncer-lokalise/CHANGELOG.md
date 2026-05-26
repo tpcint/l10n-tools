@@ -1,5 +1,12 @@
 # Changelog
 
+## [7.4.11](https://github.com/tpcint/l10n-tools/compare/l10n-tools-syncer-lokalise-v7.4.10...l10n-tools-syncer-lokalise-v7.4.11) (2026-05-26)
+
+
+### Miscellaneous Chores
+
+* **deps:** bump p-queue from 9.2.0 to 9.3.0 ([#356](https://github.com/tpcint/l10n-tools/issues/356)) ([894df17](https://github.com/tpcint/l10n-tools/commit/894df17f6d11cbc638eb34ade65d7d6d499c63a3))
+
 ## [7.4.10](https://github.com/tpcint/l10n-tools/compare/l10n-tools-syncer-lokalise-v7.4.9...l10n-tools-syncer-lokalise-v7.4.10) (2026-05-17)
 
 

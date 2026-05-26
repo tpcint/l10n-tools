@@ -96,6 +96,10 @@ function hasTag(tags: L10nKeyTag[], tag: string, source: string): boolean {
   return tags.some(t => t.tag === tag && t.source === source)
 }
 
+function hasTagAnySource(tags: L10nKeyTag[], tag: string): boolean {
+  return tags.some(t => t.tag === tag)
+}
+
 function hasTranslation(key: L10nKeyToServe, locale: string): boolean {
   return key.translations.some(t => t.locale === locale)
 }
@@ -193,10 +197,25 @@ export function buildKeyChanges(
   const globalMetadata = options?.globalMetadata
   const tagMetadata = options?.tagMetadata
 
-  // Pass 1: 서버에 있고 우리 source 태그가 있는 키 → 로컬에 없는 context 제거.
-  // Context metadata는 (tag) 단위로 모든 source가 공유하므로, 권위가 없는 source(예: PR-N)가
-  // cleanup을 수행하면 다른 source의 context를 의도치 않게 지울 수 있다.
-  // 따라서 권위 source(config의 source)일 때만 Pass 1을 활성화한다. 임시 source는 add-only.
+  // 로컬 keyEntries를 keyName 단위로 group한다. 같은 keyName이 서로 다른 context로 여러 KeyEntry로
+  // 들어오는 패턴(Android에서 동일 원문이 여러 <string name>에 쓰이는 경우 등)을 한 번에 처리하기
+  // 위함이다. 이렇게 하면 setMetadata의 (tag, 'context')/(tag, 'description') 엔트리가 동일 group
+  // 내에서 서로를 덮어쓰지 않고 누적되며, addTags도 (tag, source) 단위로 한 번만 push된다.
+  // Pass 1의 orphan 판정(로컬 추출에 없는 키)에도 사용하므로 두 pass보다 먼저 만든다.
+  const entriesByKeyName = new Map<string, KeyEntry[]>()
+  for (const ke of keyEntries) {
+    const arr = entriesByKeyName.get(ke.key)
+    if (arr) arr.push(ke)
+    else entriesByKeyName.set(ke.key, [ke])
+  }
+
+  // Pass 1: 서버에 있고 우리 source 태그가 있는 키의 정리.
+  // - 권위 source(config의 source): 로컬에 없는 context를 제거하고, context가 모두 사라지면 태그도 제거.
+  //   Context metadata는 (tag) 단위로 모든 source가 공유하므로 이 cleanup은 권위 source만 수행한다.
+  // - 비권위 source(예: PR-N): 공유 context는 절대 건드리지 않되, 로컬 추출에서 완전히 사라진 키의
+  //   자기 (tag, source) 태그만 제거한다. 이렇게 하면 과거 PR가 claim했다가 코드에서 삭제된 orphan이
+  //   _remoteCount/source filter에 영구히 남아 체크런이 고착되는 회귀를 막는다. 자기 태그 제거는 다른
+  //   source에 영향을 주지 않아 안전하다.
   if (isAuthoritativeSource) {
     for (const [keyName, listedKey] of Object.entries(listedKeyMap)) {
       if (!hasTag(listedKey.tags, tag, source)) continue
@@ -224,20 +243,23 @@ export function buildKeyChanges(
         }
       }
     }
+  } else {
+    for (const [keyName, listedKey] of Object.entries(listedKeyMap)) {
+      if (!hasTag(listedKey.tags, tag, source)) continue
+      // 로컬 추출에 아직 있으면 Pass 2에서 처리(claim 유지). 사라진 키만 orphan으로 본다.
+      if (entriesByKeyName.has(keyName)) continue
+
+      let updating = updatingKeyMap[keyName]
+      if (!updating) {
+        updating = { keyId: listedKey.id }
+        updatingKeyMap[keyName] = updating
+      }
+      // 자기 (tag, source) 태그만 제거. 공유 context/description metadata는 건드리지 않는다.
+      pushRemoveTag(updating, { tag, source })
+    }
   }
 
   // Pass 2: 로컬 keyEntries → 새 키 생성 또는 기존 키 업데이트.
-  // 같은 keyName이 서로 다른 context로 여러 KeyEntry로 들어오는 패턴(Android에서 동일 원문이 여러
-  // <string name>에 쓰이는 경우 등)을 한 번에 처리하기 위해 keyName 단위로 group한다. 이렇게 하면
-  // setMetadata의 (tag, 'context')/(tag, 'description') 엔트리가 동일 group 내에서 서로를 덮어쓰지
-  // 않고 누적되며, addTags도 (tag, source) 단위로 한 번만 push된다.
-  const entriesByKeyName = new Map<string, KeyEntry[]>()
-  for (const ke of keyEntries) {
-    const arr = entriesByKeyName.get(ke.key)
-    if (arr) arr.push(ke)
-    else entriesByKeyName.set(ke.key, [ke])
-  }
-
   for (const [entryKey, entries] of entriesByKeyName) {
     const listedKey = listedKeyMap[entryKey]
 
@@ -270,14 +292,20 @@ export function buildKeyChanges(
       const refsChanged = (mergedRefs.length > 0 || existingRefEntry != null)
         && (existingRefEntry == null || existingRefEntry.metaValue !== mergedRefsValue)
 
-      // 비권위 source(PR-N 등)는 키에 새 context를 추가하는 경우에만 (tag, source)를 claim한다.
-      // 비권위 source가 단순히 keyEntries에 키를 포함시킨 것만으로 모든 키에 PR-N 태그를 붙이면,
-      // PR scope sync마다 모든 키가 update 대상으로 잡혀 storage에 폭주 알림이 발생한다.
-      // source filter는 contexts/translations만 노출하므로, description/references 변경은
-      // PR apply 단계에 propagate할 필요가 없어 claim 대상에서 제외한다. 권위 source(예: main)는
-      // tag ownership 관리 책임이 있으므로 기존대로 자기 (tag, source) 태그가 없으면 항상 claim.
+      // 비권위 source(PR-N 등)의 claim 조건. 단순히 keyEntries에 키를 포함시킨 것만으로 모든 키에
+      // PR-N 태그를 붙이면, PR scope sync마다 모든 키가 update 대상으로 잡혀 storage에 폭주 알림이
+      // 발생한다(#346). 그래서 비권위 source는 다음 중 하나일 때만 claim한다:
+      //   - contextAdded: 키에 새 context를 추가 (Android에서 동일 원문을 새 <string name>에 쓰는 경우).
+      //   - !hasAnyOwnTag: 이 태그가 이 키를 처음 다룸. 다른 repo가 만든 기존 키를 이 도메인이 처음
+      //     사용하기 시작하는 마이그레이션 케이스. context가 없는 도메인(예: web4 vue-i18n)은 contextAdded가
+      //     영영 false라, 이 신호가 없으면 기존 키를 절대 claim하지 못한다(회귀). 폭주는 발생하지 않는데,
+      //     이 도메인이 이미 다루던 키는 (tag, main 등) 자기 태그를 가져 hasAnyOwnTag가 true이기 때문이다.
+      // description/references 변경은 source filter에 노출되지 않아 PR apply에 propagate할 필요가 없으므로
+      // claim 대상에서 제외한다. 권위 source(예: main)는 tag ownership 관리 책임이 있어 자기 (tag, source)가
+      // 없으면 항상 claim(isAuthoritativeSource 단락평가로 동작 불변).
       const hasOwnSourceTag = hasTag(listedKey.tags, tag, source)
-      const needsTagAdd = !hasOwnSourceTag && (isAuthoritativeSource || contextAdded)
+      const hasAnyOwnTag = hasTagAnySource(listedKey.tags, tag)
+      const needsTagAdd = !hasOwnSourceTag && (isAuthoritativeSource || contextAdded || !hasAnyOwnTag)
 
       if (needsTagAdd || metaUpdates.length > 0 || refsChanged) {
         let updating = updatingKeyMap[entryKey]

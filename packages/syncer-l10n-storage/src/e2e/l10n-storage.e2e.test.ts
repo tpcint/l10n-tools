@@ -302,4 +302,71 @@ describe('syncTransToL10nStorage (e2e)', () => {
 
     assert.equal(localTrans.en[0].flag, null)
   })
+
+  it('PR source claims an existing key first introduced under this tag, no context (수정 A)', async () => {
+    // 다른 repo(web)가 만든 키를 web4가 PR에서 처음 사용. context 없는 도메인이라 contextAdded는
+    // 영영 false지만, web4가 이 키를 처음 다루므로 (web4, PR-1)을 claim해야 한다.
+    await seedKeys(projectId!, [{
+      keyName: '취소',
+      tags: [{ tag: 'web', source: 'main' }],
+    }])
+
+    // configSource='main', options.source='PR-1' → 비권위 source
+    const config = buildL10nConfig(projectId!, { source: 'main' })
+    await syncTransToL10nStorage(
+      config, buildDomainConfig(), 'web4', [key('취소')], {}, false, { source: 'PR-1' },
+    )
+
+    const served = await apiClient.listKeysToServeByTag(projectId!, 'web4', 'PR-1')
+    assert.deepEqual(served.map(k => k.keyName), ['취소'])
+
+    // 기존 (web, main) 태그는 보존되고 (web4, PR-1)이 추가됨
+    const [k] = await apiClient.listAllKeysToServe(projectId!)
+    const pairs = k.tags.map(t => ({ tag: t.tag, source: t.source }))
+    assert.ok(pairs.some(p => p.tag === 'web' && p.source === 'main'))
+    assert.ok(pairs.some(p => p.tag === 'web4' && p.source === 'PR-1'))
+  })
+
+  it('PR source does NOT claim a key this tag already owns (수정 A 음성, no flood)', async () => {
+    // "불러오는 중..." 유형: main이 이미 (web4, main)으로 소유. PR이 추출에 포함했다고 claim하면 안 됨.
+    await seedKeys(projectId!, [{
+      keyName: '불러오는 중...',
+      tags: [{ tag: 'web4', source: 'main' }],
+    }])
+
+    const config = buildL10nConfig(projectId!, { source: 'main' })
+    await syncTransToL10nStorage(
+      config, buildDomainConfig(), 'web4', [key('불러오는 중...')], {}, false, { source: 'PR-1' },
+    )
+
+    const served = await apiClient.listKeysToServeByTag(projectId!, 'web4', 'PR-1')
+    assert.deepEqual(served.map(k => k.keyName), [])
+  })
+
+  it('PR source removes an orphan (tag, source) when the key disappears, preserving main scope (수정 B)', async () => {
+    // 과거 PR-1이 claim했다가 코드에서 사라진 키. PR-1 sync(추출 0건)에서 (web4, PR-1) orphan을
+    // 제거해야 _remoteCount(PR-1)이 0이 되어 체크런이 풀린다. (web4, main)과 공유 context는 불변.
+    await seedKeys(projectId!, [{
+      keyName: 'orphan.key',
+      tags: [{ tag: 'web4', source: 'PR-1' }, { tag: 'web4', source: 'main' }],
+      metadata: [{ tag: 'web4', metaKey: 'context', metaValue: JSON.stringify(['shared']) }],
+    }])
+
+    const config = buildL10nConfig(projectId!, { source: 'main' })
+    // PR이 더 이상 이 키를 추출하지 않음
+    await syncTransToL10nStorage(
+      config, buildDomainConfig(), 'web4', [], {}, false, { source: 'PR-1' },
+    )
+
+    const prScope = await apiClient.listKeysToServeByTag(projectId!, 'web4', 'PR-1')
+    assert.deepEqual(prScope.map(k => k.keyName), [], 'orphan PR-1 claim removed')
+
+    const mainScope = await apiClient.listKeysToServeByTag(projectId!, 'web4', 'main')
+    assert.ok(mainScope.map(k => k.keyName).includes('orphan.key'), 'main scope preserved')
+
+    // 키 자체는 삭제되지 않고 공유 context도 유지
+    const [k] = await apiClient.listAllKeysToServe(projectId!)
+    const ctxMeta = k.metadata.find(m => m.tag === 'web4' && m.metaKey === 'context')
+    assert.deepEqual(JSON.parse(ctxMeta!.metaValue), ['shared'])
+  })
 })

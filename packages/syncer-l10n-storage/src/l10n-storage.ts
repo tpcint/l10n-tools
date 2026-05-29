@@ -17,6 +17,7 @@ import type {
   L10nKeyMetadata,
   L10nKeyTag,
   L10nKeyToServe,
+  RemoveTagInput,
   UpdateL10nKeyInput,
 } from './api-types.js'
 import {
@@ -71,8 +72,14 @@ export async function syncTransToL10nStorage(
 
   const apiClient = new L10nStorageApiClient(url, token)
 
-  // 1. l10n-storage에서 정책 적용된 키 전체 조회 (keys-to-serve)
-  const listedKeys = await apiClient.listAllKeysToServe(projectId)
+  // 1. 이 sync가 다루는 태그가 달린 키만 l10n-storage에서 조회 (keys-to-serve, tag-filtered).
+  // 핵심 원칙: l10n-storage 호출은 항상 "태그"를 동반한다 — 이 프로젝트가 관리하는 키의 범위.
+  // tag 필터는 orphan(어떤 태그/source에서도 claim되지 않은 키)을 자연 제외하므로, 결과는
+  // "이 태그로 claim된 키"의 정확한 집합이다. 로컬 추출에 없는 키는 unclaim 대상이 된다.
+  // 로컬에는 있지만 listedKeyMap에 없는 키는 (a) 정말 새 키이거나 (b) 다른 태그로만 존재하는
+  // 또는 orphan으로 부활시킬 키다 — 둘 다 Pass 2의 createKeys 경로가 서버 측에서 처리한다
+  // (keyName 중복 시 서버가 자동으로 add-tag로 부활시킨다).
+  const listedKeys = await apiClient.listKeysToServeByTag(projectId, tag)
   const listedKeyMap: { [keyName: string]: L10nKeyToServe } = {}
   for (const key of listedKeys) {
     listedKeyMap[key.keyName] = key
@@ -109,7 +116,7 @@ function pushAddTag(updating: UpdateL10nKeyInput, tag: L10nKeyTag): void {
   updating.addTags.push(tag)
 }
 
-function pushRemoveTag(updating: UpdateL10nKeyInput, tag: L10nKeyTag): void {
+function pushRemoveTag(updating: UpdateL10nKeyInput, tag: RemoveTagInput): void {
   if (!updating.removeTags) updating.removeTags = []
   updating.removeTags.push(tag)
 }
@@ -209,37 +216,55 @@ export function buildKeyChanges(
     else entriesByKeyName.set(ke.key, [ke])
   }
 
-  // Pass 1: 서버에 있고 우리 source 태그가 있는 키의 정리.
-  // - 권위 source(config의 source): 로컬에 없는 context를 제거하고, context가 모두 사라지면 태그도 제거.
-  //   Context metadata는 (tag) 단위로 모든 source가 공유하므로 이 cleanup은 권위 source만 수행한다.
+  // Pass 1: 서버에 있는(이미 tag-filtered) 키 중 로컬 추출에 없는 것의 정리.
+  // - 권위 source(config의 source): "이 프로젝트가 관리하는 키"의 권위를 가지므로 (tag, *)를
+  //   source 무관 일괄 unclaim한다. context가 있는 도메인(Android 등)은 우선 로컬에 없는 context를
+  //   제거하고 context가 하나도 남지 않을 때만 unclaim한다. context-less 도메인(web4 vue-i18n 등)은
+  //   key 단위로 즉시 unclaim한다.
   // - 비권위 source(예: PR-N): 공유 context는 절대 건드리지 않되, 로컬 추출에서 완전히 사라진 키의
   //   자기 (tag, source) 태그만 제거한다. 이렇게 하면 과거 PR가 claim했다가 코드에서 삭제된 orphan이
-  //   _remoteCount/source filter에 영구히 남아 체크런이 고착되는 회귀를 막는다. 자기 태그 제거는 다른
+  //   _remoteCount/source filter에 남아 체크런이 고착되는 회귀를 막는다. 자기 태그 제거는 다른
   //   source에 영향을 주지 않아 안전하다.
   if (isAuthoritativeSource) {
     for (const [keyName, listedKey] of Object.entries(listedKeyMap)) {
-      if (!hasTag(listedKey.tags, tag, source)) continue
+      const serverContexts = getContextsFromMetadata(listedKey.metadata, tag)
 
-      for (const keyContext of getContextsFromMetadata(listedKey.metadata, tag)) {
+      if (serverContexts.length === 0) {
+        // context-less 도메인: 로컬에 없는 키면 즉시 (tag, *) unclaim.
+        if (entriesByKeyName.has(keyName)) continue
+        let updating = updatingKeyMap[keyName]
+        if (!updating) {
+          updating = { keyId: listedKey.id }
+          updatingKeyMap[keyName] = updating
+        }
+        pushRemoveTag(updating, { tag })
+        continue
+      }
+
+      // context-ful 도메인: 로컬에 없는 context는 제거하고, 다 빠지면 (tag, *) unclaim.
+      let touched = false
+      for (const keyContext of serverContexts) {
         const keyEntry = keys.find(keyContext, keyName)
-        if (keyEntry == null) {
-          let updating = updatingKeyMap[keyName]
-          if (!updating) {
-            updating = { keyId: listedKey.id }
-            updatingKeyMap[keyName] = updating
-          }
-          const contextMeta = buildContextMetadataRemoving(listedKey.metadata, tag, keyContext)
-          if (contextMeta) {
-            pushSetMetadata(updating, contextMeta)
-          }
-          // 모든 context가 제거되면 태그도 제거
-          const remaining = getContextsFromMetadata(
-            mergeMetadata(listedKey.metadata, updating.setMetadata ?? []),
-            tag,
-          )
-          if (remaining.length === 0) {
-            pushRemoveTag(updating, { tag, source })
-          }
+        if (keyEntry != null) continue
+        let updating = updatingKeyMap[keyName]
+        if (!updating) {
+          updating = { keyId: listedKey.id }
+          updatingKeyMap[keyName] = updating
+        }
+        const contextMeta = buildContextMetadataRemoving(listedKey.metadata, tag, keyContext)
+        if (contextMeta) {
+          pushSetMetadata(updating, contextMeta)
+          touched = true
+        }
+      }
+      if (touched) {
+        const updating = updatingKeyMap[keyName]!
+        const remaining = getContextsFromMetadata(
+          mergeMetadata(listedKey.metadata, updating.setMetadata ?? []),
+          tag,
+        )
+        if (remaining.length === 0) {
+          pushRemoveTag(updating, { tag })
         }
       }
     }

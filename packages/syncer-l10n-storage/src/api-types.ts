@@ -3,6 +3,17 @@ export interface L10nKeyTag {
   source: string,
 }
 
+/**
+ * removeTags 입력. source를 생략하면 그 `(key, tag)`의 모든 source row를 unclaim한다.
+ * source를 명시하면 해당 `(tag, source)` 한 줄만 제거한다.
+ * 권위 source의 cleanup은 source 생략 형태를 쓰고, 비권위 source(PR scope)의 self-cleanup은
+ * 자기 `(tag, source)`만 정리하기 위해 source를 명시한다.
+ */
+export interface RemoveTagInput {
+  tag: string,
+  source?: string,
+}
+
 export interface L10nKeyMetadata {
   tag: string | null,
   metaKey: string,
@@ -40,7 +51,7 @@ export interface CreateL10nKeyInput {
 export interface UpdateL10nKeyInput {
   keyId: string,
   addTags?: L10nKeyTag[],
-  removeTags?: L10nKeyTag[],
+  removeTags?: RemoveTagInput[],
   setMetadata?: L10nKeyMetadata[],
   suggestions?: CreateSuggestionInput[],
 }

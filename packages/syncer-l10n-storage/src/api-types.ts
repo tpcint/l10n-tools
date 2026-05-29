@@ -6,8 +6,8 @@ export interface L10nKeyTag {
 /**
  * removeTags 입력. source를 생략하면 그 `(key, tag)`의 모든 source row를 unclaim한다.
  * source를 명시하면 해당 `(tag, source)` 한 줄만 제거한다.
- * 권위 source의 cleanup은 source 생략 형태를 쓰고, 비권위 source(PR scope)의 self-cleanup은
- * 자기 `(tag, source)`만 정리하기 위해 source를 명시한다.
+ * 전체 sync(특정 PR 스코프가 아닌 default sync)의 cleanup은 source 생략 형태를 쓰고, 특정 source
+ * sync(PR scope)의 self-cleanup은 자기 `(tag, source)`만 정리하기 위해 source를 명시한다.
  */
 export interface RemoveTagInput {
   tag: string,

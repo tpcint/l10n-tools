@@ -2,7 +2,8 @@ name: E2E Tests
 
 on:
   pull_request:
-    types: [opened, synchronize]
+    # `edited`를 포함해서 PR body의 `tpc-agent-tag:` 마커 추가/변경 시 재실행되도록 한다.
+    types: [opened, synchronize, edited]
 
 jobs:
   changes:
@@ -13,6 +14,7 @@ jobs:
     if: ${{ !startsWith(github.head_ref, 'release-please--') }}
     outputs:
       should_run: ${{ steps.filter.outputs.syncer_l10n_storage }}
+      backend_image: ${{ steps.backend.outputs.image }}
     steps:
       - uses: actions/checkout@v6
       - uses: dorny/paths-filter@v3
@@ -25,6 +27,26 @@ jobs:
               - 'package.json'
               - 'package-lock.json'
               - '.github/workflows/e2e.yml'
+
+      - name: Resolve backend image from PR body
+        # PR description에 `tpc-agent-tag: <tag>` 한 줄이 있으면 그 태그의 tpc-agent PR 빌드 이미지로
+        # e2e를 돌린다. 마커가 없으면 기본 BACKEND_IMAGE secret으로 fallback.
+        id: backend
+        env:
+          PR_BODY: ${{ github.event.pull_request.body }}
+        run: |
+          TAG=$(printf '%s\n' "$PR_BODY" \
+            | grep -iE '^[[:space:]]*tpc-agent-tag:[[:space:]]*[A-Za-z0-9._-]+[[:space:]]*$' \
+            | head -1 \
+            | sed -E 's/^[[:space:]]*[^:]+:[[:space:]]*//; s/[[:space:]]*$//')
+          if [ -n "$TAG" ]; then
+            IMAGE="gcr.io/tpc-misc/tpc-misc-tpc-agent:${TAG}"
+            echo "Using tpc-agent image: ${IMAGE}"
+            echo "image=${IMAGE}" >> "$GITHUB_OUTPUT"
+          else
+            echo "No tpc-agent-tag marker in PR body; using default backend image"
+            echo "image=" >> "$GITHUB_OUTPUT"
+          fi
 
   e2e:
     name: E2E Tests
@@ -44,7 +66,8 @@ jobs:
       id-token: write
 
     env:
-      BACKEND_IMAGE: ${{ secrets.BACKEND_IMAGE }}
+      # PR body의 tpc-agent-tag 마커가 있으면 그 PR 빌드 이미지를, 없으면 기본 secret 이미지를 사용한다.
+      BACKEND_IMAGE: ${{ needs.changes.outputs.backend_image || secrets.BACKEND_IMAGE }}
 
     steps:
       - uses: actions/checkout@v6

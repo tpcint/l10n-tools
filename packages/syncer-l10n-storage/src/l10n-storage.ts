@@ -242,30 +242,28 @@ export function buildKeyChanges(
       }
 
       // context-ful 도메인: 로컬에 없는 context는 제거하고, 다 빠지면 (tag, *) unclaim.
+      // 여러 context가 한 번에 빠질 때 buildContextMetadataRemoving이 매번 원본 listedKey.metadata만
+      // 보고 "그 context 하나만 빠진" 결과를 만들면 pushSetMetadata의 replace로 마지막 iteration만
+      // 살아남는다. baseMetadata를 누적해 매 iteration 직전 상태를 기준으로 다음 context를 빼야 모든
+      // orphan context가 빠진다.
+      let baseMetadata = listedKey.metadata
       let touched = false
       for (const keyContext of serverContexts) {
         const keyEntry = keys.find(keyContext, keyName)
         if (keyEntry != null) continue
+        const contextMeta = buildContextMetadataRemoving(baseMetadata, tag, keyContext)
+        if (contextMeta == null) continue
         let updating = updatingKeyMap[keyName]
         if (!updating) {
           updating = { keyId: listedKey.id }
           updatingKeyMap[keyName] = updating
         }
-        const contextMeta = buildContextMetadataRemoving(listedKey.metadata, tag, keyContext)
-        if (contextMeta) {
-          pushSetMetadata(updating, contextMeta)
-          touched = true
-        }
+        pushSetMetadata(updating, contextMeta)
+        baseMetadata = mergeMetadata(baseMetadata, [contextMeta])
+        touched = true
       }
-      if (touched) {
-        const updating = updatingKeyMap[keyName]!
-        const remaining = getContextsFromMetadata(
-          mergeMetadata(listedKey.metadata, updating.setMetadata ?? []),
-          tag,
-        )
-        if (remaining.length === 0) {
-          pushRemoveTag(updating, { tag })
-        }
+      if (touched && getContextsFromMetadata(baseMetadata, tag).length === 0) {
+        pushRemoveTag(updatingKeyMap[keyName]!, { tag })
       }
     }
   } else {

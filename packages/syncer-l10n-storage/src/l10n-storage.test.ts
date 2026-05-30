@@ -53,8 +53,8 @@ describe('buildKeyChanges', () => {
     assert.deepEqual(creatingKeys[0].tags, [{ tag: 'backend', source: 'main' }])
   })
 
-  it('should NOT claim (tag, source) for non-authoritative source when no new context is added', () => {
-    // A PR-scoped sync (non-authoritative source) extracts the entire local file, so every
+  it('should NOT claim (tag, source) for specific source sync when no new context is added', () => {
+    // A PR-scoped sync (specific source sync) extracts the entire local file, so every
     // key flows through Pass 2 even if the PR did not touch it. To avoid PR-N claiming every
     // key in the project — which previously caused ~2000-key "upload" notifications on
     // PRs that only deleted a handful of strings — claim must require an actual new context.
@@ -66,14 +66,14 @@ describe('buildKeyChanges', () => {
     }
 
     const { creatingKeys, updatingKeys } = buildKeyChanges(
-      'PR-123', 'backend', keyEntries, {}, listedKeyMap, undefined, undefined, /* isAuthoritativeSource */ false,
+      'PR-123', 'backend', keyEntries, {}, listedKeyMap, undefined, undefined, /* isFullSync */ false,
     )
 
     assert.equal(creatingKeys.length, 0)
     assert.equal(updatingKeys.length, 0)
   })
 
-  it('should NOT claim (tag, source) for non-authoritative source when only references change', () => {
+  it('should NOT claim (tag, source) for specific source sync when only references change', () => {
     // References (file:line) drift with PR diffs but are not exposed by the source filter,
     // so PR-N must not claim ownership just because file locations changed.
     const keyEntries: KeyEntry[] = [
@@ -90,7 +90,7 @@ describe('buildKeyChanges', () => {
     }
 
     const { updatingKeys } = buildKeyChanges(
-      'PR-1692', 'android-likey', keyEntries, {}, listedKeyMap, undefined, undefined, /* isAuthoritativeSource */ false,
+      'PR-1692', 'android-likey', keyEntries, {}, listedKeyMap, undefined, undefined, /* isFullSync */ false,
     )
 
     // refs are updated, but no (tag, source) claim
@@ -100,7 +100,7 @@ describe('buildKeyChanges', () => {
     assert.ok(refsMeta != null)
   })
 
-  it('should NOT claim (tag, source) for non-authoritative source when only description changes', () => {
+  it('should NOT claim (tag, source) for specific source sync when only description changes', () => {
     // Description metadata is not exposed by the source filter either, so a description-only
     // change does not warrant a PR-N claim.
     const keyEntries: KeyEntry[] = [
@@ -114,7 +114,7 @@ describe('buildKeyChanges', () => {
     }
 
     const { updatingKeys } = buildKeyChanges(
-      'PR-42', 'android-likey', keyEntries, {}, listedKeyMap, undefined, undefined, /* isAuthoritativeSource */ false,
+      'PR-42', 'android-likey', keyEntries, {}, listedKeyMap, undefined, undefined, /* isFullSync */ false,
     )
 
     assert.equal(updatingKeys.length, 1)
@@ -132,7 +132,7 @@ describe('buildKeyChanges', () => {
     }
 
     const { creatingKeys, updatingKeys } = buildKeyChanges(
-      'PR-123', 'backend', keyEntries, {}, listedKeyMap, undefined, undefined, /* isAuthoritativeSource */ false,
+      'PR-123', 'backend', keyEntries, {}, listedKeyMap, undefined, undefined, /* isFullSync */ false,
     )
 
     assert.equal(creatingKeys.length, 0)
@@ -172,7 +172,7 @@ describe('buildKeyChanges', () => {
     }
 
     const { creatingKeys, updatingKeys } = buildKeyChanges(
-      'PR-99', 'android-likey', keyEntries, {}, listedKeyMap, undefined, undefined, /* isAuthoritativeSource */ false,
+      'PR-99', 'android-likey', keyEntries, {}, listedKeyMap, undefined, undefined, /* isFullSync */ false,
     )
 
     assert.equal(creatingKeys.length, 0)
@@ -287,10 +287,11 @@ describe('buildKeyChanges', () => {
     assert.equal(updatingKeys.length, 0)
   })
 
-  it('Pass 1: should only remove context for own source tags', () => {
-    // key has tag from 'main' source with context 'ctx1'
-    // but local keyEntries don't have this key with context 'ctx1'
-    // → should remove context and tag for 'main' source
+  it('Pass 1 (full sync): drops the orphan context and then unclaims (tag, *) source-agnostically', () => {
+    // context-ful 도메인에서 서버에 등록된 context가 로컬에 더 이상 없는 경우. 우선 context metadata에서
+    // 빠진 context를 제거하고, 한 키의 모든 context가 사라지면 (tag, *)를 source 무관 일괄 unclaim한다.
+    // 전체 sync는 이 태그 전체 범위를 정리할 권한이 있어 다른 source의 (tag, source) 행도 함께
+    // 정리한다 — 키 자체는 데이터 보존(orphan) 상태로 남는다.
     const keyEntries: KeyEntry[] = []
     const listedKeyMap = {
       'removed.key': createL10nKey('removed.key', {
@@ -304,17 +305,21 @@ describe('buildKeyChanges', () => {
       'main', 'backend', keyEntries, {}, listedKeyMap,
     )
 
-    // Should have an update to remove context and tag
     assert.equal(updatingKeys.length, 1)
-    assert.deepEqual(updatingKeys[0].removeTags, [{ tag: 'backend', source: 'main' }])
+    assert.deepEqual(updatingKeys[0].removeTags, [{ tag: 'backend' }])
+    const ctxMeta = updatingKeys[0].setMetadata?.find(m => m.metaKey === 'context')
+    assert.ok(ctxMeta != null)
+    assert.deepEqual(JSON.parse(ctxMeta.metaValue), [])
   })
 
-  it('Pass 1: should not touch keys owned by different source', () => {
+  it('Pass 1 (full sync): unclaims (tag, *) regardless of which source claimed it', () => {
+    // 전체 sync는 tag 단위 정리 책임을 가진다. 다른 source(예: 폐기된 PR-N)가 단 (tag, source) 행도
+    // 함께 unclaim된다 — server는 source 생략된 removeTags를 (key, tag)의 모든 row 제거로 해석한다.
+    // 키 자체는 orphan으로 보존되어 같은 키가 다시 등장하면 부활한다.
     const keyEntries: KeyEntry[] = []
     const listedKeyMap = {
       'other.key': createL10nKey('other.key', {
         tags: [{ tag: 'backend', source: 'other-source' }],
-        metadata: [{ tag: 'backend', metaKey: 'context', metaValue: '' }],
       }),
     }
 
@@ -322,7 +327,31 @@ describe('buildKeyChanges', () => {
       'main', 'backend', keyEntries, {}, listedKeyMap,
     )
 
-    assert.equal(updatingKeys.length, 0)
+    assert.equal(updatingKeys.length, 1)
+    assert.deepEqual(updatingKeys[0].removeTags, [{ tag: 'backend' }])
+    // 공유 context/description metadata는 건드리지 않는다 — 어차피 unclaim으로 자연 정리.
+    assert.equal(updatingKeys[0].setMetadata, undefined)
+  })
+
+  it('Pass 1 (full sync): context-less domain unclaims (tag, *) immediately when key is gone locally', () => {
+    // web4 vue-i18n 처럼 context metadata가 없는 도메인에서, 로컬 추출에 없는 키는 즉시 unclaim한다.
+    // 기존 코드는 context iteration을 거치므로 context-less 도메인의 orphan을 정리하지 못했다.
+    const keyEntries: KeyEntry[] = []
+    const listedKeyMap = {
+      'gone.key': createL10nKey('gone.key', {
+        id: 'key-2',
+        tags: [{ tag: 'web4', source: 'main' }],
+      }),
+    }
+
+    const { updatingKeys } = buildKeyChanges(
+      'main', 'web4', keyEntries, {}, listedKeyMap,
+    )
+
+    assert.equal(updatingKeys.length, 1)
+    assert.equal(updatingKeys[0].keyId, 'key-2')
+    assert.deepEqual(updatingKeys[0].removeTags, [{ tag: 'web4' }])
+    assert.equal(updatingKeys[0].setMetadata, undefined)
   })
 
   it('Pass 2: accumulates contexts when same keyName appears with multiple contexts (existing key)', () => {
@@ -367,7 +396,7 @@ describe('buildKeyChanges', () => {
     }
 
     const { updatingKeys } = buildKeyChanges(
-      'PR-77', 'android-likey', keyEntries, {}, listedKeyMap, undefined, undefined, /* isAuthoritativeSource */ false,
+      'PR-77', 'android-likey', keyEntries, {}, listedKeyMap, undefined, undefined, /* isFullSync */ false,
     )
 
     assert.equal(updatingKeys.length, 1)
@@ -510,7 +539,7 @@ describe('buildKeyChanges', () => {
     assert.deepEqual(JSON.parse(contextMeta.metaValue), ['a:one', 'b:two'])
   })
 
-  it('Pass 1: non-authoritative source drops its own orphan (tag, source) but never touches shared context', () => {
+  it('Pass 1: specific source sync drops its own orphan (tag, source) but never touches shared context', () => {
     // A PR source claimed the key on a previous sync, but the PR's local no longer extracts it.
     // The PR-N tag is now an orphan: it keeps _remoteCount/source filter surfacing the key,
     // freezing the check run on "Translations are not applied". So the PR's own (tag, source)
@@ -529,7 +558,7 @@ describe('buildKeyChanges', () => {
     }
 
     const { updatingKeys } = buildKeyChanges(
-      'PR-7', 'backend', keyEntries, {}, listedKeyMap, undefined, undefined, /* isAuthoritativeSource */ false,
+      'PR-7', 'backend', keyEntries, {}, listedKeyMap, undefined, undefined, /* isFullSync */ false,
     )
 
     assert.equal(updatingKeys.length, 1)
@@ -540,7 +569,7 @@ describe('buildKeyChanges', () => {
     assert.equal(updatingKeys[0].addTags, undefined)
   })
 
-  it('non-authoritative source claims an existing key first introduced by this tag (no context, e.g. web4)', () => {
+  it('specific source sync claims an existing key first introduced by this tag (no context, e.g. web4)', () => {
     // Regression (#346): a context-less domain like likey-web-4 vue-i18n never produces a new
     // context, so the old `contextAdded`-only rule meant a PR could never claim an existing key.
     // When the key already exists on the server under another tag (created by a different repo)
@@ -554,7 +583,7 @@ describe('buildKeyChanges', () => {
     }
 
     const { creatingKeys, updatingKeys } = buildKeyChanges(
-      'PR-1', 'web4', keyEntries, {}, listedKeyMap, undefined, undefined, /* isAuthoritativeSource */ false,
+      'PR-1', 'web4', keyEntries, {}, listedKeyMap, undefined, undefined, /* isFullSync */ false,
     )
 
     assert.equal(creatingKeys.length, 0)
@@ -562,7 +591,7 @@ describe('buildKeyChanges', () => {
     assert.deepEqual(updatingKeys[0].addTags, [{ tag: 'web4', source: 'PR-1' }])
   })
 
-  it('non-authoritative source does NOT claim an existing key this tag already owns (no flood)', () => {
+  it('specific source sync does NOT claim an existing key this tag already owns (no flood)', () => {
     // "불러오는 중..." 유형: main이 이미 (web4, main)으로 소유하고 번역까지 끝난 키. PR이 단순히
     // 추출에 포함시켰다고 claim하면 PR마다 모든 web4 키가 잡혀 #346 폭주가 재현된다. 자기 태그가
     // 이미 있으므로 claim하지 않아야 한다.
@@ -574,14 +603,14 @@ describe('buildKeyChanges', () => {
     }
 
     const { creatingKeys, updatingKeys } = buildKeyChanges(
-      'PR-1', 'web4', keyEntries, {}, listedKeyMap, undefined, undefined, /* isAuthoritativeSource */ false,
+      'PR-1', 'web4', keyEntries, {}, listedKeyMap, undefined, undefined, /* isFullSync */ false,
     )
 
     assert.equal(creatingKeys.length, 0)
     assert.equal(updatingKeys.length, 0)
   })
 
-  it('non-authoritative source still claims when a new context is added (context-ful domain, e.g. Android)', () => {
+  it('specific source sync still claims when a new context is added (context-ful domain, e.g. Android)', () => {
     // Regression guard for the original #346 fix: in a context-ful domain, adding a brand-new
     // context to an existing key must still claim (tag, source) via the contextAdded path,
     // independent of the new hasAnyOwnTag path.
@@ -594,7 +623,7 @@ describe('buildKeyChanges', () => {
     }
 
     const { creatingKeys, updatingKeys } = buildKeyChanges(
-      'PR-9', 'android-likey', keyEntries, {}, listedKeyMap, undefined, undefined, /* isAuthoritativeSource */ false,
+      'PR-9', 'android-likey', keyEntries, {}, listedKeyMap, undefined, undefined, /* isFullSync */ false,
     )
 
     assert.equal(creatingKeys.length, 0)
@@ -605,7 +634,7 @@ describe('buildKeyChanges', () => {
     assert.deepEqual(JSON.parse(contextMeta.metaValue), ['a', 'b'])
   })
 
-  it('Pass 1 (non-authoritative): does NOT remove tag for a key still present in local extraction', () => {
+  it('Pass 1 (specific source): does NOT remove tag for a key still present in local extraction', () => {
     // The key carries its own (tag, source) claim and is still extracted locally → it is a live
     // claim, not an orphan, so Pass 1 must leave it alone (Pass 2 keeps the claim).
     const keyEntries = [createKeyEntry('살아있는키')]
@@ -617,14 +646,14 @@ describe('buildKeyChanges', () => {
     }
 
     const { updatingKeys } = buildKeyChanges(
-      'PR-1', 'web4', keyEntries, {}, listedKeyMap, undefined, undefined, /* isAuthoritativeSource */ false,
+      'PR-1', 'web4', keyEntries, {}, listedKeyMap, undefined, undefined, /* isFullSync */ false,
     )
 
     const removeTagUpdates = updatingKeys.filter(u => u.removeTags != null)
     assert.equal(removeTagUpdates.length, 0)
   })
 
-  it('Pass 1 (non-authoritative): leaves the key itself (and other-source tags) intact when dropping an orphan', () => {
+  it('Pass 1 (specific source): leaves the key itself (and other-source tags) intact when dropping an orphan', () => {
     // Removing the orphan PR-1 tag must not remove the (web4, main) tag nor delete the key.
     const keyEntries: KeyEntry[] = []
     const listedKeyMap = {
@@ -636,7 +665,7 @@ describe('buildKeyChanges', () => {
     }
 
     const { creatingKeys, updatingKeys } = buildKeyChanges(
-      'PR-1', 'web4', keyEntries, {}, listedKeyMap, undefined, undefined, /* isAuthoritativeSource */ false,
+      'PR-1', 'web4', keyEntries, {}, listedKeyMap, undefined, undefined, /* isFullSync */ false,
     )
 
     assert.equal(creatingKeys.length, 0)
@@ -646,9 +675,9 @@ describe('buildKeyChanges', () => {
     assert.equal(updatingKeys[0].setMetadata, undefined)
   })
 
-  it('Pass 1 (authoritative): unaffected by 수정 A/B — claims own tag for a key it does not yet own', () => {
-    // main is authoritative; even with the new hasAnyOwnTag path, authoritative short-circuits
-    // first, so a key it doesn't own yet is still claimed exactly as before.
+  it('Pass 1 (full sync): unaffected by 수정 A/B — claims own tag for a key it does not yet own', () => {
+    // full sync uses main as default source; even with the new hasAnyOwnTag path, isFullSync
+    // short-circuits first, so a key it doesn't own yet is still claimed exactly as before.
     const keyEntries = [createKeyEntry('취소')] // context null
     const listedKeyMap = {
       취소: createL10nKey('취소', {
@@ -657,7 +686,7 @@ describe('buildKeyChanges', () => {
     }
 
     const { updatingKeys } = buildKeyChanges(
-      'main', 'web4', keyEntries, {}, listedKeyMap, // isAuthoritativeSource defaults to true
+      'main', 'web4', keyEntries, {}, listedKeyMap, // isFullSync defaults to true
     )
 
     assert.equal(updatingKeys.length, 1)

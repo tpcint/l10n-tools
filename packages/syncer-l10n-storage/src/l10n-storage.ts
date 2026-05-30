@@ -17,6 +17,7 @@ import type {
   L10nKeyMetadata,
   L10nKeyTag,
   L10nKeyToServe,
+  RemoveTagInput,
   UpdateL10nKeyInput,
 } from './api-types.js'
 import {
@@ -55,10 +56,14 @@ export async function syncTransToL10nStorage(
   const projectId = storageConfig.getProjectId()
   const configSource = storageConfig.getSource()
   const source = options?.source ?? configSource
-  // The configured source (e.g. 'main') is the authoritative one that owns metadata cleanup.
-  // Ephemeral sources like a PR scope must be add-only so they cannot strip contexts that
-  // other sources (notably 'main') still use — context metadata is shared per tag.
-  const isAuthoritativeSource = source === configSource
+  // 두 가지 sync 모드를 구분한다.
+  // - **전체 sync** (`source === configSource`, options.source 미지정): 이 태그의 모든 키를 대상으로
+  //   하는 sync. 로컬에 없는 키는 (tag) 자체를 source-omitted로 unclaim 가능. 새 키가 추가될 때
+  //   특정 PR이 아니므로 default source(configSource, 보통 'main')가 부여된다.
+  // - **특정 source sync** (`options.source = 'PR-N'`): PR 스코프 sync. 자기 (tag, source) 범위만
+  //   관리하고 다른 source의 claim/공유 metadata는 절대 건드리지 않는다.
+  // main이 특별한 게 아니라, "특정 PR이 아닐 때 default source가 main"인 것일 뿐 main과 PR-N은 동등.
+  const isFullSync = source === configSource
   const url = storageConfig.getUrl()
 
   const token = process.env.TPC_AGENT_TOKEN
@@ -71,8 +76,14 @@ export async function syncTransToL10nStorage(
 
   const apiClient = new L10nStorageApiClient(url, token)
 
-  // 1. l10n-storage에서 정책 적용된 키 전체 조회 (keys-to-serve)
-  const listedKeys = await apiClient.listAllKeysToServe(projectId)
+  // 1. 이 sync가 다루는 태그가 달린 키만 l10n-storage에서 조회 (keys-to-serve, tag-filtered).
+  // 핵심 원칙: l10n-storage 호출은 항상 "태그"를 동반한다 — 이 프로젝트가 관리하는 키의 범위.
+  // tag 필터는 orphan(어떤 태그/source에서도 claim되지 않은 키)을 자연 제외하므로, 결과는
+  // "이 태그로 claim된 키"의 정확한 집합이다. 로컬 추출에 없는 키는 unclaim 대상이 된다.
+  // 로컬에는 있지만 listedKeyMap에 없는 키는 (a) 정말 새 키이거나 (b) 다른 태그로만 존재하는
+  // 또는 orphan으로 부활시킬 키다 — 둘 다 Pass 2의 createKeys 경로가 서버 측에서 처리한다
+  // (keyName 중복 시 서버가 자동으로 add-tag로 부활시킨다).
+  const listedKeys = await apiClient.listKeysToServeByTag(projectId, tag)
   const listedKeyMap: { [keyName: string]: L10nKeyToServe } = {}
   for (const key of listedKeys) {
     listedKeyMap[key.keyName] = key
@@ -80,7 +91,7 @@ export async function syncTransToL10nStorage(
 
   // 2. 로컬과 비교하여 create/update 대상 분류
   const { creatingKeys, updatingKeys } = buildKeyChanges(
-    source, tag, keyEntries, allTransData, listedKeyMap, localeSyncMap, options, isAuthoritativeSource,
+    source, tag, keyEntries, allTransData, listedKeyMap, localeSyncMap, options, isFullSync,
   )
 
   // 3. 서버 번역을 로컬에 반영
@@ -109,7 +120,7 @@ function pushAddTag(updating: UpdateL10nKeyInput, tag: L10nKeyTag): void {
   updating.addTags.push(tag)
 }
 
-function pushRemoveTag(updating: UpdateL10nKeyInput, tag: L10nKeyTag): void {
+function pushRemoveTag(updating: UpdateL10nKeyInput, tag: RemoveTagInput): void {
   if (!updating.removeTags) updating.removeTags = []
   updating.removeTags.push(tag)
 }
@@ -184,7 +195,7 @@ export function buildKeyChanges(
   listedKeyMap: { [keyName: string]: L10nKeyToServe },
   localeSyncMap?: { [locale: string]: string },
   options?: SyncerOptions,
-  isAuthoritativeSource: boolean = true,
+  isFullSync: boolean = true,
 ): {
   creatingKeys: CreateL10nKeyInput[],
   updatingKeys: UpdateL10nKeyInput[],
@@ -209,38 +220,55 @@ export function buildKeyChanges(
     else entriesByKeyName.set(ke.key, [ke])
   }
 
-  // Pass 1: 서버에 있고 우리 source 태그가 있는 키의 정리.
-  // - 권위 source(config의 source): 로컬에 없는 context를 제거하고, context가 모두 사라지면 태그도 제거.
-  //   Context metadata는 (tag) 단위로 모든 source가 공유하므로 이 cleanup은 권위 source만 수행한다.
-  // - 비권위 source(예: PR-N): 공유 context는 절대 건드리지 않되, 로컬 추출에서 완전히 사라진 키의
-  //   자기 (tag, source) 태그만 제거한다. 이렇게 하면 과거 PR가 claim했다가 코드에서 삭제된 orphan이
-  //   _remoteCount/source filter에 영구히 남아 체크런이 고착되는 회귀를 막는다. 자기 태그 제거는 다른
-  //   source에 영향을 주지 않아 안전하다.
-  if (isAuthoritativeSource) {
+  // Pass 1: 서버에 있는(이미 tag-filtered) 키 중 로컬 추출에 없는 것의 정리.
+  // - 전체 sync: 이 태그의 모든 키를 대상으로 하므로 로컬에 없는 키의 (tag) 자체를 source-omitted로
+  //   일괄 unclaim한다. context가 있는 도메인(Android 등)은 우선 로컬에 없는 context를 제거하고
+  //   context가 하나도 남지 않을 때만 unclaim한다. context-less 도메인(web4 vue-i18n 등)은 key
+  //   단위로 즉시 unclaim한다. PR 1161 단일-source 모델에서 (tag) PK당 source는 하나뿐이므로
+  //   source 생략은 그 한 row를 깨끗이 제거하며, 누구든 점유 중인 claim도 같이 정리된다.
+  // - 특정 source sync(예: --source PR-N): 공유 context는 절대 건드리지 않되, 로컬 추출에서 완전히
+  //   사라진 키의 자기 (tag, source) 태그만 제거한다. PR이 도중 추가했다가 도중 제거한 키의 자기
+  //   claim을 정리해 PR 체크런이 stale orphan으로 고착되는 회귀(#358)를 막는다. 자기 태그 제거는
+  //   다른 source에 영향을 주지 않아 안전하다.
+  if (isFullSync) {
     for (const [keyName, listedKey] of Object.entries(listedKeyMap)) {
-      if (!hasTag(listedKey.tags, tag, source)) continue
+      const serverContexts = getContextsFromMetadata(listedKey.metadata, tag)
 
-      for (const keyContext of getContextsFromMetadata(listedKey.metadata, tag)) {
-        const keyEntry = keys.find(keyContext, keyName)
-        if (keyEntry == null) {
-          let updating = updatingKeyMap[keyName]
-          if (!updating) {
-            updating = { keyId: listedKey.id }
-            updatingKeyMap[keyName] = updating
-          }
-          const contextMeta = buildContextMetadataRemoving(listedKey.metadata, tag, keyContext)
-          if (contextMeta) {
-            pushSetMetadata(updating, contextMeta)
-          }
-          // 모든 context가 제거되면 태그도 제거
-          const remaining = getContextsFromMetadata(
-            mergeMetadata(listedKey.metadata, updating.setMetadata ?? []),
-            tag,
-          )
-          if (remaining.length === 0) {
-            pushRemoveTag(updating, { tag, source })
-          }
+      if (serverContexts.length === 0) {
+        // context-less 도메인: 로컬에 없는 키면 즉시 (tag, *) unclaim.
+        if (entriesByKeyName.has(keyName)) continue
+        let updating = updatingKeyMap[keyName]
+        if (!updating) {
+          updating = { keyId: listedKey.id }
+          updatingKeyMap[keyName] = updating
         }
+        pushRemoveTag(updating, { tag })
+        continue
+      }
+
+      // context-ful 도메인: 로컬에 없는 context는 제거하고, 다 빠지면 (tag, *) unclaim.
+      // 여러 context가 한 번에 빠질 때 buildContextMetadataRemoving이 매번 원본 listedKey.metadata만
+      // 보고 "그 context 하나만 빠진" 결과를 만들면 pushSetMetadata의 replace로 마지막 iteration만
+      // 살아남는다. baseMetadata를 누적해 매 iteration 직전 상태를 기준으로 다음 context를 빼야 모든
+      // orphan context가 빠진다.
+      let baseMetadata = listedKey.metadata
+      let touched = false
+      for (const keyContext of serverContexts) {
+        const keyEntry = keys.find(keyContext, keyName)
+        if (keyEntry != null) continue
+        const contextMeta = buildContextMetadataRemoving(baseMetadata, tag, keyContext)
+        if (contextMeta == null) continue
+        let updating = updatingKeyMap[keyName]
+        if (!updating) {
+          updating = { keyId: listedKey.id }
+          updatingKeyMap[keyName] = updating
+        }
+        pushSetMetadata(updating, contextMeta)
+        baseMetadata = mergeMetadata(baseMetadata, [contextMeta])
+        touched = true
+      }
+      if (touched && getContextsFromMetadata(baseMetadata, tag).length === 0) {
+        pushRemoveTag(updatingKeyMap[keyName]!, { tag })
       }
     }
   } else {
@@ -292,20 +320,20 @@ export function buildKeyChanges(
       const refsChanged = (mergedRefs.length > 0 || existingRefEntry != null)
         && (existingRefEntry == null || existingRefEntry.metaValue !== mergedRefsValue)
 
-      // 비권위 source(PR-N 등)의 claim 조건. 단순히 keyEntries에 키를 포함시킨 것만으로 모든 키에
+      // 특정 source sync(PR-N 등)의 claim 조건. 단순히 keyEntries에 키를 포함시킨 것만으로 모든 키에
       // PR-N 태그를 붙이면, PR scope sync마다 모든 키가 update 대상으로 잡혀 storage에 폭주 알림이
-      // 발생한다(#346). 그래서 비권위 source는 다음 중 하나일 때만 claim한다:
+      // 발생한다(#346). 그래서 특정 source sync는 다음 중 하나일 때만 claim한다:
       //   - contextAdded: 키에 새 context를 추가 (Android에서 동일 원문을 새 <string name>에 쓰는 경우).
       //   - !hasAnyOwnTag: 이 태그가 이 키를 처음 다룸. 다른 repo가 만든 기존 키를 이 도메인이 처음
       //     사용하기 시작하는 마이그레이션 케이스. context가 없는 도메인(예: web4 vue-i18n)은 contextAdded가
       //     영영 false라, 이 신호가 없으면 기존 키를 절대 claim하지 못한다(회귀). 폭주는 발생하지 않는데,
       //     이 도메인이 이미 다루던 키는 (tag, main 등) 자기 태그를 가져 hasAnyOwnTag가 true이기 때문이다.
       // description/references 변경은 source filter에 노출되지 않아 PR apply에 propagate할 필요가 없으므로
-      // claim 대상에서 제외한다. 권위 source(예: main)는 tag ownership 관리 책임이 있어 자기 (tag, source)가
-      // 없으면 항상 claim(isAuthoritativeSource 단락평가로 동작 불변).
+      // claim 대상에서 제외한다. 전체 sync는 tag ownership 관리 책임이 있어 자기 (tag, source)가 없으면
+      // 항상 claim(isFullSync 단락평가로 동작 불변).
       const hasOwnSourceTag = hasTag(listedKey.tags, tag, source)
       const hasAnyOwnTag = hasTagAnySource(listedKey.tags, tag)
-      const needsTagAdd = !hasOwnSourceTag && (isAuthoritativeSource || contextAdded || !hasAnyOwnTag)
+      const needsTagAdd = !hasOwnSourceTag && (isFullSync || contextAdded || !hasAnyOwnTag)
 
       if (needsTagAdd || metaUpdates.length > 0 || refsChanged) {
         let updating = updatingKeyMap[entryKey]

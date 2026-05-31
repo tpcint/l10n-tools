@@ -242,6 +242,14 @@ async function run() {
     tagMetadata?: Record<string, string>,
     source?: string,
     contexts?: string,
+    report?: string,
+  }
+  type CheckReportDomain = {
+    domain: string,
+    tag: string,
+    link?: string,
+    untranslatedCount: number,
+    untranslatedKeys: string[],
   }
   program.command('check')
     .description('Check all translated')
@@ -252,9 +260,12 @@ async function run() {
     .option('--tag-metadata <key=value>', 'tag-specific metadata to apply when creating keys (repeatable)', collectKeyValue, {})
     .option('--source <source>', 'source identifier for tag ownership (l10n-storage)')
     .option('-c, --contexts <contexts>', 'contexts to check (comma separated)')
+    .option('--report <path>', 'write a machine-readable JSON report of untranslated keys (suppresses stdout dump); pair with --source for translation links')
     .argument('[files...]', 'files to check, if not specified, all files will be checked')
     .action(async (files: string[], opts: CheckOptions, cmd: Command) => {
       const syncerOptions = buildSyncerOptions(opts)
+      const reportActive = opts.report != null
+      const reportDomains: CheckReportDomain[] = []
       await runSubCommand(cmd.name(), async (domainName, config, domainConfig, skipUpload) => {
         const cacheDir = domainConfig.getCacheDir()
         const locales = opts['locales'] ? opts['locales'].split(',') : domainConfig.getLocales()
@@ -308,6 +319,8 @@ async function run() {
           }
           return EntryCollection.loadEntries(keyEntries)
         })()
+        // 미번역 키를 locale 간 dedupe 하여 도메인 단위로 모은다 (--report 사용 시).
+        const untranslatedKeys = reportActive ? new Set<string>() : null
         for (const locale of locales) {
           const transPath = getTransPath(transDir, locale)
           const useUnverified = config.useUnverified(locale)
@@ -321,6 +334,11 @@ async function run() {
             }
             process.exitCode = 1
 
+            if (untranslatedKeys != null) {
+              untranslatedKeys.add(transEntry.key)
+              continue
+            }
+
             process.stdout.write(`[${locale}] ${specs.join(',')}\n`)
             const flag = transEntry.flag
             if (flag) {
@@ -333,7 +351,31 @@ async function run() {
             process.stdout.write(`message "${JSON.stringify(transEntry.messages)}"\n\n`)
           }
         }
+
+        // 미번역이 0건인 도메인은 리포트에서 제외한다.
+        if (untranslatedKeys != null && untranslatedKeys.size > 0) {
+          const keyNames = [...untranslatedKeys]
+          reportDomains.push({
+            domain: domainName,
+            tag,
+            // source 가 있어야 tag/source 뷰 링크를 만들 수 있다. 없으면 link 생략.
+            ...(opts.source != null
+              ? { link: config.getL10nStorageConfig().getTranslationLink(tag, opts.source) }
+              : {}),
+            untranslatedCount: keyNames.length,
+            untranslatedKeys: keyNames,
+          })
+        }
       })
+
+      if (reportActive) {
+        const report = {
+          source: opts.source ?? null,
+          domains: reportDomains,
+        }
+        await fsp.writeFile(opts.report!, JSON.stringify(report, null, 2) + '\n', { encoding: 'utf-8' })
+        log.info(cmd.name(), `wrote untranslated report to ${opts.report}`)
+      }
     })
 
   type ExtractKeysOptions = {

@@ -245,6 +245,10 @@
         "url": {
           "description": "Base URL of the tpc-agent service. Can be overridden by TPC_AGENT_URL env var",
           "type": "string"
+        },
+        "web-url": {
+          "description": "Base URL of the TPC Space web app (used to build translation links). Can be overridden by TPC_SPACE_URL env var",
+          "type": "string"
         }
       },
       "required": [

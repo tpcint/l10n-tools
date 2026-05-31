@@ -400,6 +400,8 @@ export class ValidationConfig {
 type L10nStorageConf = {
   /** Base URL of the tpc-agent service. Can be overridden by TPC_AGENT_URL env var */
   'url'?: string,
+  /** Base URL of the TPC Space web app (used to build translation links). Can be overridden by TPC_SPACE_URL env var */
+  'web-url'?: string,
   'projectId': string,
   /** Source identifier for tag ownership */
   'source'?: string,
@@ -421,8 +423,23 @@ export class L10nStorageConfig {
     return url
   }
 
+  getWebUrl(): string {
+    const url = process.env.TPC_SPACE_URL ?? this.sc['web-url'] ?? 'https://space.tpcground.com'
+    return url.replace(/\/+$/, '')
+  }
+
   getProjectId(): string {
     return this.sc.projectId
+  }
+
+  /**
+   * Build a link to the TPC Space translation view scoped to a tag/source pair,
+   * e.g. https://space.tpcground.com/l10n/translations?project=<id>&tagSource=<tag>/<source>
+   */
+  getTranslationLink(tag: string, source: string): string {
+    const project = encodeURIComponent(this.getProjectId())
+    const tagSource = `${encodeURIComponent(tag)}/${encodeURIComponent(source)}`
+    return `${this.getWebUrl()}/l10n/translations?project=${project}&tagSource=${tagSource}`
   }
 
   getSource(): string {

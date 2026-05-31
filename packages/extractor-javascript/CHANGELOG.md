@@ -1,5 +1,14 @@
 # Changelog
 
+## [7.1.15](https://github.com/tpcint/l10n-tools/compare/l10n-tools-extractor-javascript-v7.1.14...l10n-tools-extractor-javascript-v7.1.15) (2026-05-31)
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * peerDependencies
+    * l10n-tools-core bumped from ^8.2.0 to ^8.3.0
+
 ## [7.1.14](https://github.com/tpcint/l10n-tools/compare/l10n-tools-extractor-javascript-v7.1.13...l10n-tools-extractor-javascript-v7.1.14) (2026-05-05)
 
 

@@ -32,6 +32,12 @@ describe('L10nStorageConfig', () => {
       assert.equal(sc.getWebUrl(), 'https://env.example.com')
     })
 
+    it('treats an empty env var as unset and falls back', () => {
+      process.env.TPC_SPACE_URL = ''
+      const sc = new L10nStorageConfig({ 'projectId': 'p', 'web-url': 'https://space.example.com' })
+      assert.equal(sc.getWebUrl(), 'https://space.example.com')
+    })
+
     it('strips trailing slashes', () => {
       const sc = new L10nStorageConfig({ 'projectId': 'p', 'web-url': 'https://space.example.com//' })
       assert.equal(sc.getWebUrl(), 'https://space.example.com')

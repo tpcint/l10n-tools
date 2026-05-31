@@ -424,7 +424,7 @@ export class L10nStorageConfig {
   }
 
   getWebUrl(): string {
-    const url = process.env.TPC_SPACE_URL ?? this.sc['web-url'] ?? 'https://space.tpcground.com'
+    const url = process.env.TPC_SPACE_URL || this.sc['web-url'] || 'https://space.tpcground.com'
     return url.replace(/\/+$/, '')
   }
 

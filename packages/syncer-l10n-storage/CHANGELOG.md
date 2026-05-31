@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.4.0](https://github.com/tpcint/l10n-tools/compare/l10n-tools-syncer-l10n-storage-v1.3.6...l10n-tools-syncer-l10n-storage-v1.4.0) (2026-05-31)
+
+
+### Miscellaneous Chores
+
+* **deps:** bump es-toolkit from 1.46.1 to 1.47.0 ([#362](https://github.com/tpcint/l10n-tools/issues/362)) ([9b3258e](https://github.com/tpcint/l10n-tools/commit/9b3258ed9229b589f58dd8c534f6436ecc1e7d72))
+
+
+### Features
+
+* **syncer-l10n-storage:** tag-filtered fetch and (tag,*) unclaim under single-source model ([#363](https://github.com/tpcint/l10n-tools/issues/363)) ([366ed23](https://github.com/tpcint/l10n-tools/commit/366ed23e474340de731352a961f42c23fd7a2413))
+
 ## [1.3.6](https://github.com/tpcint/l10n-tools/compare/l10n-tools-syncer-l10n-storage-v1.3.5...l10n-tools-syncer-l10n-storage-v1.3.6) (2026-05-26)
 
 

@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.4.1](https://github.com/tpcint/l10n-tools/compare/l10n-tools-syncer-l10n-storage-v1.4.0...l10n-tools-syncer-l10n-storage-v1.4.1) (2026-05-31)
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * peerDependencies
+    * l10n-tools-core bumped from ^8.2.0 to ^8.3.0
+
 ## [1.4.0](https://github.com/tpcint/l10n-tools/compare/l10n-tools-syncer-l10n-storage-v1.3.6...l10n-tools-syncer-l10n-storage-v1.4.0) (2026-05-31)
 
 

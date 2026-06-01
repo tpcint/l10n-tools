@@ -1,5 +1,19 @@
 # Changelog
 
+## [7.10.0](https://github.com/tpcint/l10n-tools/compare/l10n-tools-v7.9.0...l10n-tools-v7.10.0) (2026-05-31)
+
+
+### Features
+
+* **cli:** add `check --report <path>` for untranslated key reporting ([#365](https://github.com/tpcint/l10n-tools/issues/365)) ([1f45126](https://github.com/tpcint/l10n-tools/commit/1f451262aa35eba5fe89421dc1772a551a89df92))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * l10n-tools-core bumped from ^8.2.0 to ^8.3.0
+
 ## [7.9.0](https://github.com/tpcint/l10n-tools/compare/l10n-tools-v7.8.1...l10n-tools-v7.9.0) (2026-05-08)
 
 

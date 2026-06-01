@@ -1,6 +1,6 @@
 {
   "name": "l10n-tools-compiler-json",
-  "version": "7.2.1",
+  "version": "7.2.2",
   "description": "l10n-tools compiler for JSON formats (vue-i18n, node-i18n, i18next)",
   "type": "module",
   "engines": {
@@ -31,7 +31,7 @@
     "@types/npmlog": "^7.0.0"
   },
   "peerDependencies": {
-    "l10n-tools-core": "^8.2.0"
+    "l10n-tools-core": "^8.3.0"
   },
   "author": "Eungkyu Song <eungkyu@gmail.com>",
   "license": "MIT",

@@ -109,8 +109,8 @@ async function makeTempDir(prefix: string): Promise<string> {
 }
 
 function makeIosConfig(srcDir: string, scanSrcDirs?: string[]): CompilerConfig {
-  const conf: { type: string, 'src-dir': string, 'scan-src-dirs'?: string[] } = {
-    type: 'ios',
+  const conf: { 'type': string, 'src-dir': string, 'scan-src-dirs'?: string[] } = {
+    'type': 'ios',
     'src-dir': srcDir,
   }
   if (scanSrcDirs != null) {

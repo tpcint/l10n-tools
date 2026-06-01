@@ -38,6 +38,8 @@ export async function extractIosKeys(domainName: string, config: DomainConfig, k
 
   const extractor = new KeyExtractor()
   const srcDir = config.getSrcDir()
+  const extraDirs = config.getSrcDirs()
+  const effectiveDirs = extraDirs.length > 0 ? extraDirs : [srcDir]
 
   log.info('extractKeys', 'extracting from .swift files')
   const swiftQueue = new PQueue({ concurrency: os.cpus().length })
@@ -52,14 +54,16 @@ export async function extractIosKeys(domainName: string, config: DomainConfig, k
     const stringsPath = path.join(stringsDir, 'Localizable.strings')
     if (await fileExists(stringsPath)) {
       const input = await fsp.readFile(stringsPath, { encoding: 'utf16le' })
-      const swiftFile = swiftPath.substring(srcDir.length + 1)
+      const swiftFile = relativeFromAny(swiftPath, effectiveDirs)
       return { input, swiftFile }
     } else {
       return { input: null, swiftFile: null }
     }
   }
 
-  const swiftPaths = await glob(`${srcDir}/**/*.swift`)
+  const swiftPaths = (await Promise.all(
+    effectiveDirs.map(d => glob(`${d}/**/*.swift`)),
+  )).flat()
   const swiftExtracted = await swiftQueue.addAll(
     swiftPaths.map(swiftPath => () => extractFromSwift(swiftPath)),
   )
@@ -95,7 +99,7 @@ export async function extractIosKeys(domainName: string, config: DomainConfig, k
     log.info('extractKeys', `extracting property access patterns: ${keywordsStr}`)
     for (const swiftPath of swiftPaths) {
       const src = await fsp.readFile(swiftPath, { encoding: 'utf-8' })
-      const swiftFile = swiftPath.substring(srcDir.length + 1)
+      const swiftFile = relativeFromAny(swiftPath, effectiveDirs)
       extractSwiftPropertyAccess(extractor, swiftFile, src, propertyKeywordConfigs)
     }
   }
@@ -139,6 +143,11 @@ export async function extractIosKeys(domainName: string, config: DomainConfig, k
 
   await writeKeyEntries(keysPath, extractor.keys.toEntries())
   await fsp.rm(tempDir, { force: true, recursive: true })
+}
+
+function relativeFromAny(p: string, roots: string[]): string {
+  const root = roots.find(r => p === r || p.startsWith(r + path.sep) || p.startsWith(r + '/'))
+  return root ? p.substring(root.length + 1) : p
 }
 
 async function getInfoPlistPath(srcDir: string) {

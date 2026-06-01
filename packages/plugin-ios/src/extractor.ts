@@ -39,7 +39,18 @@ export async function extractIosKeys(domainName: string, config: DomainConfig, k
   const extractor = new KeyExtractor()
   const srcDir = config.getSrcDir()
   const extraDirs = config.getSrcDirs()
-  const effectiveDirs = extraDirs.length > 0 ? extraDirs : [srcDir]
+  const candidateDirs = extraDirs.length > 0 ? extraDirs : [srcDir]
+  const effectiveDirs: string[] = []
+  for (const d of candidateDirs) {
+    if (await fileExists(d)) {
+      effectiveDirs.push(d)
+    } else {
+      log.warn('extractKeys', `src-dir not found, skipping: ${d}`)
+    }
+  }
+  if (effectiveDirs.length === 0) {
+    throw new Error('no src-dirs exist on disk; nothing to scan')
+  }
 
   log.info('extractKeys', 'extracting from .swift files')
   const swiftQueue = new PQueue({ concurrency: os.cpus().length })
@@ -146,7 +157,9 @@ export async function extractIosKeys(domainName: string, config: DomainConfig, k
 }
 
 function relativeFromAny(p: string, roots: string[]): string {
-  const root = roots.find(r => p === r || p.startsWith(r + path.sep) || p.startsWith(r + '/'))
+  // Sort by length desc so a nested root (e.g. "/a/sub") is matched before its parent ("/a").
+  const sortedRoots = [...roots].sort((a, b) => b.length - a.length)
+  const root = sortedRoots.find(r => p === r || p.startsWith(r + path.sep) || p.startsWith(r + '/'))
   return root ? p.substring(root.length + 1) : p
 }
 

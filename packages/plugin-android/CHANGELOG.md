@@ -1,5 +1,14 @@
 # Changelog
 
+## [7.5.5](https://github.com/tpcint/l10n-tools/compare/l10n-tools-plugin-android-v7.5.4...l10n-tools-plugin-android-v7.5.5) (2026-06-01)
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * peerDependencies
+    * l10n-tools-core bumped from ^8.3.0 to ^9.0.0
+
 ## [7.5.4](https://github.com/tpcint/l10n-tools/compare/l10n-tools-plugin-android-v7.5.3...l10n-tools-plugin-android-v7.5.4) (2026-05-31)
 
 

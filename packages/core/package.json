@@ -1,6 +1,6 @@
 {
   "name": "l10n-tools-core",
-  "version": "8.3.0",
+  "version": "9.0.0",
   "description": "Localization tools - Core library and infrastructure",
   "type": "module",
   "engines": {

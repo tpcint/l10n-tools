@@ -92,7 +92,20 @@ export async function compileToIosStrings(
         const output = generateStringsFile(strings)
         await fsp.writeFile(stringsPath, output, { encoding: 'utf-8' })
       } else if (stringsName === 'Localizable') {
-        await execWithLog(`find "${srcDir}" -name "*.swift" -print0 | xargs -0 genstrings -q -u -SwiftUI -o "${tempDir}"`)
+        const scanSrcDirs = config.getScanSrcDirs()
+        const existingDirs: string[] = []
+        for (const d of scanSrcDirs) {
+          if (await fileExists(d)) {
+            existingDirs.push(d)
+          } else {
+            log.warn('compile', `scan-src-dir not found, skipping: ${d}`)
+          }
+        }
+        if (existingDirs.length === 0) {
+          throw new Error('no scan-src-dirs exist on disk; nothing to scan')
+        }
+        const quotedDirs = existingDirs.map(d => `"${d.replace(/"/g, '\\"')}"`).join(' ')
+        await execWithLog(`find ${quotedDirs} -name "*.swift" -print0 | xargs -0 genstrings -q -u -SwiftUI -o "${tempDir}"`)
         const srcStrings = i18nStringsFiles.readFileSync(path.join(tempDir, 'Localizable.strings'), { encoding: 'utf16le', wantsComments: true })
         const stringsDictPath = path.join(path.dirname(stringsPath), stringsName + '.stringsdict')
 

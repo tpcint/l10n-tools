@@ -108,9 +108,30 @@ async function makeTempDir(prefix: string): Promise<string> {
   return await fsp.mkdtemp(path.join(os.tmpdir(), prefix))
 }
 
-function makeIosConfig(srcDir: string): CompilerConfig {
-  return new CompilerConfig({ 'type': 'ios', 'src-dir': srcDir } as never)
+function makeIosConfig(srcDir: string, scanSrcDirs?: string[]): CompilerConfig {
+  const conf: { type: string, 'src-dir': string, 'scan-src-dirs'?: string[] } = {
+    type: 'ios',
+    'src-dir': srcDir,
+  }
+  if (scanSrcDirs != null) {
+    conf['scan-src-dirs'] = scanSrcDirs
+  }
+  return new CompilerConfig(conf as never)
 }
+
+describe('makeIosConfig wires scan-src-dirs into CompilerConfig.getScanSrcDirs', () => {
+  it('defaults scan dirs to [srcDir] when omitted', () => {
+    const cfg = makeIosConfig('/a')
+    assert.deepEqual(cfg.getScanSrcDirs(), ['/a'])
+  })
+
+  it('honors explicit scan-src-dirs (e.g. App + Flow)', () => {
+    const cfg = makeIosConfig('/app/Likey', ['/app/Likey', '/app/Flow'])
+    assert.deepEqual(cfg.getScanSrcDirs(), ['/app/Likey', '/app/Flow'])
+    // output srcDir remains decoupled
+    assert.equal(cfg.getSrcDir(), '/app/Likey')
+  })
+})
 
 async function writeTransFiles(dir: string, perLocale: { [locale: string]: TransEntry[] }): Promise<void> {
   for (const [locale, entries] of Object.entries(perLocale)) {

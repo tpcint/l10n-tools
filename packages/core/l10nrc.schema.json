@@ -23,6 +23,13 @@
           "description": "Location of res (android)",
           "type": "string"
         },
+        "scan-src-dirs": {
+          "description": "(ios) Extra source roots to scan when re-extracting keys during compile. Defaults to [src-dir] when omitted. Output location is unaffected.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
         "src-dir": {
           "description": "Location of source root (ios)",
           "type": "string"

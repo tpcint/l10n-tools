@@ -304,6 +304,7 @@ type CompilerConf = {
    * (ios) Scan roots used when re-extracting keys during compile.
    * When set, overrides the output's `src-dir` as the scan source.
    * Defaults to `[src-dir]` when omitted. Output location is unaffected.
+   * @minItems 1
    */
   'scan-src-dirs'?: string[],
   /** Location of res (android) */

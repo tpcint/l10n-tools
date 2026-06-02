@@ -104,10 +104,16 @@ export async function compileToIosStrings(
         if (existingDirs.length === 0) {
           throw new Error('no scan-src-dirs exist on disk; nothing to scan')
         }
-        // Escape backslash first, then double quote — order matters so we don't
-        // double-escape the backslashes we just inserted.
+        // Escape backslash first, then characters that the shell still interprets
+        // inside double quotes: double quote, `$`, and backtick. Order matters so
+        // we don't double-escape the backslashes we just inserted.
         const quotedDirs = existingDirs
-          .map(d => `"${d.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`)
+          .map(d => `"${d
+            .replace(/\\/g, '\\\\')
+            .replace(/"/g, '\\"')
+            .replace(/\$/g, '\\$')
+            .replace(/`/g, '\\`')
+          }"`)
           .join(' ')
         await execWithLog(`find ${quotedDirs} -name "*.swift" -print0 | xargs -0 genstrings -q -u -SwiftUI -o "${tempDir}"`)
         const srcStrings = i18nStringsFiles.readFileSync(path.join(tempDir, 'Localizable.strings'), { encoding: 'utf16le', wantsComments: true })

@@ -71,9 +71,10 @@ export async function extractIosKeys(domainName: string, config: DomainConfig, k
     }
   }
 
-  const swiftPaths = (await Promise.all(
+  // Dedup swift paths in case scan roots overlap (e.g. one root is nested in another).
+  const swiftPaths = [...new Set((await Promise.all(
     effectiveDirs.map(d => glob(`${d}/**/*.swift`)),
-  )).flat()
+  )).flat())]
   const swiftExtracted = await swiftQueue.addAll(
     swiftPaths.map(swiftPath => () => extractFromSwift(swiftPath)),
   )

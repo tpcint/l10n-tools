@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, it } from 'node:test'
 import assert from 'node:assert/strict'
-import { L10nStorageConfig } from './config.js'
+import { CompilerConfig, L10nStorageConfig } from './config.js'
 
 describe('L10nStorageConfig', () => {
   const savedSpaceUrl = process.env.TPC_SPACE_URL
@@ -61,5 +61,39 @@ describe('L10nStorageConfig', () => {
         'https://env.example.com/l10n/translations?project=proj-123&tagSource=email/PR-1',
       )
     })
+  })
+})
+
+describe('CompilerConfig.getScanSrcDirs', () => {
+  it('falls back to [src-dir] when scan-src-dirs is omitted', () => {
+    const cc = new CompilerConfig({ 'type': 'ios', 'src-dir': '/a' } as never)
+    assert.deepEqual(cc.getScanSrcDirs(), ['/a'])
+  })
+
+  it('returns the explicit scan-src-dirs list when set', () => {
+    const cc = new CompilerConfig({
+      'type': 'ios',
+      'src-dir': '/a',
+      'scan-src-dirs': ['/a', '/b'],
+    } as never)
+    assert.deepEqual(cc.getScanSrcDirs(), ['/a', '/b'])
+  })
+
+  it('allows scan-src-dirs to differ from src-dir (decoupled output vs scan)', () => {
+    const cc = new CompilerConfig({
+      'type': 'ios',
+      'src-dir': '/output',
+      'scan-src-dirs': ['/scan1', '/scan2'],
+    } as never)
+    assert.deepEqual(cc.getScanSrcDirs(), ['/scan1', '/scan2'])
+  })
+
+  it('throws when scan-src-dirs is an explicit empty array', () => {
+    const cc = new CompilerConfig({
+      'type': 'ios',
+      'src-dir': '/a',
+      'scan-src-dirs': [],
+    } as never)
+    assert.throws(() => cc.getScanSrcDirs(), /must not be empty/)
   })
 })

@@ -300,6 +300,13 @@ type CompilerConf = {
   'target-path'?: string,
   /** Location of source root (ios) */
   'src-dir'?: string,
+  /**
+   * (ios) Scan roots used when re-extracting keys during compile.
+   * When set, overrides the output's `src-dir` as the scan source.
+   * Defaults to `[src-dir]` when omitted. Output location is unaffected.
+   * @minItems 1
+   */
+  'scan-src-dirs'?: string[],
   /** Location of res (android) */
   'res-dir'?: string,
   /** List of module paths (android only, multi-module support) */
@@ -328,6 +335,21 @@ export class CompilerConfig {
       throw new Error('src-dir is required for this output')
     }
     return srcDir
+  }
+
+  /**
+   * (ios) Source roots to scan during compile-time key re-extraction.
+   * Returns the explicit `scan-src-dirs` list when set, otherwise falls back to `[src-dir]`.
+   */
+  getScanSrcDirs(): string[] {
+    const dirs = this.cc['scan-src-dirs']
+    if (dirs != null) {
+      if (dirs.length === 0) {
+        throw new Error('scan-src-dirs must not be empty when specified')
+      }
+      return [...dirs]
+    }
+    return [this.getSrcDir()]
   }
 
   getTargetDir(): string {

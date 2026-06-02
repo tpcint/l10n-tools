@@ -38,6 +38,25 @@ export async function extractIosKeys(domainName: string, config: DomainConfig, k
 
   const extractor = new KeyExtractor()
   const srcDir = config.getSrcDir()
+  // Compose scan roots from each ios output's scan-src-dirs (each output falls back
+  // to its own src-dir). Final fallback is the domain src-dir when no outputs contribute.
+  const dirSet = new Set<string>()
+  for (const cc of config.getCompilerConfigs()) {
+    if (cc.getType() !== 'ios') continue
+    for (const d of cc.getScanSrcDirs()) {
+      dirSet.add(d)
+    }
+  }
+  const effectiveDirs = dirSet.size > 0 ? [...dirSet] : [srcDir]
+  // glob() tolerates non-existent roots by returning [], so we don't throw here
+  // (unlike the compile-side which shells out to `find`). But a configured-but-missing
+  // root is usually a typo or a path absent on this branch, which would silently drop
+  // keys — warn per missing root so it's noticeable.
+  for (const d of effectiveDirs) {
+    if (!await fileExists(d)) {
+      log.warn('extractKeys', `scan-src-dir not found, skipping: ${d}`)
+    }
+  }
 
   log.info('extractKeys', 'extracting from .swift files')
   const swiftQueue = new PQueue({ concurrency: os.cpus().length })
@@ -52,14 +71,17 @@ export async function extractIosKeys(domainName: string, config: DomainConfig, k
     const stringsPath = path.join(stringsDir, 'Localizable.strings')
     if (await fileExists(stringsPath)) {
       const input = await fsp.readFile(stringsPath, { encoding: 'utf16le' })
-      const swiftFile = swiftPath.substring(srcDir.length + 1)
+      const swiftFile = relativeFromAny(swiftPath, effectiveDirs)
       return { input, swiftFile }
     } else {
       return { input: null, swiftFile: null }
     }
   }
 
-  const swiftPaths = await glob(`${srcDir}/**/*.swift`)
+  // Dedup swift paths in case scan roots overlap (e.g. one root is nested in another).
+  const swiftPaths = [...new Set((await Promise.all(
+    effectiveDirs.map(d => glob(`${d}/**/*.swift`)),
+  )).flat())]
   const swiftExtracted = await swiftQueue.addAll(
     swiftPaths.map(swiftPath => () => extractFromSwift(swiftPath)),
   )
@@ -95,7 +117,7 @@ export async function extractIosKeys(domainName: string, config: DomainConfig, k
     log.info('extractKeys', `extracting property access patterns: ${keywordsStr}`)
     for (const swiftPath of swiftPaths) {
       const src = await fsp.readFile(swiftPath, { encoding: 'utf-8' })
-      const swiftFile = swiftPath.substring(srcDir.length + 1)
+      const swiftFile = relativeFromAny(swiftPath, effectiveDirs)
       extractSwiftPropertyAccess(extractor, swiftFile, src, propertyKeywordConfigs)
     }
   }
@@ -139,6 +161,20 @@ export async function extractIosKeys(domainName: string, config: DomainConfig, k
 
   await writeKeyEntries(keysPath, extractor.keys.toEntries())
   await fsp.rm(tempDir, { force: true, recursive: true })
+}
+
+function relativeFromAny(p: string, roots: string[]): string {
+  // Sort by length desc so a nested root (e.g. "/a/sub") wins over its parent ("/a").
+  const sortedRoots = [...roots].sort((a, b) => b.length - a.length)
+  for (const r of sortedRoots) {
+    const rel = path.relative(r, p)
+    // path.relative returns a result starting with '..' (or an absolute path on
+    // some systems) when `p` is not under `r`. Anything else means a clean match.
+    if (rel && !rel.startsWith('..') && !path.isAbsolute(rel)) {
+      return rel
+    }
+  }
+  return p
 }
 
 async function getInfoPlistPath(srcDir: string) {

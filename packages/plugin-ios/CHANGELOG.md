@@ -1,5 +1,19 @@
 # Changelog
 
+## [7.4.0](https://github.com/tpcint/l10n-tools/compare/l10n-tools-plugin-ios-v7.3.3...l10n-tools-plugin-ios-v7.4.0) (2026-06-02)
+
+
+### Features
+
+* **plugin-ios:** scan-src-dirs로 genstrings 스캔 루트와 출력 디렉토리 분리 ([#368](https://github.com/tpcint/l10n-tools/issues/368)) ([8d76072](https://github.com/tpcint/l10n-tools/commit/8d760728ad74e93039a18daa3f53e23b8c3225e4))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * peerDependencies
+    * l10n-tools-core bumped from ^8.3.0 to ^8.4.0
+
 ## [7.3.3](https://github.com/tpcint/l10n-tools/compare/l10n-tools-plugin-ios-v7.3.2...l10n-tools-plugin-ios-v7.3.3) (2026-05-31)
 
 

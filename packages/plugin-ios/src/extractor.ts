@@ -38,18 +38,26 @@ export async function extractIosKeys(domainName: string, config: DomainConfig, k
 
   const extractor = new KeyExtractor()
   const srcDir = config.getSrcDir()
-  const extraDirs = config.getSrcDirs()
-  const candidateDirs = extraDirs.length > 0 ? extraDirs : [srcDir]
+  // Compose scan roots from each ios output's scan-src-dirs (falls back to its src-dir).
+  // Falls back to domain src-dir when no outputs contribute.
+  const candidateSet = new Set<string>()
+  for (const cc of config.getCompilerConfigs()) {
+    if (cc.getType() !== 'ios') continue
+    for (const d of cc.getScanSrcDirs()) {
+      candidateSet.add(d)
+    }
+  }
+  const candidateDirs = candidateSet.size > 0 ? [...candidateSet] : [srcDir]
   const effectiveDirs: string[] = []
   for (const d of candidateDirs) {
     if (await fileExists(d)) {
       effectiveDirs.push(d)
     } else {
-      log.warn('extractKeys', `src-dir not found, skipping: ${d}`)
+      log.warn('extractKeys', `scan-src-dir not found, skipping: ${d}`)
     }
   }
   if (effectiveDirs.length === 0) {
-    throw new Error('no src-dirs exist on disk; nothing to scan')
+    throw new Error('no scan-src-dirs exist on disk; nothing to scan')
   }
 
   log.info('extractKeys', 'extracting from .swift files')

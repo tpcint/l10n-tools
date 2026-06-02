@@ -301,8 +301,9 @@ type CompilerConf = {
   /** Location of source root (ios) */
   'src-dir'?: string,
   /**
-   * (ios) Extra source roots to scan when re-extracting keys during compile.
-   * Defaults to [src-dir] when omitted. Output location is unaffected.
+   * (ios) Scan roots used when re-extracting keys during compile.
+   * When set, overrides the output's `src-dir` as the scan source.
+   * Defaults to `[src-dir]` when omitted. Output location is unaffected.
    */
   'scan-src-dirs'?: string[],
   /** Location of res (android) */
@@ -345,7 +346,7 @@ export class CompilerConfig {
       if (dirs.length === 0) {
         throw new Error('scan-src-dirs must not be empty when specified')
       }
-      return dirs
+      return [...dirs]
     }
     return [this.getSrcDir()]
   }

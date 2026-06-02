@@ -24,7 +24,7 @@
           "type": "string"
         },
         "scan-src-dirs": {
-          "description": "(ios) Extra source roots to scan when re-extracting keys during compile. Defaults to [src-dir] when omitted. Output location is unaffected.",
+          "description": "(ios) Scan roots used when re-extracting keys during compile. When set, overrides the output's `src-dir` as the scan source. Defaults to `[src-dir]` when omitted. Output location is unaffected.",
           "items": {
             "type": "string"
           },

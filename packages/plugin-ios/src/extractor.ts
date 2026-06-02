@@ -44,10 +44,13 @@ export async function extractIosKeys(domainName: string, config: DomainConfig, k
   for (const cc of config.getCompilerConfigs()) {
     if (cc.getType() !== 'ios') continue
     for (const d of cc.getScanSrcDirs()) {
-      candidateSet.add(d)
+      // Normalize and strip trailing separators so prefix matching in
+      // relativeFromAny stays correct regardless of how users write the path.
+      // (path.normalize preserves trailing separators by design.)
+      candidateSet.add(normalizeDir(d))
     }
   }
-  const candidateDirs = candidateSet.size > 0 ? [...candidateSet] : [srcDir]
+  const candidateDirs = candidateSet.size > 0 ? [...candidateSet] : [normalizeDir(srcDir)]
   const effectiveDirs: string[] = []
   for (const d of candidateDirs) {
     if (await fileExists(d)) {
@@ -162,6 +165,15 @@ export async function extractIosKeys(domainName: string, config: DomainConfig, k
 
   await writeKeyEntries(keysPath, extractor.keys.toEntries())
   await fsp.rm(tempDir, { force: true, recursive: true })
+}
+
+function normalizeDir(d: string): string {
+  const normalized = path.normalize(d)
+  // Strip trailing path separators (but keep "/" / "." as-is for root cases).
+  if (normalized.length > 1) {
+    return normalized.replace(/[/\\]+$/, '')
+  }
+  return normalized
 }
 
 function relativeFromAny(p: string, roots: string[]): string {

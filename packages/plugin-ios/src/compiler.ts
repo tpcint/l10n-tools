@@ -92,13 +92,7 @@ export async function compileToIosStrings(
         const output = generateStringsFile(strings)
         await fsp.writeFile(stringsPath, output, { encoding: 'utf-8' })
       } else if (stringsName === 'Localizable') {
-        // Normalize and strip trailing separators so existence checks and
-        // shell quoting stay consistent regardless of how the path is written.
-        // (path.normalize preserves trailing separators by design.)
-        const scanSrcDirs = config.getScanSrcDirs().map(d => {
-          const normalized = path.normalize(d)
-          return normalized.length > 1 ? normalized.replace(/[/\\]+$/, '') : normalized
-        })
+        const scanSrcDirs = config.getScanSrcDirs()
         const existingDirs: string[] = []
         for (const d of scanSrcDirs) {
           if (await fileExists(d)) {

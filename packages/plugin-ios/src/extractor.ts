@@ -38,19 +38,16 @@ export async function extractIosKeys(domainName: string, config: DomainConfig, k
 
   const extractor = new KeyExtractor()
   const srcDir = config.getSrcDir()
-  // Compose scan roots from each ios output's scan-src-dirs (falls back to its src-dir).
-  // Falls back to domain src-dir when no outputs contribute.
+  // Compose scan roots from each ios output's scan-src-dirs (each output falls back
+  // to its own src-dir). Final fallback is the domain src-dir when no outputs contribute.
   const candidateSet = new Set<string>()
   for (const cc of config.getCompilerConfigs()) {
     if (cc.getType() !== 'ios') continue
     for (const d of cc.getScanSrcDirs()) {
-      // Normalize and strip trailing separators so prefix matching in
-      // relativeFromAny stays correct regardless of how users write the path.
-      // (path.normalize preserves trailing separators by design.)
-      candidateSet.add(normalizeDir(d))
+      candidateSet.add(d)
     }
   }
-  const candidateDirs = candidateSet.size > 0 ? [...candidateSet] : [normalizeDir(srcDir)]
+  const candidateDirs = candidateSet.size > 0 ? [...candidateSet] : [srcDir]
   const effectiveDirs: string[] = []
   for (const d of candidateDirs) {
     if (await fileExists(d)) {
@@ -167,20 +164,18 @@ export async function extractIosKeys(domainName: string, config: DomainConfig, k
   await fsp.rm(tempDir, { force: true, recursive: true })
 }
 
-function normalizeDir(d: string): string {
-  const normalized = path.normalize(d)
-  // Strip trailing path separators (but keep "/" / "." as-is for root cases).
-  if (normalized.length > 1) {
-    return normalized.replace(/[/\\]+$/, '')
-  }
-  return normalized
-}
-
 function relativeFromAny(p: string, roots: string[]): string {
-  // Sort by length desc so a nested root (e.g. "/a/sub") is matched before its parent ("/a").
+  // Sort by length desc so a nested root (e.g. "/a/sub") wins over its parent ("/a").
   const sortedRoots = [...roots].sort((a, b) => b.length - a.length)
-  const root = sortedRoots.find(r => p === r || p.startsWith(r + path.sep) || p.startsWith(r + '/'))
-  return root ? p.substring(root.length + 1) : p
+  for (const r of sortedRoots) {
+    const rel = path.relative(r, p)
+    // path.relative returns a result starting with '..' (or an absolute path on
+    // some systems) when `p` is not under `r`. Anything else means a clean match.
+    if (rel && !rel.startsWith('..') && !path.isAbsolute(rel)) {
+      return rel
+    }
+  }
+  return p
 }
 
 async function getInfoPlistPath(srcDir: string) {

@@ -40,8 +40,6 @@ export async function extractIosKeys(domainName: string, config: DomainConfig, k
   const srcDir = config.getSrcDir()
   // Compose scan roots from each ios output's scan-src-dirs (each output falls back
   // to its own src-dir). Final fallback is the domain src-dir when no outputs contribute.
-  // glob() tolerates non-existent roots by returning [], so no explicit existence
-  // check is needed here (unlike the compile-side which shells out to `find`).
   const dirSet = new Set<string>()
   for (const cc of config.getCompilerConfigs()) {
     if (cc.getType() !== 'ios') continue
@@ -50,6 +48,15 @@ export async function extractIosKeys(domainName: string, config: DomainConfig, k
     }
   }
   const effectiveDirs = dirSet.size > 0 ? [...dirSet] : [srcDir]
+  // glob() tolerates non-existent roots by returning [], so we don't throw here
+  // (unlike the compile-side which shells out to `find`). But a configured-but-missing
+  // root is usually a typo or a path absent on this branch, which would silently drop
+  // keys — warn per missing root so it's noticeable.
+  for (const d of effectiveDirs) {
+    if (!await fileExists(d)) {
+      log.warn('extractKeys', `scan-src-dir not found, skipping: ${d}`)
+    }
+  }
 
   log.info('extractKeys', 'extracting from .swift files')
   const swiftQueue = new PQueue({ concurrency: os.cpus().length })

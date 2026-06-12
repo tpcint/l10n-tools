@@ -1,5 +1,12 @@
 # Changelog
 
+## [8.4.1](https://github.com/tpcint/l10n-tools/compare/l10n-tools-core-v8.4.0...l10n-tools-core-v8.4.1) (2026-06-12)
+
+
+### Miscellaneous Chores
+
+* **deps:** bump tinyglobby from 0.2.16 to 0.2.17 ([#371](https://github.com/tpcint/l10n-tools/issues/371)) ([357be0b](https://github.com/tpcint/l10n-tools/commit/357be0b621b267282c5a5c9239bcacdfd5fa0047))
+
 ## [8.4.0](https://github.com/tpcint/l10n-tools/compare/l10n-tools-core-v8.3.0...l10n-tools-core-v8.4.0) (2026-06-02)
 
 

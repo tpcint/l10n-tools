@@ -1,5 +1,20 @@
 # Changelog
 
+## [7.10.2](https://github.com/tpcint/l10n-tools/compare/l10n-tools-v7.10.1...l10n-tools-v7.10.2) (2026-06-12)
+
+
+### Miscellaneous Chores
+
+* **deps:** bump commander from 14.0.3 to 15.0.0 ([#373](https://github.com/tpcint/l10n-tools/issues/373)) ([d4500be](https://github.com/tpcint/l10n-tools/commit/d4500beeac43ac197ed9c9ef8beac06ec1f52487))
+* **deps:** bump cosmiconfig from 9.0.1 to 9.0.2 ([#376](https://github.com/tpcint/l10n-tools/issues/376)) ([1a657fd](https://github.com/tpcint/l10n-tools/commit/1a657fd7799d65337d82694c515674b99a1f4b22))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * l10n-tools-core bumped from ^8.4.0 to ^8.4.1
+
 ## [7.10.1](https://github.com/tpcint/l10n-tools/compare/l10n-tools-v7.10.0...l10n-tools-v7.10.1) (2026-06-02)
 
 

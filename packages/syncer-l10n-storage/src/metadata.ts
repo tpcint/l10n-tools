@@ -26,14 +26,6 @@ export function buildContextMetadata(existingMetadata: L10nKeyMetadata[], tag: s
   return { tag, metaKey: 'context', metaValue: JSON.stringify(updated) }
 }
 
-export function buildContextMetadataRemoving(existingMetadata: L10nKeyMetadata[], tag: string, context: string | null): L10nKeyMetadata | null {
-  if (!context) return null
-  const existing = getContextsFromMetadata(existingMetadata, tag)
-  const updated = existing.filter(c => c !== context)
-  if (updated.length === existing.length) return null
-  return { tag, metaKey: 'context', metaValue: JSON.stringify(updated) }
-}
-
 // --- Description (comments) ---
 
 export function getDescriptionFromMetadata(metadata: L10nKeyMetadata[], tag: string): string[] {

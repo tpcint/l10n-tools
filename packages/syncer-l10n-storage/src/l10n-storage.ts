@@ -22,12 +22,10 @@ import type {
 } from './api-types.js'
 import {
   buildContextMetadata,
-  buildContextMetadataRemoving,
   buildDescriptionMetadata,
   buildGlobalMetadata,
   buildReferencesMetadata,
   buildTagMetadata,
-  getContextsFromMetadata,
 } from './metadata.js'
 
 function assertBijectiveLocaleSyncMap(localeSyncMap: { [locale: string]: string }): void {
@@ -58,8 +56,8 @@ export async function syncTransToL10nStorage(
   const source = options?.source ?? configSource
   // 두 가지 sync 모드를 구분한다.
   // - **전체 sync** (`source === configSource`, options.source 미지정): 이 태그의 모든 키를 대상으로
-  //   하는 sync. 로컬에 없는 키는 (tag) 자체를 source-omitted로 unclaim 가능. 새 키가 추가될 때
-  //   특정 PR이 아니므로 default source(configSource, 보통 'main')가 부여된다.
+  //   하는 스냅샷 정합 sync. 새 키가 추가될 때 특정 PR이 아니므로 default source(configSource, 보통
+  //   'main')가 부여된다. 단, 로컬에 없는 키의 unclaim/context 정리는 하지 않는다(Pass 1 참고).
   // - **특정 source sync** (`options.source = 'PR-N'`): PR 스코프 sync. 자기 (tag, source) 범위만
   //   관리하고 다른 source의 claim/공유 metadata는 절대 건드리지 않는다.
   // main이 특별한 게 아니라, "특정 PR이 아닐 때 default source가 main"인 것일 뿐 main과 PR-N은 동등.
@@ -79,7 +77,8 @@ export async function syncTransToL10nStorage(
   // 1. 이 sync가 다루는 태그가 달린 키만 l10n-storage에서 조회 (keys-to-serve, tag-filtered).
   // 핵심 원칙: l10n-storage 호출은 항상 "태그"를 동반한다 — 이 프로젝트가 관리하는 키의 범위.
   // tag 필터는 orphan(어떤 태그/source에서도 claim되지 않은 키)을 자연 제외하므로, 결과는
-  // "이 태그로 claim된 키"의 정확한 집합이다. 로컬 추출에 없는 키는 unclaim 대상이 된다.
+  // "이 태그로 claim된 키"의 정확한 집합이다. 특정 source sync는 이 중 로컬 추출에서 사라진 자기
+  // (tag, source) 키를 unclaim 대상으로 본다(Pass 1). 전체 sync는 unclaim하지 않는다.
   // 로컬에는 있지만 listedKeyMap에 없는 키는 (a) 정말 새 키이거나 (b) 다른 태그로만 존재하는
   // 또는 orphan으로 부활시킬 키다 — 둘 다 Pass 2의 createKeys 경로가 서버 측에서 처리한다
   // (keyName 중복 시 서버가 자동으로 add-tag로 부활시킨다).
@@ -200,7 +199,6 @@ export function buildKeyChanges(
   creatingKeys: CreateL10nKeyInput[],
   updatingKeys: UpdateL10nKeyInput[],
 } {
-  const keys = EntryCollection.loadEntries(keyEntries)
   const creatingKeyMap: { [keyName: string]: CreateL10nKeyInput } = {}
   const updatingKeyMap: { [keyName: string]: UpdateL10nKeyInput } = {}
 
@@ -221,57 +219,20 @@ export function buildKeyChanges(
   }
 
   // Pass 1: 서버에 있는(이미 tag-filtered) 키 중 로컬 추출에 없는 것의 정리.
-  // - 전체 sync: 이 태그의 모든 키를 대상으로 하므로 로컬에 없는 키의 (tag) 자체를 source-omitted로
-  //   일괄 unclaim한다. context가 있는 도메인(Android 등)은 우선 로컬에 없는 context를 제거하고
-  //   context가 하나도 남지 않을 때만 unclaim한다. context-less 도메인(web4 vue-i18n 등)은 key
-  //   단위로 즉시 unclaim한다. PR 1161 단일-source 모델에서 (tag) PK당 source는 하나뿐이므로
-  //   source 생략은 그 한 row를 깨끗이 제거하며, 누구든 점유 중인 claim도 같이 정리된다.
-  // - 특정 source sync(예: --source PR-N): 공유 context는 절대 건드리지 않되, 로컬 추출에서 완전히
-  //   사라진 키의 자기 (tag, source) 태그만 제거한다. PR이 도중 추가했다가 도중 제거한 키의 자기
-  //   claim을 정리해 PR 체크런이 stale orphan으로 고착되는 회귀(#358)를 막는다. 자기 태그 제거는
-  //   다른 source에 영향을 주지 않아 안전하다.
-  if (isFullSync) {
-    for (const [keyName, listedKey] of Object.entries(listedKeyMap)) {
-      const serverContexts = getContextsFromMetadata(listedKey.metadata, tag)
-
-      if (serverContexts.length === 0) {
-        // context-less 도메인: 로컬에 없는 키면 즉시 (tag, *) unclaim.
-        if (entriesByKeyName.has(keyName)) continue
-        let updating = updatingKeyMap[keyName]
-        if (!updating) {
-          updating = { keyId: listedKey.id }
-          updatingKeyMap[keyName] = updating
-        }
-        pushRemoveTag(updating, { tag })
-        continue
-      }
-
-      // context-ful 도메인: 로컬에 없는 context는 제거하고, 다 빠지면 (tag, *) unclaim.
-      // 여러 context가 한 번에 빠질 때 buildContextMetadataRemoving이 매번 원본 listedKey.metadata만
-      // 보고 "그 context 하나만 빠진" 결과를 만들면 pushSetMetadata의 replace로 마지막 iteration만
-      // 살아남는다. baseMetadata를 누적해 매 iteration 직전 상태를 기준으로 다음 context를 빼야 모든
-      // orphan context가 빠진다.
-      let baseMetadata = listedKey.metadata
-      let touched = false
-      for (const keyContext of serverContexts) {
-        const keyEntry = keys.find(keyContext, keyName)
-        if (keyEntry != null) continue
-        const contextMeta = buildContextMetadataRemoving(baseMetadata, tag, keyContext)
-        if (contextMeta == null) continue
-        let updating = updatingKeyMap[keyName]
-        if (!updating) {
-          updating = { keyId: listedKey.id }
-          updatingKeyMap[keyName] = updating
-        }
-        pushSetMetadata(updating, contextMeta)
-        baseMetadata = mergeMetadata(baseMetadata, [contextMeta])
-        touched = true
-      }
-      if (touched && getContextsFromMetadata(baseMetadata, tag).length === 0) {
-        pushRemoveTag(updatingKeyMap[keyName]!, { tag })
-      }
-    }
-  } else {
+  // **특정 source sync(예: --source PR-N)만** 정리를 수행한다: 로컬 추출에서 완전히 사라진 키의 자기
+  // (tag, source) 태그만 제거한다. PR이 도중 추가했다가 도중 제거한 키의 자기 claim을 정리해 PR
+  // 체크런이 stale orphan으로 고착되는 회귀(#358)를 막는다. 자기 태그만 제거하고 공유 context는
+  // 건드리지 않으므로 다른 source에 영향을 주지 않아 안전하다.
+  //
+  // **전체 sync(source 미지정)는 어떤 unclaim/context 정리도 하지 않는다.** full sync는 특정 커밋
+  // diff에 묶이지 않은 스냅샷 정합 작업이라("Localizations (full)" 체크런의 Sync 버튼으로 임의 시점에
+  // 실행), "코드에서 지워진 키"와 "아직 머지되지 않은 다른 PR이 추가해 둔 키"를 신뢰성 있게 구분할
+  // 수단이 없다(둘 다 "서버엔 이 태그로 있는데 로컬엔 없음"으로 동일하게 보임). 잘못 unclaim하면
+  // 미머지 PR의 claim을 조용히 삭제하는 데이터 손실(되돌리기 어려움)이 발생하므로, 신뢰할 분류 수단이
+  // 마련되기 전까지는 정리하지 않는 쪽을 택한다. 그 대가로 지워진 키의 (tag, main) claim과 폐기 PR의
+  // orphan이 storage에 누적되지만(full 태그 전체 _remoteCount가 과대 집계됨), source-scoped PR
+  // 체크와 full compile-diff 체크의 동작은 영향받지 않는다.
+  if (!isFullSync) {
     for (const [keyName, listedKey] of Object.entries(listedKeyMap)) {
       if (!hasTag(listedKey.tags, tag, source)) continue
       // 로컬 추출에 아직 있으면 Pass 2에서 처리(claim 유지). 사라진 키만 orphan으로 본다.

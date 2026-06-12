@@ -172,7 +172,8 @@ describe('syncTransToL10nStorage (e2e)', () => {
     assert.deepEqual(locales, ['en', 'ko'])
   })
 
-  it('removes context from metadata when local entry no longer has it', async () => {
+  it('full sync does NOT prune context even when a local entry no longer has it', async () => {
+    // 전체 sync는 "정말 삭제된 context"와 "미머지 PR이 쓰는 context"를 구분할 수 없어 context를 건드리지 않는다.
     await seedKeys(projectId!, [{
       keyName: 'ctx.key',
       tags: [{ tag: 'web', source: 'main' }],
@@ -180,20 +181,19 @@ describe('syncTransToL10nStorage (e2e)', () => {
     }])
 
     const config = buildL10nConfig(projectId!, { source: 'main' })
-    // ctx-A만 로컬에 남고 ctx-B는 사라진 상태
+    // ctx-A만 로컬에 남고 ctx-B는 사라졌지만, 전체 sync는 ctx-B를 제거하지 않는다
     await syncTransToL10nStorage(
       config, buildDomainConfig(), 'web', [key('ctx.key', { context: 'ctx-A' })], {}, false,
     )
 
     const [k] = await apiClient.listAllKeysToServe(projectId!)
     const ctxMeta = k.metadata.find(m => m.tag === 'web' && m.metaKey === 'context')
-    assert.deepEqual(JSON.parse(ctxMeta!.metaValue), ['ctx-A'])
-    assert.equal(k.tags.length, 1, 'tag remains because ctx-A still belongs to main')
+    assert.deepEqual(JSON.parse(ctxMeta!.metaValue), ['ctx-A', 'ctx-B'])
+    assert.deepEqual(k.tags.map(t => ({ tag: t.tag, source: t.source })), [{ tag: 'web', source: 'main' }])
   })
 
-  it('removes the tag and empties context when all contexts are gone from local', async () => {
-    // 전체 sync가 로컬에 없는 마지막 context까지 다 빼고 나면 (tag, *)를 source-omitted로 unclaim한다.
-    // 단일-source 모델이라 "다른 source 보존" 시나리오는 정의상 존재하지 않는다.
+  it('full sync does NOT unclaim or empty context when all contexts are gone from local', async () => {
+    // 로컬에 키가 없어도 전체 sync는 unclaim하지 않는다 — 미머지 PR이 추가한 키일 수 있기 때문.
     await seedKeys(projectId!, [{
       keyName: 'ctx.gone.key',
       tags: [{ tag: 'web', source: 'main' }],
@@ -206,9 +206,9 @@ describe('syncTransToL10nStorage (e2e)', () => {
     )
 
     const [k] = await apiClient.listAllKeysToServe(projectId!)
-    assert.deepEqual(k.tags.map(t => ({ tag: t.tag, source: t.source })), [])
+    assert.deepEqual(k.tags.map(t => ({ tag: t.tag, source: t.source })), [{ tag: 'web', source: 'main' }])
     const ctxMeta = k.metadata.find(m => m.tag === 'web' && m.metaKey === 'context')
-    assert.deepEqual(JSON.parse(ctxMeta!.metaValue), [])
+    assert.deepEqual(JSON.parse(ctxMeta!.metaValue), ['ctx-only'])
   })
 
   it('attaches additionalTags + globalMetadata + tagMetadata when creating keys', async () => {
@@ -370,9 +370,8 @@ describe('syncTransToL10nStorage (e2e)', () => {
     assert.deepEqual(JSON.parse(ctxMeta!.metaValue), ['shared'])
   })
 
-  it('full sync unclaims (tag) when key is gone locally (context-less)', async () => {
-    // context-less 도메인에서 로컬에 없는 키는 즉시 source-omitted removeTags로 (tag) unclaim한다.
-    // 단일-source 모델이라 (tag) PK당 source는 하나뿐 — source 생략은 그 한 row를 깨끗이 제거한다.
+  it('full sync does NOT unclaim a key gone from local (context-less)', async () => {
+    // 전체 sync는 로컬에 없는 키를 unclaim하지 않는다 — 미머지 PR이 추가한 키와 구분할 수 없기 때문.
     await seedKeys(projectId!, [{
       keyName: 'gone.key',
       tags: [{ tag: 'web4', source: 'main' }],
@@ -381,79 +380,31 @@ describe('syncTransToL10nStorage (e2e)', () => {
     const config = buildL10nConfig(projectId!, { source: 'main' })
     await syncTransToL10nStorage(config, buildDomainConfig(), 'web4', [], {}, false)
 
-    // 키는 orphan으로 보존(데이터 유지, 태그만 제거)
+    // 태그가 그대로 보존되어 tag 필터 serve에도 계속 노출된다
     const [k] = await apiClient.listAllKeysToServe(projectId!)
     assert.equal(k.keyName, 'gone.key')
-    assert.deepEqual(k.tags.map(t => ({ tag: t.tag, source: t.source })), [])
+    assert.deepEqual(k.tags.map(t => ({ tag: t.tag, source: t.source })), [{ tag: 'web4', source: 'main' }])
 
-    // tag 필터 serve는 orphan을 자연 제외
     const served = await apiClient.listKeysToServeByTag(projectId!, 'web4')
-    assert.deepEqual(served.map(k => k.keyName), [])
+    assert.deepEqual(served.map(k => k.keyName), ['gone.key'])
   })
 
-  it('full sync removes all orphan contexts and then unclaims (tag) (context-ful, multi-context)', async () => {
-    // Android 같은 context-ful 도메인에서 서버 context 여러 개가 로컬에서 모두 사라진 케이스.
-    // 모든 orphan context를 빠짐없이 제거해야 한다 — Pass 1에서 baseMetadata를 누적하지 않으면
-    // pushSetMetadata replace 때문에 마지막 iteration만 살아남는 회귀가 있었다. 모든 context가
-    // 빠지면 그 다음 (tag) source-omitted unclaim까지 동일 PUT으로 보낸다.
-    await seedKeys(projectId!, [{
-      keyName: '취소',
-      tags: [{ tag: 'android-likey', source: 'main' }],
-      metadata: [{ tag: 'android-likey', metaKey: 'context', metaValue: JSON.stringify(['a', 'b']) }],
-    }])
-
-    const config = buildL10nConfig(projectId!, { source: 'main' })
-    await syncTransToL10nStorage(config, buildDomainConfig(), 'android-likey', [], {}, false)
-
-    const [k] = await apiClient.listAllKeysToServe(projectId!)
-    assert.equal(k.keyName, '취소')
-    assert.deepEqual(k.tags.map(t => ({ tag: t.tag, source: t.source })), [])
-    const ctxMeta = k.metadata.find(m => m.tag === 'android-likey' && m.metaKey === 'context')
-    assert.deepEqual(JSON.parse(ctxMeta!.metaValue), [])
-  })
-
-  it('full sync removes only missing contexts and preserves the tag when others remain', async () => {
-    // 로컬에 일부 context가 남아 있으면 빠진 context만 제거하고 (tag, source)는 그대로 둔다.
-    // context가 줄어들 뿐 키는 여전히 코드에서 사용되므로 unclaim 대상이 아니다.
-    await seedKeys(projectId!, [{
-      keyName: '취소',
-      tags: [{ tag: 'android-likey', source: 'main' }],
-      metadata: [{ tag: 'android-likey', metaKey: 'context', metaValue: JSON.stringify(['a', 'b']) }],
-    }])
-
-    const config = buildL10nConfig(projectId!, { source: 'main' })
-    await syncTransToL10nStorage(
-      config, buildDomainConfig(), 'android-likey',
-      [key('취소', { context: 'a' })], {}, false,
-    )
-
-    const [k] = await apiClient.listAllKeysToServe(projectId!)
-    // 태그는 보존
-    assert.deepEqual(
-      k.tags.map(t => ({ tag: t.tag, source: t.source })),
-      [{ tag: 'android-likey', source: 'main' }],
-    )
-    // 'b'만 제거되고 'a'는 남음
-    const ctxMeta = k.metadata.find(m => m.tag === 'android-likey' && m.metaKey === 'context')
-    assert.deepEqual(JSON.parse(ctxMeta!.metaValue), ['a'])
-  })
-
-  it('tag-filtered fetch isolates cleanup — never touches keys tagged with a different tag', async () => {
-    // sync는 자신이 다루는 태그에만 영향을 준다. 같은 프로젝트에 다른 태그(web)로만 존재하는 키는
-    // tag-filtered fetch에서 보이지 않으므로 web4 sync의 Pass 1 cleanup이 절대 건드릴 수 없다.
+  it('PR-scope sync cleanup isolates by tag — never touches keys tagged with a different tag', async () => {
+    // PR-scope sync(--source)는 자기 (tag, source) orphan만 정리하며, 자신이 다루는 태그에만 영향을 준다.
+    // 같은 프로젝트에 다른 태그(web)로만 존재하는 키는 tag-filtered fetch에서 보이지 않아 절대 건드릴 수 없다.
     await seedKeys(projectId!, [
-      { keyName: 'only.web4', tags: [{ tag: 'web4', source: 'main' }] },
+      { keyName: 'only.web4', tags: [{ tag: 'web4', source: 'PR-1' }] },
       { keyName: 'only.web', tags: [{ tag: 'web', source: 'main' }] },
     ])
 
     const config = buildL10nConfig(projectId!, { source: 'main' })
-    await syncTransToL10nStorage(config, buildDomainConfig(), 'web4', [], {}, false)
+    await syncTransToL10nStorage(config, buildDomainConfig(), 'web4', [], {}, false, { source: 'PR-1' })
 
     const all = await apiClient.listAllKeysToServe(projectId!)
     const w4 = all.find(k => k.keyName === 'only.web4')!
     const w = all.find(k => k.keyName === 'only.web')!
 
-    // only.web4는 전체 sync의 (web4, *) unclaim으로 orphan이 된다
+    // only.web4는 PR-scope self-cleanup으로 자기 (web4, PR-1)이 제거되어 orphan이 된다
     assert.deepEqual(w4.tags.map(t => ({ tag: t.tag, source: t.source })), [])
     // only.web은 다른 태그라 완전 보존
     assert.deepEqual(

@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.4.3](https://github.com/tpcint/l10n-tools/compare/l10n-tools-syncer-l10n-storage-v1.4.2...l10n-tools-syncer-l10n-storage-v1.4.3) (2026-06-12)
+
+
+### Bug Fixes
+
+* **syncer-l10n-storage:** stop full sync from unclaiming keys absent from local ([#378](https://github.com/tpcint/l10n-tools/issues/378)) ([64bf17c](https://github.com/tpcint/l10n-tools/commit/64bf17cb9e241ea4ce75434d43352f30e1b0248c))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * peerDependencies
+    * l10n-tools-core bumped from ^8.4.0 to ^8.4.1
+
 ## [1.4.2](https://github.com/tpcint/l10n-tools/compare/l10n-tools-syncer-l10n-storage-v1.4.1...l10n-tools-syncer-l10n-storage-v1.4.2) (2026-06-02)
 
 

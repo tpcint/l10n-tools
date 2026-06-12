@@ -287,11 +287,27 @@ describe('buildKeyChanges', () => {
     assert.equal(updatingKeys.length, 0)
   })
 
-  it('Pass 1 (full sync): drops the orphan context and then unclaims (tag, *) source-agnostically', () => {
-    // context-ful 도메인에서 서버에 등록된 context가 로컬에 더 이상 없는 경우. 우선 context metadata에서
-    // 빠진 context를 제거하고, 한 키의 모든 context가 사라지면 (tag, *)를 source 무관 일괄 unclaim한다.
-    // 전체 sync는 이 태그 전체 범위를 정리할 권한이 있어 다른 source의 (tag, source) 행도 함께
-    // 정리한다 — 키 자체는 데이터 보존(orphan) 상태로 남는다.
+  it('Pass 1 (full sync): does NOT unclaim a key gone from local (context-less)', () => {
+    // 전체 sync는 특정 커밋 diff에 묶이지 않은 스냅샷 정합 작업이라 "코드에서 지워진 키"와 "아직
+    // 머지되지 않은 다른 PR이 추가해 둔 키"를 구분할 수 없다. 잘못 unclaim하면 미머지 PR의 claim을
+    // 조용히 삭제하는 데이터 손실이 생기므로, 로컬에 없는 키를 unclaim하지 않는다. (이전엔 즉시 unclaim했음)
+    const keyEntries: KeyEntry[] = []
+    const listedKeyMap = {
+      'gone.key': createL10nKey('gone.key', {
+        id: 'key-2',
+        tags: [{ tag: 'web4', source: 'main' }],
+      }),
+    }
+
+    const { updatingKeys } = buildKeyChanges(
+      'main', 'web4', keyEntries, {}, listedKeyMap,
+    )
+
+    assert.equal(updatingKeys.length, 0)
+  })
+
+  it('Pass 1 (full sync): does NOT unclaim or prune contexts for a key gone from local (context-ful)', () => {
+    // context-ful 도메인에서도 동일 — 로컬에 없는 키의 (tag) unclaim도, orphan context 제거도 하지 않는다.
     const keyEntries: KeyEntry[] = []
     const listedKeyMap = {
       'removed.key': createL10nKey('removed.key', {
@@ -305,17 +321,30 @@ describe('buildKeyChanges', () => {
       'main', 'backend', keyEntries, {}, listedKeyMap,
     )
 
-    assert.equal(updatingKeys.length, 1)
-    assert.deepEqual(updatingKeys[0].removeTags, [{ tag: 'backend' }])
-    const ctxMeta = updatingKeys[0].setMetadata?.find(m => m.metaKey === 'context')
-    assert.ok(ctxMeta != null)
-    assert.deepEqual(JSON.parse(ctxMeta.metaValue), [])
+    assert.equal(updatingKeys.length, 0)
   })
 
-  it('Pass 1 (full sync): unclaims (tag, *) regardless of which source claimed it', () => {
-    // 전체 sync는 tag 단위 정리 책임을 가진다. 다른 source(예: 폐기된 PR-N)가 단 (tag, source) 행도
-    // 함께 unclaim된다 — server는 source 생략된 removeTags를 (key, tag)의 모든 row 제거로 해석한다.
-    // 키 자체는 orphan으로 보존되어 같은 키가 다시 등장하면 부활한다.
+  it('Pass 1 (full sync): does NOT prune orphan contexts for a key still present in local', () => {
+    // 키가 로컬에 살아있고 일부 context만 빠진 경우에도 전체 sync는 context metadata를 건드리지 않는다.
+    // "빠진 context"가 정말 삭제된 건지, 미머지 PR이 쓰는 context인지 구분할 수 없기 때문. (이전엔 제거했음)
+    const keyEntries = [createKeyEntry('취소', { context: 'a' })]
+    const listedKeyMap = {
+      취소: createL10nKey('취소', {
+        tags: [{ tag: 'android-likey', source: 'main' }],
+        metadata: [{ tag: 'android-likey', metaKey: 'context', metaValue: JSON.stringify(['a', 'b']) }],
+      }),
+    }
+
+    const { updatingKeys } = buildKeyChanges(
+      'main', 'android-likey', keyEntries, {}, listedKeyMap,
+    )
+
+    // context 'a'는 이미 서버에 있어 Pass 2 변경도 없음 → 아무 업데이트 없음
+    assert.equal(updatingKeys.length, 0)
+  })
+
+  it('Pass 1 (full sync): does NOT touch a key claimed only by another source', () => {
+    // 다른 source(예: 미머지/폐기 PR-N)만 가진 키도 전체 sync는 건드리지 않는다.
     const keyEntries: KeyEntry[] = []
     const listedKeyMap = {
       'other.key': createL10nKey('other.key', {
@@ -327,31 +356,7 @@ describe('buildKeyChanges', () => {
       'main', 'backend', keyEntries, {}, listedKeyMap,
     )
 
-    assert.equal(updatingKeys.length, 1)
-    assert.deepEqual(updatingKeys[0].removeTags, [{ tag: 'backend' }])
-    // 공유 context/description metadata는 건드리지 않는다 — 어차피 unclaim으로 자연 정리.
-    assert.equal(updatingKeys[0].setMetadata, undefined)
-  })
-
-  it('Pass 1 (full sync): context-less domain unclaims (tag, *) immediately when key is gone locally', () => {
-    // web4 vue-i18n 처럼 context metadata가 없는 도메인에서, 로컬 추출에 없는 키는 즉시 unclaim한다.
-    // 기존 코드는 context iteration을 거치므로 context-less 도메인의 orphan을 정리하지 못했다.
-    const keyEntries: KeyEntry[] = []
-    const listedKeyMap = {
-      'gone.key': createL10nKey('gone.key', {
-        id: 'key-2',
-        tags: [{ tag: 'web4', source: 'main' }],
-      }),
-    }
-
-    const { updatingKeys } = buildKeyChanges(
-      'main', 'web4', keyEntries, {}, listedKeyMap,
-    )
-
-    assert.equal(updatingKeys.length, 1)
-    assert.equal(updatingKeys[0].keyId, 'key-2')
-    assert.deepEqual(updatingKeys[0].removeTags, [{ tag: 'web4' }])
-    assert.equal(updatingKeys[0].setMetadata, undefined)
+    assert.equal(updatingKeys.length, 0)
   })
 
   it('Pass 2: accumulates contexts when same keyName appears with multiple contexts (existing key)', () => {

@@ -1,13 +1,13 @@
 {
   "packages/core": "8.4.1",
   "packages/cli": "7.10.2",
-  "packages/plugin-android": "7.5.6",
+  "packages/plugin-android": "7.5.7",
   "packages/plugin-ios": "7.4.1",
   "packages/extractor-javascript": "7.1.17",
   "packages/extractor-vue": "7.2.8",
   "packages/extractor-python": "7.0.15",
   "packages/compiler-json": "7.2.4",
   "packages/compiler-gettext": "7.2.4",
-  "packages/syncer-lokalise": "7.4.15",
-  "packages/syncer-l10n-storage": "1.4.3"
+  "packages/syncer-lokalise": "7.4.16",
+  "packages/syncer-l10n-storage": "1.4.4"
 }

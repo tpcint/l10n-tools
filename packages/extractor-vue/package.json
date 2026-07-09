@@ -29,7 +29,7 @@
     "htmlparser2": "^12.0.0",
     "l10n-tools-extractor-javascript": "^7.1.17",
     "npmlog": "^7.0.1",
-    "typescript": "^6.0.3"
+    "typescript": "^7.0.2"
   },
   "devDependencies": {
     "@types/npmlog": "^7.0.0"

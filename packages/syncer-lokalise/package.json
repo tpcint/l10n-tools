@@ -27,7 +27,7 @@
     "@lokalise/node-api": "^16.3.0",
     "es-toolkit": "^1.49.0",
     "npmlog": "^7.0.1",
-    "p-queue": "^9.3.1"
+    "p-queue": "^9.3.3"
   },
   "devDependencies": {
     "@types/npmlog": "^7.0.0"

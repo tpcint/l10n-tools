@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.4.4](https://github.com/tpcint/l10n-tools/compare/l10n-tools-syncer-l10n-storage-v1.4.3...l10n-tools-syncer-l10n-storage-v1.4.4) (2026-07-24)
+
+
+### Miscellaneous Chores
+
+* **deps:** bump es-toolkit from 1.47.0 to 1.47.1 ([#382](https://github.com/tpcint/l10n-tools/issues/382)) ([e123082](https://github.com/tpcint/l10n-tools/commit/e123082123294e8a60babb86e34ac28f53329688))
+* **deps:** bump es-toolkit from 1.47.1 to 1.48.1 ([#388](https://github.com/tpcint/l10n-tools/issues/388)) ([c7ebcf6](https://github.com/tpcint/l10n-tools/commit/c7ebcf604afca28abeeecfe7e3d88ab9ccd83d48))
+* **deps:** bump es-toolkit from 1.48.1 to 1.49.0 ([#390](https://github.com/tpcint/l10n-tools/issues/390)) ([69898bf](https://github.com/tpcint/l10n-tools/commit/69898bfd67d8bfcc6d464ca343ad8f7fb8897614))
+
 ## [1.4.3](https://github.com/tpcint/l10n-tools/compare/l10n-tools-syncer-l10n-storage-v1.4.2...l10n-tools-syncer-l10n-storage-v1.4.3) (2026-06-12)
 
 

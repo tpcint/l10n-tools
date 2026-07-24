@@ -1,5 +1,18 @@
 # Changelog
 
+## [7.4.16](https://github.com/tpcint/l10n-tools/compare/l10n-tools-syncer-lokalise-v7.4.15...l10n-tools-syncer-lokalise-v7.4.16) (2026-07-24)
+
+
+### Miscellaneous Chores
+
+* **deps:** bump @lokalise/node-api from 16.0.0 to 16.2.0 ([#399](https://github.com/tpcint/l10n-tools/issues/399)) ([2561ef0](https://github.com/tpcint/l10n-tools/commit/2561ef047d41cdbcea0ecbaa4eb6736cedc3402c))
+* **deps:** bump @lokalise/node-api from 16.2.0 to 16.3.0 ([#405](https://github.com/tpcint/l10n-tools/issues/405)) ([a54fc83](https://github.com/tpcint/l10n-tools/commit/a54fc83b555b367a4cac628ecea7b609e7119129))
+* **deps:** bump es-toolkit from 1.47.0 to 1.47.1 ([#382](https://github.com/tpcint/l10n-tools/issues/382)) ([e123082](https://github.com/tpcint/l10n-tools/commit/e123082123294e8a60babb86e34ac28f53329688))
+* **deps:** bump es-toolkit from 1.47.1 to 1.48.1 ([#388](https://github.com/tpcint/l10n-tools/issues/388)) ([c7ebcf6](https://github.com/tpcint/l10n-tools/commit/c7ebcf604afca28abeeecfe7e3d88ab9ccd83d48))
+* **deps:** bump es-toolkit from 1.48.1 to 1.49.0 ([#390](https://github.com/tpcint/l10n-tools/issues/390)) ([69898bf](https://github.com/tpcint/l10n-tools/commit/69898bfd67d8bfcc6d464ca343ad8f7fb8897614))
+* **deps:** bump p-queue from 9.3.0 to 9.3.1 ([#397](https://github.com/tpcint/l10n-tools/issues/397)) ([980987e](https://github.com/tpcint/l10n-tools/commit/980987ec6e426feeeb187e4455e6bbc3d58f7749))
+* **deps:** bump p-queue from 9.3.1 to 9.3.3 ([#406](https://github.com/tpcint/l10n-tools/issues/406)) ([76057c1](https://github.com/tpcint/l10n-tools/commit/76057c1578fe8fe10f2984c33e7c6cda366aaf77))
+
 ## [7.4.15](https://github.com/tpcint/l10n-tools/compare/l10n-tools-syncer-lokalise-v7.4.14...l10n-tools-syncer-lokalise-v7.4.15) (2026-06-12)
 
 

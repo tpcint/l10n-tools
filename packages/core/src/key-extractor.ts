@@ -49,7 +49,7 @@ export class KeyExtractor {
  * Get line number at a given index in source string
  */
 export function getLineTo(src: string, index: number, startLine: number = 1): number {
-  const matches = src.substr(0, index).match(/\n/g)
+  const matches = src.slice(0, index).match(/\n/g)
   if (!matches) {
     return startLine
   }

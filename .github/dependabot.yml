@@ -6,14 +6,12 @@ updates:
     schedule:
       interval: "weekly"
     groups:
-      eslint:
+      lint:
         patterns:
-          - "@eslint/*"
           - "@stylistic/*"
-          - "eslint"
-          - "eslint-*"
-          - "typescript-eslint"
-          - "@typescript-eslint/*"
+          - "eslint-plugin-import-newlines"
+          - "oxlint"
+          - "oxlint-*"
       htmlparser2:
         patterns:
           - "htmlparser2"

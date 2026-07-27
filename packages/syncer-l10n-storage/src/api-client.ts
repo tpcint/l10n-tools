@@ -14,7 +14,9 @@ export class L10nStorageApiClient {
     const url = `${this.baseUrl}${path}`
     log.verbose('l10n-storage-api', `${method} ${url}`)
     const controller = new AbortController()
-    const timeout = setTimeout(() => controller.abort(), 30_000)
+    const timeout = setTimeout(() => {
+      controller.abort()
+    }, 30_000)
     let res: Response
     try {
       res = await fetch(url, {
@@ -49,7 +51,7 @@ export class L10nStorageApiClient {
       if (cursor) params.set('cursor', cursor)
       const response = await this.request<ListKeysToServeResponse>(
         'GET',
-        `/api/l10n/projects/${projectId}/keys-to-serve?${params}`,
+        `/api/l10n/projects/${projectId}/keys-to-serve?${params.toString()}`,
       )
       allKeys.push(...response.keys)
       previousCursor = cursor
@@ -81,7 +83,7 @@ export class L10nStorageApiClient {
       if (source) params.set('source', source)
       const response = await this.request<ListKeysToServeResponse>(
         'GET',
-        `/api/l10n/projects/${projectId}/tags/${encodedTag}/keys-to-serve?${params}`,
+        `/api/l10n/projects/${projectId}/tags/${encodedTag}/keys-to-serve?${params.toString()}`,
       )
       allKeys.push(...response.keys)
       previousCursor = cursor

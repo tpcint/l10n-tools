@@ -143,7 +143,7 @@ export function jsonKeyMatchesMergeKeys(
   if (pluralType === 'i18next') {
     const m = jsonKey.match(I18NEXT_PLURAL_SUFFIX_RE)
     if (m) {
-      const base = jsonKey.substring(0, m.index!)
+      const base = jsonKey.substring(0, m.index)
       return mergeKeys.has(base)
     }
   }

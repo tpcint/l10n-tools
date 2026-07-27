@@ -253,9 +253,9 @@ function parseComment(key: string, commentText: string | undefined) {
   }
 
   if (commentData[key]) {
-    defaultValue = JSON.parse(commentData[key])
+    defaultValue = JSON.parse(commentData[key]) as string
   } else if (commentData[field]) {
-    defaultValue = JSON.parse(commentData[field])
+    defaultValue = JSON.parse(commentData[field]) as string
   }
 
   return { defaultValue, ignore }
@@ -465,7 +465,7 @@ function extractNamedParameter(argsString: string, paramName: string): string | 
 }
 
 function unescapeSwiftString(str: string): string {
-  return str.replace(/\\(\\|"|'|n|r|t|0|u\{([0-9A-Fa-f]{1,8})\})/g, (_match, esc, unicode) => {
+  return str.replace(/\\(\\|"|'|n|r|t|0|u\{([0-9A-Fa-f]{1,8})\})/g, (_match: string, esc: string, unicode: string | undefined) => {
     if (unicode) {
       const codePoint = parseInt(unicode, 16)
       if (codePoint > 0x10FFFF) {

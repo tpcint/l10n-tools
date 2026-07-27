@@ -237,7 +237,7 @@ async function readMoIfExists(
 ): Promise<GetTextTranslations> {
   try {
     const buffer = await fsp.readFile(moPath)
-    const parsed = gettextParser.mo.parse(buffer) as GetTextTranslations
+    const parsed = gettextParser.mo.parse(buffer)
     if (parsed?.translations == null) {
       return emptyPo(domainName, locale)
     }

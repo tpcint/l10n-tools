@@ -69,7 +69,7 @@ function parseContext(context: string | undefined): CombinedContextMap {
     return {}
   }
   try {
-    return JSON.parse(context)
+    return JSON.parse(context) as CombinedContextMap
   } catch (err) {
     log.warn('parseContext', 'context not recognized', context, err)
     return {}

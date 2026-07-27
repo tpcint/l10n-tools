@@ -13,7 +13,7 @@ function requireToken(): string {
 
 export const DEV_TOKEN = requireToken()
 
-export async function api<T = unknown>(path: string, options?: RequestInit): Promise<T> {
+export async function api<T = unknown>(path: string, options?: Omit<RequestInit, 'headers'> & { headers?: Record<string, string> }): Promise<T> {
   const res = await fetch(`${API_BASE}/api/l10n${path}`, {
     ...options,
     headers: {

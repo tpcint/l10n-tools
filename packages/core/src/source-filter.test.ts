@@ -47,7 +47,7 @@ describe('materializeSnapshotsToTempDir', () => {
     try {
       const ko = await readTransEntries(path.join(tempDir, 'trans-ko.json'))
       assert.equal(ko.length, 2)
-      const contexts = ko.map(e => e.context).sort()
+      const contexts = ko.map(e => e.context).sort((a, b) => (a ?? '').localeCompare(b ?? ''))
       assert.deepEqual(contexts, ['ctx1', 'ctx2'])
       for (const entry of ko) {
         assert.deepEqual(entry.messages, { other: '값' })

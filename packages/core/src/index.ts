@@ -29,6 +29,7 @@ export {
   type ProgramOptions,
   type LokalisePlatform,
   type KeywordConfig,
+  type L10nConf,
 } from './config.js'
 
 // Entry types and utilities

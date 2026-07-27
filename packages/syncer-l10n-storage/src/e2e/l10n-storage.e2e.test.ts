@@ -291,7 +291,7 @@ describe('syncTransToL10nStorage (e2e)', () => {
     await acceptAllSuggestions(seeded)
 
     const localTrans = {
-      en: [trans('flagged.key', { other: 'Authoritative' }) as TransEntry],
+      en: [trans('flagged.key', { other: 'Authoritative' })],
     }
     localTrans.en[0].flag = 'fuzzy'
 

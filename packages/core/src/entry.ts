@@ -68,8 +68,8 @@ export function compareEntry(a: BaseEntry, b: BaseEntry) {
 
 export async function readKeyEntries(file: string): Promise<KeyEntry[]> {
   const input = await fsp.readFile(file, { encoding: 'utf-8' })
-  const { keys: entries } = JSON.parse(input)
-  return entries.map((entry: any) => {
+  const { keys: entries } = JSON.parse(input) as { keys: Partial<KeyEntry>[] }
+  return entries.map(entry => {
     return {
       context: entry.context || null,
       key: entry.key || '',
@@ -82,8 +82,8 @@ export async function readKeyEntries(file: string): Promise<KeyEntry[]> {
 
 export async function readTransEntries(file: string): Promise<TransEntry[]> {
   const input = await fsp.readFile(file, { encoding: 'utf-8' })
-  const { translations: entries } = JSON.parse(input) as { translations: TransEntry[] }
-  return entries.map((entry: any) => {
+  const { translations: entries } = JSON.parse(input) as { translations: Partial<TransEntry>[] }
+  return entries.map(entry => {
     return {
       context: entry.context || null,
       key: entry.key || '',
@@ -135,7 +135,7 @@ export function checkTransEntrySpecs(transEntry: TransEntry, specs: string[], us
   return specs.every(spec => {
     const positive = !spec.startsWith('!')
     if (!positive) {
-      spec = spec.substr(1)
+      spec = spec.slice(1)
     }
     const isVerified = useUnverified || transEntry.flag !== 'unverified'
 

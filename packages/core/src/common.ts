@@ -12,7 +12,7 @@ import {
   writeTransEntries,
 } from './entry.js'
 import type { DomainConfig, ValidationConfig } from './config.js'
-import { validateMessages } from './validator.js'
+import { ValidateError, validateMessages } from './validator.js'
 import { EntryCollection } from './entry-collection.js'
 
 /**
@@ -77,8 +77,9 @@ export async function updateTrans(keysPath: string, fromTransDir: string, transD
                 baseMessages = baseTransEntry?.messages ?? keyTransEntry.messages
               }
               validateMessages(baseMessages, keyTransEntry.messages)
-            } catch (err: any) {
-              log.warn('validation', `[${locale}] ${err.constructor.name}: ${err.message}`)
+            } catch (err) {
+              const detail = err instanceof ValidateError ? `${err.constructor.name}: ${err.message}` : String(err)
+              log.warn('validation', `[${locale}] ${detail}`)
               if (keyTransEntry.context) {
                 log.warn('validation', `context: \`${keyTransEntry.context}'`)
               }

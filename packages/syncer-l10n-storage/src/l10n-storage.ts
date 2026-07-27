@@ -433,7 +433,7 @@ export function updateTransEntries(
         }
         if (Object.keys(translations).length > 0 && !isEqual(transEntry.messages, translations)) {
           log.verbose('updateTransEntries', `updating ${locale} value of ${keyEntry.key}`)
-          transEntry.messages = translations as TransMessages
+          transEntry.messages = translations
         }
       } else {
         const value = tr.translation.other

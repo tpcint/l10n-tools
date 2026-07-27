@@ -144,6 +144,20 @@ describe('VueKeyExtractor', () => {
       expectKeyEntry(extractor, null, 'key-v-t-path', false, 'test-file', '4')
     })
 
+    it('v-t attrs with leading underscores in path', () => {
+      // TypeScript는 `__`로 시작하는 식별자를 `___path`처럼 이스케이프해서
+      // `escapedText`에 담는다. 속성명 비교는 이스케이프되지 않은 `text`로 해야
+      // 설정에 적은 경로와 일치한다.
+      const module = `
+                <template>
+                    <div v-t="{__path: 'key-v-t-underscore-path'}"></div>
+                </template>
+            `
+      const extractor = new VueKeyExtractor({ objectAttrs: { 'v-t': ['__path'] } })
+      extractor.extractVue('test-file', module)
+      expectKeyEntry(extractor, null, 'key-v-t-underscore-path', false, 'test-file', '3')
+    })
+
     it('extra exprAttrs: custom directive (e.g. v-dompurify-html)', () => {
       const module = `
                 <template>

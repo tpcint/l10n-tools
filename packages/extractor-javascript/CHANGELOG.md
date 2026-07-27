@@ -1,5 +1,19 @@
 # Changelog
 
+## [7.1.18](https://github.com/tpcint/l10n-tools/compare/l10n-tools-extractor-javascript-v7.1.17...l10n-tools-extractor-javascript-v7.1.18) (2026-07-27)
+
+
+### Code Refactoring
+
+* eslint를 oxlint로 교체하고 type-aware 룰 대응 ([#412](https://github.com/tpcint/l10n-tools/issues/412)) ([b2663b4](https://github.com/tpcint/l10n-tools/commit/b2663b4186fc1ee8334d656fd0bc1c5918eb262c))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * peerDependencies
+    * l10n-tools-core bumped from ^8.4.1 to ^8.4.2
+
 ## [7.1.17](https://github.com/tpcint/l10n-tools/compare/l10n-tools-extractor-javascript-v7.1.16...l10n-tools-extractor-javascript-v7.1.17) (2026-06-12)
 
 

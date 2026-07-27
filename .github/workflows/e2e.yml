@@ -16,7 +16,7 @@ jobs:
       should_run: ${{ steps.filter.outputs.syncer_l10n_storage }}
       backend_image: ${{ steps.backend.outputs.image }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: dorny/paths-filter@v3
         id: filter
         with:
@@ -70,7 +70,7 @@ jobs:
       BACKEND_IMAGE: ${{ needs.changes.outputs.backend_image || secrets.BACKEND_IMAGE }}
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v3

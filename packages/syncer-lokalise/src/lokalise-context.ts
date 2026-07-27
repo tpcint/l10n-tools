@@ -64,14 +64,30 @@ export function removeContext(context: string | undefined, tag: string, keyConte
   }
 }
 
+function isCombinedContextMap(value: unknown): value is CombinedContextMap {
+  if (typeof value !== 'object' || value == null || Array.isArray(value)) {
+    return false
+  }
+  return Object.values(value as Record<string, unknown>)
+    .every(keyContexts => Array.isArray(keyContexts) && keyContexts.every(keyContext => typeof keyContext === 'string'))
+}
+
 function parseContext(context: string | undefined): CombinedContextMap {
   if (!context) {
     return {}
   }
+  let parsed: unknown
   try {
-    return JSON.parse(context) as CombinedContextMap
+    parsed = JSON.parse(context)
   } catch (err) {
     log.warn('parseContext', 'context not recognized', context, err)
     return {}
   }
+  // 파싱은 됐지만 형태가 다른 경우(예: `{"tag": 1}`)를 걸러낸다. 그대로 두면
+  // addContext/removeContext/getContexts에서 배열 메서드 호출로 터진다.
+  if (!isCombinedContextMap(parsed)) {
+    log.warn('parseContext', 'context shape not recognized', context)
+    return {}
+  }
+  return parsed
 }

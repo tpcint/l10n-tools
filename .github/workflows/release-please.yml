@@ -9,17 +9,19 @@ jobs:
   release-please:
     runs-on: ubuntu-latest
     concurrency: release-please
-    permissions:
-      contents: write
-      pull-requests: write
     outputs:
       releases_created: ${{ steps.release.outputs.releases_created }}
       paths_released: ${{ steps.release.outputs.paths_released }}
     steps:
+      - uses: actions/create-github-app-token@v3
+        id: app-token
+        with:
+          client-id: ${{ vars.TPC_AGENT_CLIENT_ID }}
+          private-key: ${{ secrets.TPC_AGENT_PRIVATE_KEY }}
       - uses: googleapis/release-please-action@v5
         id: release
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ steps.app-token.outputs.token }}
           target-branch: ${{ github.ref_name }}
 
   publish:

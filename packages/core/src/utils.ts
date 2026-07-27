@@ -9,7 +9,7 @@ export function execWithLog(cmd: string, logPrefix: string = ''): Promise<number
   return new Promise((resolve, reject) => {
     const p = spawn(cmd, [], { shell: true })
 
-    p.stdout.on('data', data => {
+    p.stdout.on('data', (data: Buffer) => {
       for (const line of data.toString().split('\n')) {
         if (line) {
           log.info(logPrefix, line)
@@ -17,7 +17,7 @@ export function execWithLog(cmd: string, logPrefix: string = ''): Promise<number
       }
     })
 
-    p.stderr.on('data', data => {
+    p.stderr.on('data', (data: Buffer) => {
       for (const line of data.toString().split('\n')) {
         if (line) {
           log.warn(logPrefix, line)

@@ -2,7 +2,7 @@ import { parseDocument } from 'htmlparser2'
 import { isTag } from 'domhandler'
 import { findAll } from 'domutils'
 import { getElementContent, getElementContentIndex } from './element-utils.js'
-import { getLineTo, JsKeyExtractor } from 'l10n-tools-extractor-javascript'
+import { formatParseError, getLineTo, JsKeyExtractor } from 'l10n-tools-extractor-javascript'
 import log from 'npmlog'
 import * as ts from 'typescript'
 
@@ -238,8 +238,8 @@ export class VueKeyExtractor extends JsKeyExtractor {
     try {
       const ast = ts.createSourceFile(filename, `(${src})`, ts.ScriptTarget.Latest, true, ts.ScriptKind.JS)
       this.extractJsIdentifierNode(filename, src, ast, startLine, options)
-    } catch (err: any) {
-      log.warn('extractJsIdentifier', `error parsing '${src.split(/\n/g)[err.loc?.line - 1]?.trim() ?? ''}' (${filename}:${err.loc?.line ?? '?'})`)
+    } catch (err) {
+      log.warn('extractJsIdentifier', formatParseError(err, filename, src))
     }
   }
 
@@ -254,8 +254,8 @@ export class VueKeyExtractor extends JsKeyExtractor {
             this.addMessage({ filename, line: getLineTo(src, pos, startLine) }, key, options)
           }
           return
-        } catch (err: any) {
-          log.warn('extractJsIdentifierNode', err.message)
+        } catch (err) {
+          log.warn('extractJsIdentifierNode', err instanceof Error ? err.message : String(err))
           log.warn('extractJsIdentifierNode', `'${src.substring(pos, node.end)}': (${filename}:${getLineTo(src, pos, startLine)})`)
         }
       }
@@ -268,8 +268,8 @@ export class VueKeyExtractor extends JsKeyExtractor {
     try {
       const ast = ts.createSourceFile(filename, `(${src})`, ts.ScriptTarget.Latest, true, ts.ScriptKind.JS)
       this.extractJsObjectNode(filename, src, ast, paths, startLine)
-    } catch (err: any) {
-      log.warn('extractJsObjectPaths', `error parsing '${src.split(/\n/g)[err.loc?.line - 1]?.trim() ?? ''}' (${filename}:${err.loc?.line ?? '?'})`)
+    } catch (err) {
+      log.warn('extractJsObjectPaths', formatParseError(err, filename, src))
     }
   }
 
@@ -277,7 +277,7 @@ export class VueKeyExtractor extends JsKeyExtractor {
     const visit = (node: ts.Node) => {
       if (ts.isExpressionStatement(node)) {
         const pos = node.getStart(ast)
-        const errs: any[] = []
+        const errs: unknown[] = []
         for (const path of paths) {
           try {
             const keys = this.evaluateTsArgumentValues(node.expression, path)
@@ -285,13 +285,13 @@ export class VueKeyExtractor extends JsKeyExtractor {
               this.addMessage({ filename, line: getLineTo(src, pos, startLine) }, key)
             }
             return
-          } catch (err: any) {
+          } catch (err) {
             errs.push(err)
           }
         }
         if (errs.length > 0) {
           for (const err of errs) {
-            log.warn('extractJsObjectNode', err.message)
+            log.warn('extractJsObjectNode', err instanceof Error ? err.message : String(err))
           }
           log.warn('extractJsObjectNode', `'${src.substring(pos, node.end)}': (${filename}:${getLineTo(src, pos, startLine)})`)
         }

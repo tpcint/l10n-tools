@@ -152,7 +152,7 @@ describe('sourceFilterForL10nStorage (e2e)', () => {
     assert.equal(snapshots.length, 1)
     const snap = snapshots[0]
     assert.equal(snap.keyName, 'ctx.key')
-    assert.deepEqual(snap.contexts.sort(), ['ctx1', 'ctx2'])
+    assert.deepEqual(snap.contexts.sort((a, b) => (a ?? '').localeCompare(b ?? '')), ['ctx1', 'ctx2'])
     assert.deepEqual(snap.translations.en, { other: 'Hello' })
     assert.deepEqual(snap.translations.ko, { other: '안녕' })
   })

@@ -13,6 +13,7 @@ import {
   fileExists,
   getKeysPath,
   getTransPath,
+  type L10nConf,
   L10nConfig,
   materializeSnapshotsToTempDir,
   pluginRegistry,
@@ -99,7 +100,7 @@ async function run() {
   // Initialize plugin registry - discovers and loads all installed plugins
   await pluginRegistry.initialize()
 
-  const pkg = JSON.parse(await fsp.readFile(path.join(dirname, '..', 'package.json'), { encoding: 'utf-8' }))
+  const pkg = JSON.parse(await fsp.readFile(path.join(dirname, '..', 'package.json'), { encoding: 'utf-8' })) as { version: string, description: string }
   program.version(pkg.version)
     .description(pkg.description)
     .option('-r, --rcfile <rcfile>', 'specify config file, default to .l10nrc')
@@ -115,7 +116,7 @@ async function run() {
 
   program.command('plugins')
     .description('List installed plugins')
-    .action(async () => {
+    .action(() => {
       for (const plugin of pluginRegistry.getPlugins().values()) {
         const caps: string[] = []
         if (plugin.extractors?.length) {
@@ -445,7 +446,7 @@ async function run() {
               count++
             }
           }
-          counts.push(locale + ':' + count)
+          counts.push(`${locale}:${count}`)
         }
         process.stdout.write(`${domainName},${counts.join(',')}\n`)
       })
@@ -507,7 +508,7 @@ async function run() {
           if (isAggregate) {
             aggregate.set(locale, (aggregate.get(locale) ?? 0) + count)
           } else {
-            counts.push(locale + ':' + count)
+            counts.push(`${locale}:${count}`)
           }
         }
         if (!isAggregate) {
@@ -646,15 +647,15 @@ async function loadConfig(rcPath: string): Promise<L10nConfig> {
   const corePackagePath = import.meta.resolve('l10n-tools-core')
   const coreDir = path.dirname(fileURLToPath(corePackagePath))
   const schemaPath = path.join(coreDir, '..', 'l10nrc.schema.json')
-  const schema = JSON.parse(await fsp.readFile(schemaPath, { encoding: 'utf-8' }))
+  const schema = JSON.parse(await fsp.readFile(schemaPath, { encoding: 'utf-8' })) as object
 
-  const validate = ajv.compile(schema)
-  const valid = validate(rc?.config)
-  if (!valid) {
+  const rcConfig: unknown = rc?.config
+  const validate = ajv.compile<L10nConf>(schema)
+  if (!validate(rcConfig)) {
     log.error('l10n', 'rc file error', validate.errors)
     throw new Error('rc file is not valid')
   }
-  return new L10nConfig(rc?.config)
+  return new L10nConfig(rcConfig)
 }
 
 try {

@@ -11,6 +11,12 @@ type KeywordArgumentPositions = {
   pluralCount: number | null,
 }
 
+export function formatParseError(err: unknown, filename: string, src: string): string {
+  const line = (err as { loc?: { line?: number } } | null | undefined)?.loc?.line
+  const source = line == null ? '' : src.split(/\n/g)[line - 1]?.trim() ?? ''
+  return `error parsing '${source}' (${filename}:${line ?? '?'})`
+}
+
 export class JsKeyExtractor extends KeyExtractor {
   protected readonly keywordMap: { [keyword: string]: KeywordArgumentPositions }
 
@@ -24,8 +30,8 @@ export class JsKeyExtractor extends KeyExtractor {
     try {
       const ast = ts.createSourceFile(filename, src, ts.ScriptTarget.Latest, true, ts.ScriptKind.JS)
       this.extractTsNode(filename, src, ast, startLine)
-    } catch (err: any) {
-      log.warn('extractJsModule', `error parsing '${src.split(/\n/g)[err.loc?.line - 1]?.trim() ?? ''}' (${filename}:${err.loc?.line ?? '?'})`)
+    } catch (err) {
+      log.warn('extractJsModule', formatParseError(err, filename, src))
     }
   }
 
@@ -33,8 +39,8 @@ export class JsKeyExtractor extends KeyExtractor {
     try {
       const ast = ts.createSourceFile(filename, src, ts.ScriptTarget.Latest, true, ts.ScriptKind.JSX)
       this.extractTsNode(filename, src, ast, startLine)
-    } catch (err: any) {
-      log.warn('extractJsxModule', `error parsing '${src.split(/\n/g)[err.loc?.line - 1]?.trim() ?? ''}' (${filename}:${err.loc?.line ?? '?'})`)
+    } catch (err) {
+      log.warn('extractJsxModule', formatParseError(err, filename, src))
     }
   }
 
@@ -42,8 +48,8 @@ export class JsKeyExtractor extends KeyExtractor {
     try {
       const ast = ts.createSourceFile(filename, src, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS)
       this.extractTsNode(filename, src, ast, startLine)
-    } catch (err: any) {
-      log.warn('extractTsModule', `error parsing '${src.split(/\n/g)[err.loc?.line - 1]?.trim() ?? ''}' (${filename}:${err.loc?.line ?? '?'})`)
+    } catch (err) {
+      log.warn('extractTsModule', formatParseError(err, filename, src))
     }
   }
 
@@ -51,8 +57,8 @@ export class JsKeyExtractor extends KeyExtractor {
     try {
       const ast = ts.createSourceFile(filename, src, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX)
       this.extractTsNode(filename, src, ast, startLine)
-    } catch (err: any) {
-      log.warn('extractTsxModule', `error parsing '${src.split(/\n/g)[err.loc?.line - 1]?.trim() ?? ''}' (${filename}:${err.loc?.line ?? '?'})`)
+    } catch (err) {
+      log.warn('extractTsxModule', formatParseError(err, filename, src))
     }
   }
 
@@ -60,8 +66,8 @@ export class JsKeyExtractor extends KeyExtractor {
     try {
       const ast = ts.createSourceFile(filename, `(${src})`, ts.ScriptTarget.Latest, true, ts.ScriptKind.JS)
       this.extractTsNode(filename, src, ast, startLine)
-    } catch (err: any) {
-      log.warn('extractJsExpression', `error parsing '${src.split(/\n/g)[err.loc?.line - 1]?.trim() ?? ''}' (${filename}:${err.loc?.line ?? '?'})`)
+    } catch (err) {
+      log.warn('extractJsExpression', formatParseError(err, filename, src))
     }
   }
 
@@ -79,8 +85,8 @@ export class JsKeyExtractor extends KeyExtractor {
             for (const key of keys) {
               this.addMessage({ filename, line: getLineTo(src, pos, startLine) }, key, { isPlural })
             }
-          } catch (err: any) {
-            log.warn('extractTsNode', err.message)
+          } catch (err) {
+            log.warn('extractTsNode', err instanceof Error ? err.message : String(err))
             log.warn('extractTsNode', `'${src.substring(pos, node.end)}': (${filename}:${getLineTo(src, pos, startLine)})`)
           }
         }
@@ -106,7 +112,7 @@ export class JsKeyExtractor extends KeyExtractor {
           if (!ts.isIdentifier(prop.name)) {
             continue
           }
-          if (prop.name.escapedText !== path) {
+          if (prop.name.text !== path) {
             continue
           }
           return this.evaluateTsArgumentValues(prop.initializer)

@@ -138,12 +138,12 @@ export class PluginRegistry {
     const parentUrl = pathToFileURL(path.join(process.cwd(), 'package.json')).href
     const pluginUrl = import.meta.resolve(pluginName, parentUrl)
 
-    const module = await import(pluginUrl)
-    const factory: PluginFactory = module.default
-    if (typeof factory !== 'function') {
+    const module = await import(pluginUrl) as { default?: unknown }
+    if (typeof module.default !== 'function') {
       log.warn('plugin-registry', `Plugin ${pluginName} does not export a factory function`)
       return
     }
+    const factory = module.default as PluginFactory
     const plugin = await factory()
     this.register(plugin)
     log.verbose('plugin-registry', `Loaded plugin: ${plugin.name}`)

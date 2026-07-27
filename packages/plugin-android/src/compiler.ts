@@ -171,6 +171,8 @@ export interface GenerateAndroidXmlOptions {
   merge?: boolean,
 }
 
+// 공개 API 시그니처가 Promise<string>이라 async를 유지한다.
+// oxlint-disable-next-line typescript/require-await
 export async function generateAndroidXml(
   locale: string,
   transEntries: TransEntry[],
@@ -285,8 +287,8 @@ function patchAndroidXmlMerge(
   dstXmlJson: ReturnType<typeof parseAndroidXml>,
   builder: ReturnType<typeof getAndroidXmlBuilder>,
 ): string {
-  const srcNodesByName = indexResourcesByName(srcResNode.resources as XMLNode[])
-  const dstResources = [...dstResNode.resources as XMLNode[]]
+  const srcNodesByName = indexResourcesByName(srcResNode.resources)
+  const dstResources = [...dstResNode.resources]
 
   for (const transEntry of transEntries) {
     const name = transEntry.context

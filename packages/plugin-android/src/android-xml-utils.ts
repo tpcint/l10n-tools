@@ -45,9 +45,9 @@ export function getAndroidXmlBuilder(): XMLBuilder {
 }
 
 export function parseAndroidXml(parser: XMLParser, src: string): XMLNodeList {
-  const srcJson = parser.parse(src) as any[]
+  const srcJson = parser.parse(src) as XMLNodeList
   for (const [i, child] of srcJson.entries()) {
-    if (child['?xml']) {
+    if ('?xml' in child) {
       srcJson.splice(i + 1, 0, createTextNode('\n'))
       break
     }
@@ -132,7 +132,7 @@ export function decodeAndroidStrings(value: string): string {
   if (value.startsWith('"') && value.endsWith('"')) {
     value = value.substring(1, value.length - 1)
   }
-  return value.replace(/\\(["'@nu])([0-9A-F]{4})?/g, (m, p1, p2) => {
+  return value.replace(/\\(["'@nu])([0-9A-F]{4})?/g, (m: string, p1: string, p2: string | undefined) => {
     switch (p1) {
       case '"':
       case '\'':

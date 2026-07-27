@@ -10,7 +10,7 @@ export type ProgramOptions = {
   quiet?: boolean,
 }
 
-type L10nConf = {
+export type L10nConf = {
   '$schema'?: string,
   'domains': { [name: string]: DomainConf },
   /** Validation Config */
@@ -113,7 +113,7 @@ type DomainConf = {
 
 export class L10nConfig {
   private readonly rc: L10nConf
-  constructor(rc: any) {
+  constructor(rc: L10nConf) {
     this.rc = rc
   }
 

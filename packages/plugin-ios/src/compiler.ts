@@ -226,6 +226,8 @@ export function shouldProcessKey(
   return transEntries.some(entry => entry.context === key || (entry.context == null && entry.key === key))
 }
 
+// 호출부가 모두 await하는 비동기 계약을 유지한다.
+// oxlint-disable-next-line typescript/require-await
 async function readStringsIfExists(stringsPath: string): Promise<CommentedI18nStringsMsg> {
   try {
     return i18nStringsFiles.readFileSync(stringsPath, { encoding: 'utf-8', wantsComments: true })

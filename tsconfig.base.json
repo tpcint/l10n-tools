@@ -4,6 +4,10 @@
     "lib": ["ES2024"],
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
+    // 워크스페이스 패키지를 exports의 `source` 조건(= src/*.ts)으로 해석한다.
+    // 이게 없으면 타입 해석이 `dist/*.d.ts`에 의존해, 빌드 전에는 oxlint의
+    // type-aware 룰이 워크스페이스 간 import를 error type으로 보고 오탐을 낸다.
+    "customConditions": ["source"],
     "sourceMap": true,
     "declaration": true,
     "declarationMap": true,

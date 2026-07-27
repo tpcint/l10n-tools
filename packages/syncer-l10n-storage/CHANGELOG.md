@@ -1,5 +1,27 @@
 # Changelog
 
+## [1.4.4](https://github.com/tpcint/l10n-tools/compare/l10n-tools-syncer-l10n-storage-v1.4.3...l10n-tools-syncer-l10n-storage-v1.4.4) (2026-07-27)
+
+
+### Miscellaneous Chores
+
+* **deps:** bump es-toolkit from 1.47.0 to 1.47.1 ([#382](https://github.com/tpcint/l10n-tools/issues/382)) ([e123082](https://github.com/tpcint/l10n-tools/commit/e123082123294e8a60babb86e34ac28f53329688))
+* **deps:** bump es-toolkit from 1.47.1 to 1.48.1 ([#388](https://github.com/tpcint/l10n-tools/issues/388)) ([c7ebcf6](https://github.com/tpcint/l10n-tools/commit/c7ebcf604afca28abeeecfe7e3d88ab9ccd83d48))
+* **deps:** bump es-toolkit from 1.48.1 to 1.49.0 ([#390](https://github.com/tpcint/l10n-tools/issues/390)) ([69898bf](https://github.com/tpcint/l10n-tools/commit/69898bfd67d8bfcc6d464ca343ad8f7fb8897614))
+* **deps:** bump es-toolkit from 1.49.0 to 1.50.0 ([#411](https://github.com/tpcint/l10n-tools/issues/411)) ([5aa7004](https://github.com/tpcint/l10n-tools/commit/5aa7004416bc28d8e949621ff65342280c74bddc))
+
+
+### Code Refactoring
+
+* eslint를 oxlint로 교체하고 type-aware 룰 대응 ([#412](https://github.com/tpcint/l10n-tools/issues/412)) ([b2663b4](https://github.com/tpcint/l10n-tools/commit/b2663b4186fc1ee8334d656fd0bc1c5918eb262c))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * peerDependencies
+    * l10n-tools-core bumped from ^8.4.1 to ^8.4.2
+
 ## [1.4.3](https://github.com/tpcint/l10n-tools/compare/l10n-tools-syncer-l10n-storage-v1.4.2...l10n-tools-syncer-l10n-storage-v1.4.3) (2026-06-12)
 
 

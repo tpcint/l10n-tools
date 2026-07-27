@@ -1,5 +1,25 @@
 # Changelog
 
+## [7.4.2](https://github.com/tpcint/l10n-tools/compare/l10n-tools-plugin-ios-v7.4.1...l10n-tools-plugin-ios-v7.4.2) (2026-07-27)
+
+
+### Miscellaneous Chores
+
+* **deps:** bump p-queue from 9.3.0 to 9.3.1 ([#397](https://github.com/tpcint/l10n-tools/issues/397)) ([980987e](https://github.com/tpcint/l10n-tools/commit/980987ec6e426feeeb187e4455e6bbc3d58f7749))
+* **deps:** bump p-queue from 9.3.1 to 9.3.3 ([#406](https://github.com/tpcint/l10n-tools/issues/406)) ([76057c1](https://github.com/tpcint/l10n-tools/commit/76057c1578fe8fe10f2984c33e7c6cda366aaf77))
+
+
+### Code Refactoring
+
+* eslint를 oxlint로 교체하고 type-aware 룰 대응 ([#412](https://github.com/tpcint/l10n-tools/issues/412)) ([b2663b4](https://github.com/tpcint/l10n-tools/commit/b2663b4186fc1ee8334d656fd0bc1c5918eb262c))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * peerDependencies
+    * l10n-tools-core bumped from ^8.4.1 to ^8.4.2
+
 ## [7.4.1](https://github.com/tpcint/l10n-tools/compare/l10n-tools-plugin-ios-v7.4.0...l10n-tools-plugin-ios-v7.4.1) (2026-06-12)
 
 

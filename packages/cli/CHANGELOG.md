@@ -1,5 +1,19 @@
 # Changelog
 
+## [7.10.3](https://github.com/tpcint/l10n-tools/compare/l10n-tools-v7.10.2...l10n-tools-v7.10.3) (2026-07-27)
+
+
+### Code Refactoring
+
+* eslint를 oxlint로 교체하고 type-aware 룰 대응 ([#412](https://github.com/tpcint/l10n-tools/issues/412)) ([b2663b4](https://github.com/tpcint/l10n-tools/commit/b2663b4186fc1ee8334d656fd0bc1c5918eb262c))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * l10n-tools-core bumped from ^8.4.1 to ^8.4.2
+
 ## [7.10.2](https://github.com/tpcint/l10n-tools/compare/l10n-tools-v7.10.1...l10n-tools-v7.10.2) (2026-06-12)
 
 

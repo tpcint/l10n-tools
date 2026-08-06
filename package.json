@@ -27,7 +27,7 @@
     "@stylistic/eslint-plugin": "^5.10.0",
     "@types/node": "^22.20.1",
     "eslint-plugin-import-newlines": "^2.0.0",
-    "oxlint": "^1.76.0",
+    "oxlint": "^1.77.0",
     "oxlint-tsgolint": "^7.0.2001",
     "tsx": "^4.23.1",
     "typescript": "^6.0.3"

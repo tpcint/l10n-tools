@@ -71,5 +71,6 @@ export { updateTrans, getSrcPaths } from './common.js'
 // Extractor, compiler, syncer functions
 export { extractKeys } from './extractor.js'
 export { compileAll, findMissingOutputKeys, outputEntryId } from './compiler.js'
+export { resolveBaseRef } from './base-output.js'
 export { syncTransToTarget } from './syncer.js'
 export { materializeSnapshotsToTempDir } from './source-filter.js'

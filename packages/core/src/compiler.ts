@@ -1,3 +1,4 @@
+import { materializeBaseOutputs } from './base-output.js'
 import type { DomainConfig } from './config.js'
 import type { KeyEntry } from './entry.js'
 import type { CompileOptions } from './plugin-types.js'
@@ -56,37 +57,52 @@ export async function compileAll(
  * NOT reported — that is normal translation progress, not a missing key, and treating it
  * as missing would drag every partially-translated key of the project into scope.
  *
+ * With `baseRef`, the comparison is against the output that commit carries, so the answer
+ * is "keys this branch introduces". That has to be the default reading, because comparing
+ * against the working tree makes the answer depend on what a previous compile in the same
+ * branch already wrote: the key leaves the scope after the first partial apply, and the
+ * locales translated afterwards never reach the branch. Without a usable `baseRef` the
+ * working tree is all there is, so the gap is computed against it.
+ *
  * Returns `null` when the gap cannot be computed for the domain as a whole — some
- * configured output has no {@link OutputKeyReaderFunc}, or does not exist yet — so
- * callers must fall back to their previous behavior rather than act on a partial
- * answer. A missing output in particular must not be read as "every key is missing".
+ * configured output has no {@link OutputKeyReaderFunc}, or (working tree only) does not
+ * exist yet — so callers must fall back to their previous behavior rather than act on a
+ * partial answer. An output absent from `baseRef`, on the other hand, is not unknown at
+ * all: none of its keys are in the base, so all of them are missing.
  */
 export async function findMissingOutputKeys(
   domainName: string,
   domainConfig: DomainConfig,
   keyEntries: KeyEntry[],
   locales: string[],
+  baseRef?: string | null,
 ): Promise<Set<string> | null> {
   const configs = domainConfig.getCompilerConfigs()
   if (configs.length === 0) {
     return null
   }
 
-  const missing = new Set<string>()
-  for (const config of configs) {
-    const reader = pluginRegistry.getOutputKeyReader(config.getType())
-    if (!reader) {
-      return null
-    }
-    const present = await reader(domainName, config, locales)
-    if (present == null) {
-      return null
-    }
-    for (const keyEntry of keyEntries) {
-      if (!present.has(outputEntryId(keyEntry.context, keyEntry.key))) {
-        missing.add(keyEntry.key)
+  const base = baseRef != null ? await materializeBaseOutputs(configs, baseRef) : null
+  try {
+    const readConfigs = base?.configs ?? configs
+    const missing = new Set<string>()
+    for (const [i, config] of configs.entries()) {
+      const reader = pluginRegistry.getOutputKeyReader(config.getType())
+      if (!reader) {
+        return null
+      }
+      const present = await reader(domainName, readConfigs[i], locales)
+      if (present == null && base == null) {
+        return null
+      }
+      for (const keyEntry of keyEntries) {
+        if (present?.has(outputEntryId(keyEntry.context, keyEntry.key)) !== true) {
+          missing.add(keyEntry.key)
+        }
       }
     }
+    return missing
+  } finally {
+    await base?.cleanup()
   }
-  return missing
 }

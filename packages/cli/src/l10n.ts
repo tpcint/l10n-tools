@@ -22,6 +22,7 @@ import {
   type ProgramOptions,
   readKeyEntries,
   readTransEntries,
+  resolveBaseRef,
   type SyncerKeySnapshot,
   type SyncerOptions,
   syncTransToTarget,
@@ -88,6 +89,11 @@ async function readKeyEntriesIfExists(keysPath: string): Promise<KeyEntry[]> {
  *   - keys the local source uses that are **missing from the compiled output entirely**
  *     (see {@link findMissingOutputKeys}) — regardless of who owns them.
  *
+ * The gap is measured against the output of the base commit, not the working tree, so
+ * that compiling does not shrink the scope it was derived from — see
+ * {@link findMissingOutputKeys}. Without a resolvable base ref the working tree is used
+ * instead, which is enough for a one-off local run.
+ *
  * The second term needs a compiler that can read its own output. When any configured
  * output lacks that capability the gap is unknown, and the scope falls back to ownership
  * alone so those domains behave exactly as before.
@@ -99,6 +105,7 @@ async function resolveSourceScope(
   domainName: string,
   source: string,
   keyEntries: KeyEntry[],
+  sourceBase: string | undefined,
 ): Promise<SyncerKeySnapshot[]> {
   const owned = await fetchSourceSnapshots(cmdName, config, domainConfig, source)
 
@@ -110,7 +117,17 @@ async function resolveSourceScope(
     )
     return owned
   }
-  const missing = await findMissingOutputKeys(domainName, domainConfig, keyEntries, domainConfig.getLocales())
+  const baseRef = await resolveBaseRef(sourceBase)
+  if (baseRef == null) {
+    log.warn(
+      cmdName,
+      `no base ref resolved; measuring the scope of '${source}' against the working tree output `
+      + '(pass --source-base to compare against the commit this branch started from)',
+    )
+  }
+  const missing = await findMissingOutputKeys(
+    domainName, domainConfig, keyEntries, domainConfig.getLocales(), baseRef,
+  )
   if (missing == null || missing.size === 0) {
     return owned
   }
@@ -152,9 +169,12 @@ async function compileFromSource(
   domainName: string,
   source: string,
   keysPath: string,
+  sourceBase: string | undefined,
 ): Promise<void> {
   const keyEntries = await readKeyEntriesIfExists(keysPath)
-  const snapshots = await resolveSourceScope(cmdName, config, domainConfig, domainName, source, keyEntries)
+  const snapshots = await resolveSourceScope(
+    cmdName, config, domainConfig, domainName, source, keyEntries, sourceBase,
+  )
   const mergeKeys = new Set(snapshots.map(s => s.keyName))
   const tempDir = await materializeSnapshotsToTempDir(domainName, snapshots, domainConfig.getLocales())
   try {
@@ -278,6 +298,7 @@ async function run() {
     metadata?: Record<string, string>,
     tagMetadata?: Record<string, string>,
     source?: string,
+    sourceBase?: string,
   }
   program.command('sync')
     .description('Synchronize local translations and sync target')
@@ -285,6 +306,7 @@ async function run() {
     .option('-m, --metadata <key=value>', 'global metadata to apply when creating keys (repeatable)', collectKeyValue, {})
     .option('--tag-metadata <key=value>', 'tag-specific metadata to apply when creating keys (repeatable)', collectKeyValue, {})
     .option('--source <source>', 'source identifier for tag ownership (l10n-storage)')
+    .option('--source-base <ref>', 'commit whose compiled output this branch inherited; --source scope is measured against it (defaults to the merge base with the remote default branch)')
     .action(async (opts: SyncOptions, cmd: Command) => {
       const syncerOptions = buildSyncerOptions(opts)
       await runSubCommand(cmd.name(), async (domainName, config, domainConfig, skipUpload) => {
@@ -302,7 +324,9 @@ async function run() {
         await updateTrans(keysPath, transDir, transDir, locales, validationConfig)
 
         if (opts.source) {
-          await compileFromSource(cmd.name(), config, domainConfig, domainName, opts.source, keysPath)
+          await compileFromSource(
+            cmd.name(), config, domainConfig, domainName, opts.source, keysPath, opts.sourceBase,
+          )
         } else {
           await compileAll(domainName, domainConfig, transDir)
         }
@@ -316,6 +340,7 @@ async function run() {
     metadata?: Record<string, string>,
     tagMetadata?: Record<string, string>,
     source?: string,
+    sourceBase?: string,
     contexts?: string,
     report?: string,
   }
@@ -334,6 +359,7 @@ async function run() {
     .option('-m, --metadata <key=value>', 'global metadata to apply when creating keys (repeatable)', collectKeyValue, {})
     .option('--tag-metadata <key=value>', 'tag-specific metadata to apply when creating keys (repeatable)', collectKeyValue, {})
     .option('--source <source>', 'source identifier for tag ownership (l10n-storage)')
+    .option('--source-base <ref>', 'commit whose compiled output this branch inherited; --source scope is measured against it (defaults to the merge base with the remote default branch)')
     .option('-c, --contexts <contexts>', 'contexts to check (comma separated)')
     .option('--report <path>', 'write a machine-readable JSON report of untranslated keys (suppresses stdout dump); pair with --source for translation links')
     .argument('[files...]', 'files to check, if not specified, all files will be checked')
@@ -372,7 +398,9 @@ async function run() {
 
           const allKeyEntries = await readKeyEntries(keysPath)
           const scoped = opts.source
-            ? await resolveSourceScope(cmd.name(), config, domainConfig, domainName, opts.source, allKeyEntries)
+            ? await resolveSourceScope(
+                cmd.name(), config, domainConfig, domainName, opts.source, allKeyEntries, opts.sourceBase,
+              )
             : null
           const sourceKeyNameSet = scoped != null ? new Set(scoped.map(s => s.keyName)) : null
 
@@ -532,12 +560,14 @@ async function run() {
     locales?: string,
     spec?: string,
     source?: string,
+    sourceBase?: string,
   }
   program.command('_remoteCount')
     .description('Count remote translations from sync target (internal use only)')
     .option('-l, --locales [locales]', 'locales to count (comma separated)')
     .option('--spec [spec]', 'spec to count (required, negate if starting with !, comma separated) supported: total,translated,untranslated')
     .option('--source <source>', 'source identifier to filter (l10n-storage); omit to count all keys for the tag')
+    .option('--source-base <ref>', 'commit whose compiled output this branch inherited; --source scope is measured against it (defaults to the merge base with the remote default branch)')
     .action(async (opts: RemoteCountOptions, cmd: Command) => {
       const supportedSpecs = new Set(['total', 'translated', 'untranslated'])
       const specs = opts['spec'] ? opts['spec'].split(',') : ['total']
@@ -564,7 +594,8 @@ async function run() {
         const keysPath = getKeysPath(path.join(domainConfig.getCacheDir(), domainName))
         const snapshots = opts.source
           ? await resolveSourceScope(
-              cmd.name(), config, domainConfig, domainName, opts.source, await readKeyEntriesIfExists(keysPath),
+              cmd.name(), config, domainConfig, domainName, opts.source,
+              await readKeyEntriesIfExists(keysPath), opts.sourceBase,
             )
           : await sourceFilter(config, domainConfig, tag, opts.source)
 
@@ -647,16 +678,20 @@ async function run() {
 
   type CompileCmdOptions = {
     source?: string,
+    sourceBase?: string,
   }
   program.command('_compile')
     .description('Write domain asset from translations (internal use only)')
     .option('--source <source>', 'compile only keys belonging to this source (l10n-storage only)')
+    .option('--source-base <ref>', 'commit whose compiled output this branch inherited; --source scope is measured against it (defaults to the merge base with the remote default branch)')
     .action(async (opts: CompileCmdOptions, cmd: Command) => {
       await runSubCommand(cmd.name(), async (domainName, config, domainConfig) => {
         const cacheDir = domainConfig.getCacheDir()
         if (opts.source) {
           const keysPath = getKeysPath(path.join(cacheDir, domainName))
-          await compileFromSource(cmd.name(), config, domainConfig, domainName, opts.source, keysPath)
+          await compileFromSource(
+            cmd.name(), config, domainConfig, domainName, opts.source, keysPath, opts.sourceBase,
+          )
           return
         }
         const transDir = path.join(cacheDir, domainName)

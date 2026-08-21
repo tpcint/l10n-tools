@@ -46,6 +46,23 @@ export type CompilerFunc = (
 ) => Promise<void>
 
 /**
+ * Reads the entry identities that already exist in a compiled output.
+ *
+ * The identity must be the same one the compiler merges on — build it with
+ * {@link outputEntryId} so callers can compare against local key entries.
+ * Returned identities are the union over `locales`: an entry counts as present
+ * when it exists in at least one locale of this output.
+ *
+ * Implementing this is optional. Compilers that do not implement it keep the
+ * source-ownership scope for `--source` (see `CompileOptions.mergeKeys`).
+ */
+export type OutputKeyReaderFunc = (
+  domainName: string,
+  config: CompilerConfig,
+  locales: string[],
+) => Promise<Set<string>>
+
+/**
  * Compiler plugin definition
  */
 export interface CompilerPlugin {
@@ -53,6 +70,11 @@ export interface CompilerPlugin {
   compilerTypes: string[],
   /** Map of compiler type to function */
   compilers: Record<string, CompilerFunc>,
+  /**
+   * Optional map of compiler type to a reader of the current output.
+   * Types without an entry keep the pre-existing `--source` scoping.
+   */
+  outputKeyReaders?: Record<string, OutputKeyReaderFunc>,
 }
 
 /**

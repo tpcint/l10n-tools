@@ -10,6 +10,8 @@ import {
   getPluralKeys,
   isErrnoException,
   listTransPaths,
+  outputEntryId,
+  type OutputKeyReaderFunc,
   readTransEntries,
   type TransEntry,
 } from 'l10n-tools-core'
@@ -136,6 +138,47 @@ export function createPoEntry(locale: string, transEntry: TransEntry): GetTextTr
  *
  * @internal exported for testing
  */
+/**
+ * Entry identities present in the compiled `po-json` output, unioned over `locales`.
+ * The identity is the `(msgctxt, msgid)` pair the merge already works on; the header
+ * entry (empty msgctxt + empty msgid) is not an entry and is skipped.
+ */
+export function readPoJsonOutputKeys(): OutputKeyReaderFunc {
+  return async function (domainName, config, locales) {
+    const targetDir = config.getTargetDir()
+    const present = new Set<string>()
+    for (const locale of locales) {
+      const jsonPath = path.join(targetDir, locale + '.json')
+      collectPoKeys(await readPoJsonIfExists(jsonPath, domainName, locale), present)
+    }
+    return present
+  }
+}
+
+/** Same as {@link readPoJsonOutputKeys} for the binary `.mo` output. */
+export function readMoOutputKeys(): OutputKeyReaderFunc {
+  return async function (domainName, config, locales) {
+    const targetDir = config.getTargetDir()
+    const present = new Set<string>()
+    for (const locale of locales) {
+      const moPath = path.join(targetDir, locale, 'LC_MESSAGES', domainName + '.mo')
+      collectPoKeys(await readMoIfExists(moPath, domainName, locale), present)
+    }
+    return present
+  }
+}
+
+function collectPoKeys(po: GetTextTranslations, into: Set<string>): void {
+  for (const [msgctxt, entries] of Object.entries(po.translations)) {
+    for (const msgid of Object.keys(entries)) {
+      if (msgctxt === '' && msgid === '') {
+        continue
+      }
+      into.add(outputEntryId(msgctxt === '' ? null : msgctxt, msgid))
+    }
+  }
+}
+
 export function mergePoTranslations(
   base: GetTextTranslations,
   fresh: GetTextTranslations,

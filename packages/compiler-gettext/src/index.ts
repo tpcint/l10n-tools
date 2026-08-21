@@ -1,5 +1,5 @@
 import type { L10nPlugin } from 'l10n-tools-core'
-import { compileToMo, compileToPoJson } from './compiler.js'
+import { compileToMo, compileToPoJson, readMoOutputKeys, readPoJsonOutputKeys } from './compiler.js'
 
 const plugin: L10nPlugin = {
   name: 'l10n-tools-compiler-gettext',
@@ -10,6 +10,12 @@ const plugin: L10nPlugin = {
       'mo': compileToMo,
       'python': compileToMo,
       'node-gettext': compileToPoJson,
+    },
+    outputKeyReaders: {
+      'po-json': readPoJsonOutputKeys(),
+      'mo': readMoOutputKeys(),
+      'python': readMoOutputKeys(),
+      'node-gettext': readPoJsonOutputKeys(),
     },
   }],
 }

@@ -11,6 +11,7 @@ import {
   EntryCollection,
   extractKeys,
   fileExists,
+  findMissingOutputKeys,
   getKeysPath,
   getTransPath,
   type L10nConf,
@@ -57,7 +58,7 @@ async function fetchSourceSnapshots(
   cmdName: string,
   config: L10nConfig,
   domainConfig: DomainConfig,
-  source: string,
+  source: string | undefined,
 ): Promise<SyncerKeySnapshot[]> {
   const syncTarget = config.getSyncTarget()
   const sourceFilter = pluginRegistry.getSourceFilter(syncTarget)
@@ -66,6 +67,58 @@ async function fetchSourceSnapshots(
     process.exit(1)
   }
   return await sourceFilter(config, domainConfig, domainConfig.getTag(), source)
+}
+
+/**
+ * Keys in scope for a `--source` run.
+ *
+ * The scope is what this source has to write into its own output, which is **not** the
+ * same as what it owns. Ownership of a `(key, tag)` belongs to a single source, so a key
+ * first introduced by another still-open PR stays owned by that PR — and a second PR
+ * using the same key gets an empty scope, compiles nothing, and reports "no keys" while
+ * its output silently lacks the key (tpcint/l10n-tools#428).
+ *
+ * So the scope is the union of
+ *   - keys this source owns (unchanged behavior), and
+ *   - keys the local source uses that are **missing from the compiled output entirely**
+ *     (see {@link findMissingOutputKeys}) — regardless of who owns them.
+ *
+ * The second term needs a compiler that can read its own output. When any configured
+ * output lacks that capability the gap is unknown, and the scope falls back to ownership
+ * alone so those domains behave exactly as before.
+ */
+async function resolveSourceScope(
+  cmdName: string,
+  config: L10nConfig,
+  domainConfig: DomainConfig,
+  domainName: string,
+  source: string,
+  keysPath: string,
+): Promise<SyncerKeySnapshot[]> {
+  const owned = await fetchSourceSnapshots(cmdName, config, domainConfig, source)
+
+  const keyEntries = (await fileExists(keysPath)) ? await readKeyEntries(keysPath) : []
+  if (keyEntries.length === 0) {
+    return owned
+  }
+  const missing = await findMissingOutputKeys(domainName, domainConfig, keyEntries, domainConfig.getLocales())
+  if (missing == null || missing.size === 0) {
+    return owned
+  }
+
+  const ownedKeyNames = new Set(owned.map(s => s.keyName))
+  const borrowed = new Set([...missing].filter(keyName => !ownedKeyNames.has(keyName)))
+  if (borrowed.size === 0) {
+    // Every missing key is already owned by this source — no extra remote listing needed.
+    return owned
+  }
+
+  log.info(
+    cmdName,
+    `${borrowed.size} key(s) missing from the output are owned by another source; including them in scope of '${source}'`,
+  )
+  const allForTag = await fetchSourceSnapshots(cmdName, config, domainConfig, undefined)
+  return [...owned, ...allForTag.filter(s => borrowed.has(s.keyName))]
 }
 
 /**
@@ -79,8 +132,9 @@ async function compileFromSource(
   domainConfig: DomainConfig,
   domainName: string,
   source: string,
+  keysPath: string,
 ): Promise<void> {
-  const snapshots = await fetchSourceSnapshots(cmdName, config, domainConfig, source)
+  const snapshots = await resolveSourceScope(cmdName, config, domainConfig, domainName, source, keysPath)
   const mergeKeys = new Set(snapshots.map(s => s.keyName))
   const tempDir = await materializeSnapshotsToTempDir(domainName, snapshots, domainConfig.getLocales())
   try {
@@ -228,7 +282,7 @@ async function run() {
         await updateTrans(keysPath, transDir, transDir, locales, validationConfig)
 
         if (opts.source) {
-          await compileFromSource(cmd.name(), config, domainConfig, domainName, opts.source)
+          await compileFromSource(cmd.name(), config, domainConfig, domainName, opts.source, keysPath)
         } else {
           await compileAll(domainName, domainConfig, transDir)
         }
@@ -292,9 +346,10 @@ async function run() {
           const contextSet = opts.contexts !== undefined
             ? new Set<string>(opts.contexts.split(',').filter(Boolean))
             : null
-          const sourceKeyNameSet = opts.source
-            ? new Set((await fetchSourceSnapshots(cmd.name(), config, domainConfig, opts.source)).map(s => s.keyName))
+          const scoped = opts.source
+            ? await resolveSourceScope(cmd.name(), config, domainConfig, domainName, opts.source, keysPath)
             : null
+          const sourceKeyNameSet = scoped != null ? new Set(scoped.map(s => s.keyName)) : null
 
           if (fileSet.size === 0 && contextSet == null && sourceKeyNameSet == null) {
             return null
@@ -485,7 +540,10 @@ async function run() {
         const tag = domainConfig.getTag()
         const locales: string[] = opts['locales'] ? opts['locales'].split(',') : domainConfig.getLocales()
 
-        const snapshots = await sourceFilter(config, domainConfig, tag, opts.source)
+        const keysPath = getKeysPath(path.join(domainConfig.getCacheDir(), domainName))
+        const snapshots = opts.source
+          ? await resolveSourceScope(cmd.name(), config, domainConfig, domainName, opts.source, keysPath)
+          : await sourceFilter(config, domainConfig, tag, opts.source)
 
         const counts: string[] = []
         for (const locale of locales) {
@@ -572,11 +630,12 @@ async function run() {
     .option('--source <source>', 'compile only keys belonging to this source (l10n-storage only)')
     .action(async (opts: CompileCmdOptions, cmd: Command) => {
       await runSubCommand(cmd.name(), async (domainName, config, domainConfig) => {
+        const cacheDir = domainConfig.getCacheDir()
         if (opts.source) {
-          await compileFromSource(cmd.name(), config, domainConfig, domainName, opts.source)
+          const keysPath = getKeysPath(path.join(cacheDir, domainName))
+          await compileFromSource(cmd.name(), config, domainConfig, domainName, opts.source, keysPath)
           return
         }
-        const cacheDir = domainConfig.getCacheDir()
         const transDir = path.join(cacheDir, domainName)
         await compileAll(domainName, domainConfig, transDir)
       })

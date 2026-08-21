@@ -82,7 +82,9 @@ function registerFileBackedOutput(type: string): void {
 async function makeRepoWithCommittedOutput(committed: object): Promise<{ dir: string, outputPath: string }> {
   const dir = await fsp.mkdtemp(path.join(os.tmpdir(), 'base-output-test-'))
   const outputPath = path.join(dir, 'trans.json')
-  const run = (...args: string[]) => execFileSync('git', args, { cwd: dir, stdio: 'ignore' })
+  const run = (...args: string[]) => execFileSync(
+    'git', ['-c', 'commit.gpgsign=false', ...args], { cwd: dir, stdio: 'ignore' },
+  )
   run('init', '-b', 'main')
   run('config', 'user.email', 'test@example.com')
   run('config', 'user.name', 'test')

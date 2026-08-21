@@ -56,6 +56,8 @@ function buildSyncerOptions(opts: { tags?: string, metadata?: Record<string, str
   }
 }
 
+const SOURCE_BASE_DESC = 'commit whose compiled output this branch inherited; --source scope is measured against it (env: L10N_SOURCE_BASE; defaults to the merge base with the remote default branch)'
+
 async function fetchSourceSnapshots(
   cmdName: string,
   config: L10nConfig,
@@ -306,7 +308,7 @@ async function run() {
     .option('-m, --metadata <key=value>', 'global metadata to apply when creating keys (repeatable)', collectKeyValue, {})
     .option('--tag-metadata <key=value>', 'tag-specific metadata to apply when creating keys (repeatable)', collectKeyValue, {})
     .option('--source <source>', 'source identifier for tag ownership (l10n-storage)')
-    .option('--source-base <ref>', 'commit whose compiled output this branch inherited; --source scope is measured against it (env: L10N_SOURCE_BASE; defaults to the merge base with the remote default branch)')
+    .option('--source-base <ref>', SOURCE_BASE_DESC)
     .action(async (opts: SyncOptions, cmd: Command) => {
       const syncerOptions = buildSyncerOptions(opts)
       await runSubCommand(cmd.name(), async (domainName, config, domainConfig, skipUpload) => {
@@ -359,7 +361,7 @@ async function run() {
     .option('-m, --metadata <key=value>', 'global metadata to apply when creating keys (repeatable)', collectKeyValue, {})
     .option('--tag-metadata <key=value>', 'tag-specific metadata to apply when creating keys (repeatable)', collectKeyValue, {})
     .option('--source <source>', 'source identifier for tag ownership (l10n-storage)')
-    .option('--source-base <ref>', 'commit whose compiled output this branch inherited; --source scope is measured against it (env: L10N_SOURCE_BASE; defaults to the merge base with the remote default branch)')
+    .option('--source-base <ref>', SOURCE_BASE_DESC)
     .option('-c, --contexts <contexts>', 'contexts to check (comma separated)')
     .option('--report <path>', 'write a machine-readable JSON report of untranslated keys (suppresses stdout dump); pair with --source for translation links')
     .argument('[files...]', 'files to check, if not specified, all files will be checked')
@@ -567,7 +569,7 @@ async function run() {
     .option('-l, --locales [locales]', 'locales to count (comma separated)')
     .option('--spec [spec]', 'spec to count (required, negate if starting with !, comma separated) supported: total,translated,untranslated')
     .option('--source <source>', 'source identifier to filter (l10n-storage); omit to count all keys for the tag')
-    .option('--source-base <ref>', 'commit whose compiled output this branch inherited; --source scope is measured against it (env: L10N_SOURCE_BASE; defaults to the merge base with the remote default branch)')
+    .option('--source-base <ref>', SOURCE_BASE_DESC)
     .action(async (opts: RemoteCountOptions, cmd: Command) => {
       const supportedSpecs = new Set(['total', 'translated', 'untranslated'])
       const specs = opts['spec'] ? opts['spec'].split(',') : ['total']
@@ -683,7 +685,7 @@ async function run() {
   program.command('_compile')
     .description('Write domain asset from translations (internal use only)')
     .option('--source <source>', 'compile only keys belonging to this source (l10n-storage only)')
-    .option('--source-base <ref>', 'commit whose compiled output this branch inherited; --source scope is measured against it (env: L10N_SOURCE_BASE; defaults to the merge base with the remote default branch)')
+    .option('--source-base <ref>', SOURCE_BASE_DESC)
     .action(async (opts: CompileCmdOptions, cmd: Command) => {
       await runSubCommand(cmd.name(), async (domainName, config, domainConfig) => {
         const cacheDir = domainConfig.getCacheDir()

@@ -9,7 +9,9 @@ import { resolveBaseRef } from './base-output.js'
 /** Runs `body` inside a throwaway repository with one commit, then restores the cwd. */
 async function inRepo(body: (headSha: string) => Promise<void>): Promise<void> {
   const dir = await fsp.mkdtemp(path.join(os.tmpdir(), 'base-ref-test-'))
-  const run = (...args: string[]) => execFileSync('git', args, { cwd: dir, stdio: 'ignore' })
+  const run = (...args: string[]) => execFileSync(
+    'git', ['-c', 'commit.gpgsign=false', ...args], { cwd: dir, stdio: 'ignore' },
+  )
   run('init', '-b', 'main')
   run('config', 'user.email', 'test@example.com')
   run('config', 'user.name', 'test')
@@ -20,6 +22,7 @@ async function inRepo(body: (headSha: string) => Promise<void>): Promise<void> {
 
   const cwd = process.cwd()
   const savedEnv = process.env.L10N_SOURCE_BASE
+  delete process.env.L10N_SOURCE_BASE
   process.chdir(dir)
   try {
     await body(headSha)

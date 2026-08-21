@@ -615,6 +615,28 @@ describe('buildKeyChanges', () => {
     assert.equal(updatingKeys.length, 0)
   })
 
+  it('specific source sync claims a key another unmerged PR already claimed for this tag', () => {
+    // likey-web PR-4385 사례: 같은 키를 먼저 도입한 미머지 PR-4270 이 (web, PR-4270) 으로 선점해
+    // 두면, hasTagAnySource 판정은 이를 "이미 우리 태그가 있다"로 보아 claim 을 건너뛴다. 그러면
+    // PR-4385 는 _remoteCount 0 → 체크런 "No PR-scope translation keys"(초록) → Apply 버튼 없음
+    // → locale 파일에 키가 영영 안 들어와, 코드가 쓰는 키가 미등록 상태로 머지된다.
+    // (tag, PR-X) 는 "이 키가 mainline 에 있다"를 뜻하지 않으므로 claim 을 막아선 안 된다.
+    const keyEntries = [createKeyEntry('아이디를 입력해 주세요.')] // context null
+    const listedKeyMap = {
+      '아이디를 입력해 주세요.': createL10nKey('아이디를 입력해 주세요.', {
+        tags: [{ tag: 'web', source: 'PR-4270' }], // 다른 미머지 PR 만 소유. (web, main) 은 없다
+      }),
+    }
+
+    const { creatingKeys, updatingKeys } = buildKeyChanges(
+      'PR-4385', 'web', keyEntries, {}, listedKeyMap, undefined, undefined, /* isFullSync */ false,
+    )
+
+    assert.equal(creatingKeys.length, 0)
+    assert.equal(updatingKeys.length, 1)
+    assert.deepEqual(updatingKeys[0].addTags, [{ tag: 'web', source: 'PR-4385' }])
+  })
+
   it('specific source sync still claims when a new context is added (context-ful domain, e.g. Android)', () => {
     // Regression guard for the original #346 fix: in a context-ful domain, adding a brand-new
     // context to an existing key must still claim (tag, source) via the contextAdded path,

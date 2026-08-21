@@ -90,7 +90,7 @@ export async function syncTransToL10nStorage(
 
   // 2. 로컬과 비교하여 create/update 대상 분류
   const { creatingKeys, updatingKeys } = buildKeyChanges(
-    source, tag, keyEntries, allTransData, listedKeyMap, localeSyncMap, options, isFullSync,
+    source, tag, keyEntries, allTransData, listedKeyMap, localeSyncMap, options, isFullSync, configSource,
   )
 
   // 3. 서버 번역을 로컬에 반영
@@ -104,10 +104,6 @@ export async function syncTransToL10nStorage(
 
 function hasTag(tags: L10nKeyTag[], tag: string, source: string): boolean {
   return tags.some(t => t.tag === tag && t.source === source)
-}
-
-function hasTagAnySource(tags: L10nKeyTag[], tag: string): boolean {
-  return tags.some(t => t.tag === tag)
 }
 
 function hasTranslation(key: L10nKeyToServe, locale: string): boolean {
@@ -195,6 +191,7 @@ export function buildKeyChanges(
   localeSyncMap?: { [locale: string]: string },
   options?: SyncerOptions,
   isFullSync: boolean = true,
+  authoritativeSource: string = 'main',
 ): {
   creatingKeys: CreateL10nKeyInput[],
   updatingKeys: UpdateL10nKeyInput[],
@@ -285,16 +282,19 @@ export function buildKeyChanges(
       // PR-N 태그를 붙이면, PR scope sync마다 모든 키가 update 대상으로 잡혀 storage에 폭주 알림이
       // 발생한다(#346). 그래서 특정 source sync는 다음 중 하나일 때만 claim한다:
       //   - contextAdded: 키에 새 context를 추가 (Android에서 동일 원문을 새 <string name>에 쓰는 경우).
-      //   - !hasAnyOwnTag: 이 태그가 이 키를 처음 다룸. 다른 repo가 만든 기존 키를 이 도메인이 처음
-      //     사용하기 시작하는 마이그레이션 케이스. context가 없는 도메인(예: web4 vue-i18n)은 contextAdded가
-      //     영영 false라, 이 신호가 없으면 기존 키를 절대 claim하지 못한다(회귀). 폭주는 발생하지 않는데,
-      //     이 도메인이 이미 다루던 키는 (tag, main 등) 자기 태그를 가져 hasAnyOwnTag가 true이기 때문이다.
+      //   - !hasAuthoritativeTag: 이 태그의 **권위 source**(configSource, 보통 'main')가 아직 이 키를
+      //     claim하지 않음 = 이 키는 아직 이 repo의 mainline 산출물(커밋된 locale 파일)에 없다. 따라서
+      //     이 PR 이 자기 브랜치에 번역을 받으려면 claim 해야 한다. 폭주는 발생하지 않는데, mainline이
+      //     이미 쓰는 키는 full sync 가 (tag, main) 을 붙여두므로 hasAuthoritativeTag 가 true 이기 때문이다.
+      //     `hasTagAnySource` 로 판정하면 **다른 미머지 PR 이 (tag, PR-X) 로 선점한 키**까지 "이미 우리
+      //     태그가 있다"로 보아 claim 을 건너뛴다 — 같은 키를 동시에 도입하는 병렬 PR 중 뒤에 온 쪽이
+      //     번역을 영영 받지 못하고, PR 체크런은 "No PR-scope translation keys" 로 초록이 된다.
       // description/references 변경은 source filter에 노출되지 않아 PR apply에 propagate할 필요가 없으므로
       // claim 대상에서 제외한다. 전체 sync는 tag ownership 관리 책임이 있어 자기 (tag, source)가 없으면
       // 항상 claim(isFullSync 단락평가로 동작 불변).
       const hasOwnSourceTag = hasTag(listedKey.tags, tag, source)
-      const hasAnyOwnTag = hasTagAnySource(listedKey.tags, tag)
-      const needsTagAdd = !hasOwnSourceTag && (isFullSync || contextAdded || !hasAnyOwnTag)
+      const hasAuthoritativeTag = hasTag(listedKey.tags, tag, authoritativeSource)
+      const needsTagAdd = !hasOwnSourceTag && (isFullSync || contextAdded || !hasAuthoritativeTag)
 
       if (needsTagAdd || metaUpdates.length > 0 || refsChanged) {
         let updating = updatingKeyMap[entryKey]

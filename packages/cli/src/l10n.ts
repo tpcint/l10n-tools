@@ -14,6 +14,7 @@ import {
   findMissingOutputKeys,
   getKeysPath,
   getTransPath,
+  type KeyEntry,
   type L10nConf,
   L10nConfig,
   materializeSnapshotsToTempDir,
@@ -69,6 +70,10 @@ async function fetchSourceSnapshots(
   return await sourceFilter(config, domainConfig, domainConfig.getTag(), source)
 }
 
+async function readKeyEntriesIfExists(keysPath: string): Promise<KeyEntry[]> {
+  return (await fileExists(keysPath)) ? await readKeyEntries(keysPath) : []
+}
+
 /**
  * Keys in scope for a `--source` run.
  *
@@ -93,12 +98,16 @@ async function resolveSourceScope(
   domainConfig: DomainConfig,
   domainName: string,
   source: string,
-  keysPath: string,
+  keyEntries: KeyEntry[],
 ): Promise<SyncerKeySnapshot[]> {
   const owned = await fetchSourceSnapshots(cmdName, config, domainConfig, source)
 
-  const keyEntries = (await fileExists(keysPath)) ? await readKeyEntries(keysPath) : []
   if (keyEntries.length === 0) {
+    log.warn(
+      cmdName,
+      `no local keys available; scope of '${source}' falls back to owned keys only `
+      + '(run \'l10n update\' or \'l10n sync\' to refresh local keys)',
+    )
     return owned
   }
   const missing = await findMissingOutputKeys(domainName, domainConfig, keyEntries, domainConfig.getLocales())
@@ -113,12 +122,22 @@ async function resolveSourceScope(
     return owned
   }
 
+  const allForTag = await fetchSourceSnapshots(cmdName, config, domainConfig, undefined)
+  const borrowedSnapshots = allForTag.filter(s => borrowed.has(s.keyName))
   log.info(
     cmdName,
-    `${borrowed.size} key(s) missing from the output are owned by another source; including them in scope of '${source}'`,
+    `including ${borrowedSnapshots.length} key(s) missing from the output but owned by `
+    + `another source in scope of '${source}'`,
   )
-  const allForTag = await fetchSourceSnapshots(cmdName, config, domainConfig, undefined)
-  return [...owned, ...allForTag.filter(s => borrowed.has(s.keyName))]
+  if (borrowedSnapshots.length < borrowed.size) {
+    // 산출물에도 없고 이 태그의 remote 에도 없는 키 — 아직 업로드되지 않았거나 다른 태그에만 있다.
+    log.warn(
+      cmdName,
+      `${borrowed.size - borrowedSnapshots.length} key(s) missing from the output are not `
+      + `available for tag '${domainConfig.getTag()}' yet; they stay out of scope`,
+    )
+  }
+  return [...owned, ...borrowedSnapshots]
 }
 
 /**
@@ -134,7 +153,8 @@ async function compileFromSource(
   source: string,
   keysPath: string,
 ): Promise<void> {
-  const snapshots = await resolveSourceScope(cmdName, config, domainConfig, domainName, source, keysPath)
+  const keyEntries = await readKeyEntriesIfExists(keysPath)
+  const snapshots = await resolveSourceScope(cmdName, config, domainConfig, domainName, source, keyEntries)
   const mergeKeys = new Set(snapshots.map(s => s.keyName))
   const tempDir = await materializeSnapshotsToTempDir(domainName, snapshots, domainConfig.getLocales())
   try {
@@ -346,17 +366,18 @@ async function run() {
           const contextSet = opts.contexts !== undefined
             ? new Set<string>(opts.contexts.split(',').filter(Boolean))
             : null
-          const scoped = opts.source
-            ? await resolveSourceScope(cmd.name(), config, domainConfig, domainName, opts.source, keysPath)
-            : null
-          const sourceKeyNameSet = scoped != null ? new Set(scoped.map(s => s.keyName)) : null
-
-          if (fileSet.size === 0 && contextSet == null && sourceKeyNameSet == null) {
+          if (fileSet.size === 0 && contextSet == null && opts.source == null) {
             return null
           }
 
+          const allKeyEntries = await readKeyEntries(keysPath)
+          const scoped = opts.source
+            ? await resolveSourceScope(cmd.name(), config, domainConfig, domainName, opts.source, allKeyEntries)
+            : null
+          const sourceKeyNameSet = scoped != null ? new Set(scoped.map(s => s.keyName)) : null
+
           const fileOrContextActive = fileSet.size > 0 || contextSet != null
-          const keyEntries = (await readKeyEntries(keysPath))
+          const keyEntries = allKeyEntries
             .filter(keyEntry => {
               if (sourceKeyNameSet != null && !sourceKeyNameSet.has(keyEntry.key)) {
                 return false
@@ -542,7 +563,9 @@ async function run() {
 
         const keysPath = getKeysPath(path.join(domainConfig.getCacheDir(), domainName))
         const snapshots = opts.source
-          ? await resolveSourceScope(cmd.name(), config, domainConfig, domainName, opts.source, keysPath)
+          ? await resolveSourceScope(
+              cmd.name(), config, domainConfig, domainName, opts.source, await readKeyEntriesIfExists(keysPath),
+            )
           : await sourceFilter(config, domainConfig, tag, opts.source)
 
         const counts: string[] = []

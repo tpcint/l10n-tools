@@ -54,16 +54,22 @@ async function realPath(target: string): Promise<string> {
  * determined (no explicit ref and no reachable default branch, a shallow clone, or no
  * git at all).
  *
- * `explicit` comes from `--source-base` — CI knows the PR base and should pass it. The
- * fallback probes the merge base with the remote's default branch, which covers ordinary
- * local runs but relies on `origin/HEAD` being set.
+ * `explicit` comes from `--source-base`, and `L10N_SOURCE_BASE` is the same input by
+ * environment. CI needs the environment form: a workflow reaches every repo the moment it
+ * merges while l10n-tools arrives only when each repo's lockfile is bumped, so a bare
+ * `--source-base` on the command line would break every repo still on an older version.
+ * An unset variable expands to an empty string in CI, which counts as "not given".
+ *
+ * The fallback probes the merge base with the remote's default branch, which covers
+ * ordinary local runs but relies on `origin/HEAD` being set.
  */
 export async function resolveBaseRef(explicit?: string): Promise<string | null> {
   const cwd = process.cwd()
-  if (explicit != null) {
-    const resolved = await git(['rev-parse', '--verify', '--quiet', `${explicit}^{commit}`], cwd)
+  const requested = explicit || process.env.L10N_SOURCE_BASE || undefined
+  if (requested != null) {
+    const resolved = await git(['rev-parse', '--verify', '--quiet', `${requested}^{commit}`], cwd)
     if (resolved == null) {
-      log.warn('base-output', `base ref '${explicit}' is not available in this checkout`)
+      log.warn('base-output', `base ref '${requested}' is not available in this checkout`)
       return null
     }
     return resolved.trim()

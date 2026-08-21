@@ -726,6 +726,7 @@ describe('output key readers', () => {
 
     const present = await readJsonDirOutputKeys()('d', makeJsonDirConfig(targetDir), ['ko', 'en'])
 
+    assert.ok(present != null)
     assert.ok(present.has(outputEntryId(null, 'both')))
     assert.ok(present.has(outputEntryId(null, 'koOnly')))
     assert.ok(!present.has(outputEntryId(null, 'absent')))
@@ -737,6 +738,7 @@ describe('output key readers', () => {
 
     const present = await readJsonDirOutputKeys()('d', makeJsonDirConfig(targetDir, true), ['ko'])
 
+    assert.ok(present != null)
     assert.deepEqual([...present], [outputEntryId(null, 'wrapped')])
   })
 
@@ -746,15 +748,33 @@ describe('output key readers', () => {
 
     const present = await readJsonDirOutputKeys('i18next')('d', makeJsonDirConfig(targetDir), ['ko'])
 
+    assert.ok(present != null)
     assert.ok(present.has(outputEntryId(null, 'apple')))
   })
 
-  it('json-dir: a missing output file yields an empty set, not a throw', async () => {
+  it('json-dir: reports null when no locale file exists, so the caller can fall back', async () => {
     const targetDir = await makeTempDir('json-read-')
 
     const present = await readJsonDirOutputKeys()('d', makeJsonDirConfig(targetDir), ['ko'])
 
-    assert.equal(present.size, 0)
+    assert.equal(present, null)
+  })
+
+  it('json-dir: one locale file present is enough to report the gap', async () => {
+    const targetDir = await makeTempDir('json-read-')
+    await fsp.writeFile(path.join(targetDir, 'ko.json'), JSON.stringify({ onlyKo: 'ㄱ' }))
+
+    const present = await readJsonDirOutputKeys()('d', makeJsonDirConfig(targetDir), ['ko', 'en'])
+
+    assert.deepEqual([...present!], [outputEntryId(null, 'onlyKo')])
+  })
+
+  it('json: reports null when the output file does not exist', async () => {
+    const targetDir = await makeTempDir('json-read-')
+
+    const present = await readJsonOutputKeys()('d', makeJsonConfig(path.join(targetDir, 'trans.json')), ['ko'])
+
+    assert.equal(present, null)
   })
 
   it('json: reads the single-file shape and unions locales', async () => {
@@ -764,6 +784,7 @@ describe('output key readers', () => {
 
     const present = await readJsonOutputKeys()('d', makeJsonConfig(targetPath), ['ko', 'en'])
 
+    assert.ok(present != null)
     assert.deepEqual([...present].sort(), [outputEntryId(null, 'a'), outputEntryId(null, 'b')].sort())
   })
 })

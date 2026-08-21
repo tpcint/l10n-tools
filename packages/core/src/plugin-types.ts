@@ -53,6 +53,10 @@ export type CompilerFunc = (
  * Returned identities are the union over `locales`: an entry counts as present
  * when it exists in at least one locale of this output.
  *
+ * Returns `null` when the output does not exist yet, which must stay distinct from
+ * an existing but empty output: an absent file says nothing about which keys are
+ * missing, so the caller has to fall back instead of treating every key as absent.
+ *
  * Implementing this is optional. Compilers that do not implement it keep the
  * source-ownership scope for `--source` (see `CompileOptions.mergeKeys`).
  */
@@ -60,7 +64,7 @@ export type OutputKeyReaderFunc = (
   domainName: string,
   config: CompilerConfig,
   locales: string[],
-) => Promise<Set<string>>
+) => Promise<Set<string> | null>
 
 /**
  * Compiler plugin definition

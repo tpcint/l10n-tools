@@ -590,6 +590,7 @@ describe('output key readers', () => {
 
     const present = await readPoJsonOutputKeys()('d', makePoJsonConfig(targetDir), ['ko', 'en'])
 
+    assert.ok(present != null)
     assert.ok(present.has(outputEntryId(null, 'plain')))
     assert.ok(present.has(outputEntryId('ctx', 'shared')))
     // 같은 msgid 라도 다른 msgctxt 는 별개 엔트리다
@@ -602,12 +603,17 @@ describe('output key readers', () => {
 
     const present = await readPoJsonOutputKeys()('d', makePoJsonConfig(targetDir), ['ko'])
 
-    assert.equal(present.size, 0)
+    assert.equal(present?.size, 0)
   })
 
-  it('po-json: a missing output file yields an empty set, not a throw', async () => {
+  it('po-json: reports null when no locale file exists, so the caller can fall back', async () => {
     const present = await readPoJsonOutputKeys()('d', makePoJsonConfig(await makeTargetDir()), ['ko'])
-    assert.equal(present.size, 0)
+    assert.equal(present, null)
+  })
+
+  it('mo: reports null when no locale file exists, so the caller can fall back', async () => {
+    const present = await readMoOutputKeys()('d', makeMoConfig(await makeTargetDir()), ['ko'])
+    assert.equal(present, null)
   })
 
   it('mo: reads back the compiled binary output', async () => {
@@ -619,6 +625,7 @@ describe('output key readers', () => {
 
     const present = await readMoOutputKeys()('d', makeMoConfig(targetDir), ['ko'])
 
+    assert.ok(present != null)
     assert.ok(present.has(outputEntryId(null, 'fromMo')))
   })
 })

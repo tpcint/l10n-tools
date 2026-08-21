@@ -38,7 +38,7 @@ export async function compileToPoJson(
     let po = createPo(domainName, locale, await readTransEntries(transPath))
 
     if (mergeKeys != null) {
-      const base = await readPoJsonIfExists(jsonPath, domainName, locale)
+      const base = (await readPoJsonIfExists(jsonPath, domainName, locale)) ?? emptyPo(domainName, locale)
       po = mergePoTranslations(base, po, mergeKeys)
     }
     po = sortPoTranslations(po)
@@ -71,7 +71,7 @@ export async function compileToMo(
 
     let po = createPo(domainName, locale, await readTransEntries(transPath))
     if (mergeKeys != null) {
-      const base = await readMoIfExists(moPath, domainName, locale)
+      const base = (await readMoIfExists(moPath, domainName, locale)) ?? emptyPo(domainName, locale)
       po = mergePoTranslations(base, po, mergeKeys)
     }
     po = sortPoTranslations(po)
@@ -128,30 +128,27 @@ export function createPoEntry(locale: string, transEntry: TransEntry): GetTextTr
 }
 
 /**
- * Merge `fresh` PO (built from PR-N keys) into `base` PO. The merge unit is the
- * `(msgctxt, msgid)` pair: any pair present in `fresh` replaces the corresponding pair
- * in `base`, and every other base entry — including same-msgid entries that live under
- * a different msgctxt — is preserved unchanged.
- *
- * `mergeKeys` is currently unused inside the merge but is kept on the signature for
- * symmetry with other compilers and to enable future deletion semantics if needed.
- *
- * @internal exported for testing
- */
-/**
  * Entry identities present in the compiled `po-json` output, unioned over `locales`.
  * The identity is the `(msgctxt, msgid)` pair the merge already works on; the header
- * entry (empty msgctxt + empty msgid) is not an entry and is skipped.
+ * entry (empty msgctxt + empty msgid) is not an entry and is skipped. `null` when none
+ * of the locale files exist — one locale file missing among others is normal, but no
+ * file at all means this output was never compiled.
  */
 export function readPoJsonOutputKeys(): OutputKeyReaderFunc {
   return async function (domainName, config, locales) {
     const targetDir = config.getTargetDir()
     const present = new Set<string>()
+    let read = 0
     for (const locale of locales) {
       const jsonPath = path.join(targetDir, locale + '.json')
-      collectPoKeys(await readPoJsonIfExists(jsonPath, domainName, locale), present)
+      const po = await readPoJsonIfExists(jsonPath, domainName, locale)
+      if (po == null) {
+        continue
+      }
+      read++
+      collectPoKeys(po, present)
     }
-    return present
+    return read > 0 ? present : null
   }
 }
 
@@ -160,11 +157,17 @@ export function readMoOutputKeys(): OutputKeyReaderFunc {
   return async function (domainName, config, locales) {
     const targetDir = config.getTargetDir()
     const present = new Set<string>()
+    let read = 0
     for (const locale of locales) {
       const moPath = path.join(targetDir, locale, 'LC_MESSAGES', domainName + '.mo')
-      collectPoKeys(await readMoIfExists(moPath, domainName, locale), present)
+      const po = await readMoIfExists(moPath, domainName, locale)
+      if (po == null) {
+        continue
+      }
+      read++
+      collectPoKeys(po, present)
     }
-    return present
+    return read > 0 ? present : null
   }
 }
 
@@ -179,6 +182,17 @@ function collectPoKeys(po: GetTextTranslations, into: Set<string>): void {
   }
 }
 
+/**
+ * Merge `fresh` PO (built from PR-N keys) into `base` PO. The merge unit is the
+ * `(msgctxt, msgid)` pair: any pair present in `fresh` replaces the corresponding pair
+ * in `base`, and every other base entry — including same-msgid entries that live under
+ * a different msgctxt — is preserved unchanged.
+ *
+ * `mergeKeys` is currently unused inside the merge but is kept on the signature for
+ * symmetry with other compilers and to enable future deletion semantics if needed.
+ *
+ * @internal exported for testing
+ */
 export function mergePoTranslations(
   base: GetTextTranslations,
   fresh: GetTextTranslations,
@@ -254,7 +268,7 @@ async function readPoJsonIfExists(
   jsonPath: string,
   domainName: string,
   locale: string,
-): Promise<GetTextTranslations> {
+): Promise<GetTextTranslations | null> {
   try {
     const text = await fsp.readFile(jsonPath, { encoding: 'utf-8' })
     const parsed = JSON.parse(text) as GetTextTranslations
@@ -267,7 +281,7 @@ async function readPoJsonIfExists(
     return parsed
   } catch (err) {
     if (isErrnoException(err, 'ENOENT')) {
-      return emptyPo(domainName, locale)
+      return null
     }
     throw err
   }
@@ -277,7 +291,7 @@ async function readMoIfExists(
   moPath: string,
   domainName: string,
   locale: string,
-): Promise<GetTextTranslations> {
+): Promise<GetTextTranslations | null> {
   try {
     const buffer = await fsp.readFile(moPath)
     const parsed = gettextParser.mo.parse(buffer)
@@ -287,7 +301,7 @@ async function readMoIfExists(
     return parsed
   } catch (err) {
     if (isErrnoException(err, 'ENOENT')) {
-      return emptyPo(domainName, locale)
+      return null
     }
     throw err
   }

@@ -56,9 +56,10 @@ export async function compileAll(
  * NOT reported — that is normal translation progress, not a missing key, and treating it
  * as missing would drag every partially-translated key of the project into scope.
  *
- * Returns `null` when any configured output has no {@link OutputKeyReaderFunc}: the gap
- * cannot be computed for the domain as a whole, so callers must fall back to their
- * previous behavior rather than act on a partial answer.
+ * Returns `null` when the gap cannot be computed for the domain as a whole — some
+ * configured output has no {@link OutputKeyReaderFunc}, or does not exist yet — so
+ * callers must fall back to their previous behavior rather than act on a partial
+ * answer. A missing output in particular must not be read as "every key is missing".
  */
 export async function findMissingOutputKeys(
   domainName: string,
@@ -78,6 +79,9 @@ export async function findMissingOutputKeys(
       return null
     }
     const present = await reader(domainName, config, locales)
+    if (present == null) {
+      return null
+    }
     for (const keyEntry of keyEntries) {
       if (!present.has(outputEntryId(keyEntry.context, keyEntry.key))) {
         missing.add(keyEntry.key)

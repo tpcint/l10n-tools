@@ -18,6 +18,18 @@ function makeDomainConfig(outputTypes: string[]): DomainConfig {
   } as never)
 }
 
+/** Registers a compiler type whose output does not exist yet. */
+function registerAbsentOutput(type: string): void {
+  pluginRegistry.register({
+    name: `test-${type}`,
+    compilers: [{
+      compilerTypes: [type],
+      compilers: { [type]: async () => {} },
+      outputKeyReaders: { [type]: async () => null },
+    }],
+  })
+}
+
 /** Registers a compiler type whose output contains exactly `present`. */
 function registerOutput(type: string, present: Set<string>): void {
   pluginRegistry.register({
@@ -107,6 +119,19 @@ describe('findMissingOutputKeys', () => {
     )
 
     assert.deepEqual(missing, new Set(['k']))
+  })
+
+  it('returns null when an output does not exist yet — absent is not "everything is missing"', async () => {
+    registerAbsentOutput('test-absent')
+
+    const missing = await findMissingOutputKeys(
+      'd',
+      makeDomainConfig(['test-absent']),
+      [makeKeyEntry('a')],
+      ['ko'],
+    )
+
+    assert.equal(missing, null)
   })
 
   it('returns null for a domain with no configured output', async () => {

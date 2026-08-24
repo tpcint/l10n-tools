@@ -5,6 +5,7 @@ import type {
   CompilerFunc,
   ExtractorFunc,
   L10nPlugin,
+  OutputKeyReaderFunc,
   PluginFactory,
   SyncerFunc,
   SyncerSourceFilterFunc,
@@ -71,6 +72,7 @@ export class PluginRegistry {
   private plugins = new Map<string, L10nPlugin>()
   private extractors = new Map<string, ExtractorFunc>()
   private compilers = new Map<string, CompilerFunc>()
+  private outputKeyReaders = new Map<string, OutputKeyReaderFunc>()
   private syncers = new Map<string, SyncerFunc>()
   private sourceFilters = new Map<string, SyncerSourceFilterFunc>()
   private initialized = false
@@ -178,6 +180,9 @@ export class PluginRegistry {
         }
         this.compilers.set(type, fn)
       }
+      for (const [type, fn] of Object.entries(comp.outputKeyReaders ?? {})) {
+        this.outputKeyReaders.set(type, fn)
+      }
     }
 
     // Register syncers
@@ -204,6 +209,13 @@ export class PluginRegistry {
    */
   getCompiler(compilerType: string): CompilerFunc | undefined {
     return this.compilers.get(compilerType)
+  }
+
+  /**
+   * Get the output reader for a compiler type, if the plugin provides one
+   */
+  getOutputKeyReader(compilerType: string): OutputKeyReaderFunc | undefined {
+    return this.outputKeyReaders.get(compilerType)
   }
 
   /**

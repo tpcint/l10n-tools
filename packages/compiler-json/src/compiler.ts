@@ -8,6 +8,8 @@ import {
   getPluralKeys,
   isErrnoException,
   listTransPaths,
+  outputEntryId,
+  type OutputKeyReaderFunc,
   readTransEntries,
   type TransEntry,
 } from 'l10n-tools-core'
@@ -91,6 +93,67 @@ export function compileToJsonDir(pluralType?: JsonPluralType) {
 export type JsonTransValue = string | { [transKey: string]: string }
 export type JsonTrans = {
   [key: string]: JsonTransValue,
+}
+
+/**
+ * Entry identities present in a single-file JSON output (`{ [locale]: { key: msg } }`),
+ * unioned over `locales`. JSON outputs have no contexts, so the identity is the bare key.
+ * `null` when the output file does not exist.
+ */
+export function readJsonOutputKeys(): OutputKeyReaderFunc {
+  return async function (_domainName, config, locales) {
+    const parsed = await readJsonIfExists(config.getTargetPath())
+    if (parsed == null) {
+      return null
+    }
+    const present = new Set<string>()
+    const byLocale = parsed as { [locale: string]: unknown }
+    for (const locale of locales) {
+      const trans = byLocale[locale]
+      if (trans == null || typeof trans !== 'object') {
+        continue
+      }
+      collectJsonKeys(trans as JsonTrans, present)
+    }
+    return present
+  }
+}
+
+/**
+ * Entry identities present in a per-locale JSON output (`{locale}.json`), unioned over
+ * `locales`. i18next plural suffixes are folded back to their base key so a plural entry
+ * is not reported as missing. `null` when none of the locale files exist — one locale file
+ * missing among others is normal, but no file at all means this output was never compiled.
+ */
+export function readJsonDirOutputKeys(pluralType?: JsonPluralType): OutputKeyReaderFunc {
+  return async function (_domainName, config, locales) {
+    const targetDir = config.getTargetDir()
+    const useLocaleKey = config.useLocaleKey()
+    const present = new Set<string>()
+    let read = 0
+    for (const locale of locales) {
+      const jsonPath = path.join(targetDir, locale + '.json')
+      const base = await readJsonDirIfExists(jsonPath, useLocaleKey, locale)
+      if (base == null) {
+        continue
+      }
+      read++
+      collectJsonKeys(base, present, pluralType)
+    }
+    return read > 0 ? present : null
+  }
+}
+
+function collectJsonKeys(trans: JsonTrans, into: Set<string>, pluralType?: JsonPluralType): void {
+  for (const jsonKey of Object.keys(trans)) {
+    into.add(outputEntryId(null, jsonKey))
+    if (pluralType === 'i18next') {
+      const m = jsonKey.match(I18NEXT_PLURAL_SUFFIX_RE)
+      if (m) {
+        into.add(outputEntryId(null, jsonKey.substring(0, m.index)))
+      }
+    }
+  }
 }
 
 export function buildJsonTrans(locale: string, transEntries: TransEntry[], pluralType?: JsonPluralType): JsonTrans {
@@ -209,9 +272,17 @@ async function readJsonIfExists(filePath: string): Promise<unknown | null> {
 }
 
 async function readJsonDirBase(jsonPath: string, useLocaleKey: boolean, locale: string): Promise<JsonTrans> {
+  return (await readJsonDirIfExists(jsonPath, useLocaleKey, locale)) ?? {}
+}
+
+async function readJsonDirIfExists(
+  jsonPath: string,
+  useLocaleKey: boolean,
+  locale: string,
+): Promise<JsonTrans | null> {
   const parsed = await readJsonIfExists(jsonPath)
   if (parsed == null) {
-    return {}
+    return null
   }
   if (useLocaleKey) {
     const inner = (parsed as { [locale: string]: unknown })[locale]

@@ -1,3 +1,4 @@
+import log from 'npmlog'
 import { materializeBaseOutputs } from './base-output.js'
 import type { DomainConfig } from './config.js'
 import type { KeyEntry } from './entry.js'
@@ -83,6 +84,16 @@ export async function findMissingOutputKeys(
   }
 
   const base = baseRef != null ? await materializeBaseOutputs(configs, baseRef) : null
+  if (baseRef != null && base == null) {
+    // The caller asked for the base commit but git could not produce it, so the gap is
+    // measured against the working tree instead. That silently reintroduces the moving
+    // baseline this function exists to avoid, and nothing else on the path reports it.
+    log.warn(
+      'compile',
+      `base output for '${baseRef}' is not available; `
+      + `measuring the output gap of '${domainName}' against the working tree`,
+    )
+  }
   try {
     const readConfigs = base?.configs ?? configs
     const missing = new Set<string>()

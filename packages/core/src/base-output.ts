@@ -87,10 +87,10 @@ export async function resolveBaseRef(explicit?: string): Promise<string | null> 
  * the keys, otherwise a key drops out of scope after the first partial apply and the
  * translations that arrive later never reach the branch.
  *
- * Returns `null` when the base output cannot be materialized at all (not a git repo, or
- * an output writing outside the repo); callers then fall back to the working tree. An
- * output that simply does not exist in `baseRef` is not a failure — it yields an empty
- * copy, which is exactly "every key of this output is new".
+ * Returns `null` when the base output cannot be materialized at all (not a git repo, an
+ * output writing outside the repo, or git refusing to read the base tree); callers then
+ * fall back to the working tree. An output that simply does not exist in `baseRef` is not
+ * a failure — it yields an empty copy, which is exactly "every key of this output is new".
  */
 export async function materializeBaseOutputs(
   configs: CompilerConfig[],
@@ -121,7 +121,10 @@ export async function materializeBaseOutputs(
 
   try {
     for (const rel of relByLocation.values()) {
-      await checkoutTreePath(baseRef, rel, repoRoot, tempRoot)
+      if (!await checkoutTreePath(baseRef, rel, repoRoot, tempRoot)) {
+        await cleanup()
+        return null
+      }
     }
   } catch (err) {
     await cleanup()
@@ -136,20 +139,38 @@ export async function materializeBaseOutputs(
   }
 }
 
-/** Writes every blob under `rel` in `baseRef` into `tempRoot`, keeping the same layout. */
-async function checkoutTreePath(baseRef: string, rel: string, repoRoot: string, tempRoot: string): Promise<void> {
+/**
+ * Writes every blob under `rel` in `baseRef` into `tempRoot`, keeping the same layout, and
+ * reports whether git answered for the whole path.
+ *
+ * `false` must not be read as "the base has no such path": an empty copy means "every key
+ * of this output is new", so a git failure left unreported would pull the entire local
+ * extraction into scope. A path that is genuinely absent from `baseRef` lists no files and
+ * still succeeds.
+ */
+async function checkoutTreePath(baseRef: string, rel: string, repoRoot: string, tempRoot: string): Promise<boolean> {
   const relPosix = rel.split(path.sep).join(path.posix.sep)
-  const listed = await git(['ls-tree', '-r', '-z', '--name-only', baseRef, '--', relPosix], repoRoot)
+  // An output location is a literal path. Without `--literal-pathspecs` a glob character
+  // in it (`*`, `?`, `[`) is matched as a pattern, which lists nothing and exits zero.
+  const listed = await git(
+    ['--literal-pathspecs', 'ls-tree', '-r', '-z', '--name-only', baseRef, '--', relPosix],
+    repoRoot,
+  )
   if (listed == null) {
-    return
+    log.warn('base-output', `cannot list '${relPosix}' in '${baseRef}'`)
+    return false
   }
   for (const file of listed.split('\0').filter(Boolean)) {
     const blob = await gitBlob(['show', `${baseRef}:${file}`], repoRoot)
     if (blob == null) {
-      continue
+      // The tree named this blob, so a read failure is a broken object store (a partial
+      // clone that filtered blobs out, most likely), not an absent file.
+      log.warn('base-output', `cannot read '${file}' from '${baseRef}'`)
+      return false
     }
     const destPath = path.join(tempRoot, ...file.split(path.posix.sep))
     await fsp.mkdir(path.dirname(destPath), { recursive: true })
     await fsp.writeFile(destPath, blob)
   }
+  return true
 }

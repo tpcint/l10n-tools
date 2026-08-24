@@ -223,6 +223,32 @@ describe('findMissingOutputKeys', () => {
     }
   })
 
+  it('falls back to the working tree when git cannot read the base ref', async () => {
+    // ls-tree 실패는 "base 에 이 경로가 없음" 과 다르다. 빈 복사본을 그대로 base 로 삼으면 그
+    // output 의 로컬 키가 전부 누락으로 잡혀 스코프가 과대해진다.
+    registerFileBackedOutput('test-base-unreadable')
+    const { dir, outputPath } = await makeRepoWithCommittedOutput({ a: 'ㄱ' })
+    const domainConfig = makeDomainConfig(['test-base-unreadable'], outputPath)
+
+    const cwd = process.cwd()
+    process.chdir(dir)
+    try {
+      assert.deepEqual(
+        await findMissingOutputKeys(
+          'd',
+          domainConfig,
+          [makeKeyEntry('a'), makeKeyEntry('b')],
+          ['ko'],
+          'deadbeefdeadbeefdeadbeefdeadbeefdeadbeef',
+        ),
+        new Set(['b']),
+      )
+    } finally {
+      process.chdir(cwd)
+      await fsp.rm(dir, { recursive: true, force: true })
+    }
+  })
+
   it('returns null for a domain with no configured output', async () => {
     const missing = await findMissingOutputKeys('d', makeDomainConfig([]), [makeKeyEntry('a')], ['ko'])
     assert.equal(missing, null)

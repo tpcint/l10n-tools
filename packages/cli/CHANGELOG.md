@@ -1,5 +1,13 @@
 # Changelog
 
+## [7.10.4](https://github.com/tpcint/l10n-tools/compare/l10n-tools-v7.10.3...l10n-tools-v7.10.4) (2026-09-04)
+
+
+### Miscellaneous Chores
+
+* **deps:** bump cosmiconfig from 10.0.0 to 10.0.1 ([#439](https://github.com/tpcint/l10n-tools/issues/439)) ([b6a03ec](https://github.com/tpcint/l10n-tools/commit/b6a03ecce9a86bd3d8cfd3130462cc341717c158))
+* **deps:** bump cosmiconfig from 9.0.2 to 10.0.0 ([#419](https://github.com/tpcint/l10n-tools/issues/419)) ([37f76d5](https://github.com/tpcint/l10n-tools/commit/37f76d5eb3a38152e2638a45ace195549ae5820a))
+
 ## [7.10.3](https://github.com/tpcint/l10n-tools/compare/l10n-tools-v7.10.2...l10n-tools-v7.10.3) (2026-07-27)
 
 

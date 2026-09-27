@@ -29,7 +29,7 @@
     "eslint-plugin-import-newlines": "^2.0.0",
     "oxlint": "^1.84.0",
     "oxlint-tsgolint": "^7.0.2002",
-    "tsx": "^4.23.13",
+    "tsx": "^4.23.15",
     "typescript": "^6.0.3"
   }
 }

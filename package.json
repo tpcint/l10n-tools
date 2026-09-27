@@ -25,7 +25,7 @@
   "devDependencies": {
     "@faker-js/faker": "^10.1.0",
     "@stylistic/eslint-plugin": "^5.10.0",
-    "@types/node": "^22.20.2",
+    "@types/node": "^22.20.4",
     "eslint-plugin-import-newlines": "^2.0.0",
     "oxlint": "^1.84.0",
     "oxlint-tsgolint": "^7.0.2002",

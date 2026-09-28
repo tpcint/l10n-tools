@@ -1,5 +1,12 @@
 # Changelog
 
+## [7.4.18](https://github.com/tpcint/l10n-tools/compare/l10n-tools-syncer-lokalise-v7.4.17...l10n-tools-syncer-lokalise-v7.4.18) (2026-09-28)
+
+
+### Miscellaneous Chores
+
+* **deps:** bump @lokalise/node-api from 16.4.1 to 16.5.0 ([#446](https://github.com/tpcint/l10n-tools/issues/446)) ([a6ce8e1](https://github.com/tpcint/l10n-tools/commit/a6ce8e1298cca15c39ba74ed29241e7acde669f2))
+
 ## [7.4.17](https://github.com/tpcint/l10n-tools/compare/l10n-tools-syncer-lokalise-v7.4.16...l10n-tools-syncer-lokalise-v7.4.17) (2026-09-17)
 
 

@@ -21,7 +21,7 @@
     "ajv": "^8.20.0",
     "commander": "^15.0.0",
     "cosmiconfig": "^10.0.1",
-    "dotenv": "^18.0.1",
+    "dotenv": "^18.0.4",
     "l10n-tools-core": "^8.4.2",
     "npmlog": "^7.0.1"
   },

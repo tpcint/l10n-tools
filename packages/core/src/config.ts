@@ -352,6 +352,35 @@ export class CompilerConfig {
     return [this.getSrcDir()]
   }
 
+  /**
+   * File system locations this output writes to (`target-dir` or `target-path`).
+   *
+   * Outputs that write nowhere on their own (ios, android — which derive locations
+   * from `src-dir` / `res-dir` per module) return an empty list.
+   */
+  getTargetLocations(): string[] {
+    const locations: string[] = []
+    if (this.cc['target-dir'] != null) {
+      locations.push(this.cc['target-dir'])
+    }
+    if (this.cc['target-path'] != null) {
+      locations.push(this.cc['target-path'])
+    }
+    return locations
+  }
+
+  /** Same config with every target location replaced by `rewrite(location)`. */
+  withRewrittenTargets(rewrite: (location: string) => string): CompilerConfig {
+    const cc = { ...this.cc }
+    if (cc['target-dir'] != null) {
+      cc['target-dir'] = rewrite(cc['target-dir'])
+    }
+    if (cc['target-path'] != null) {
+      cc['target-path'] = rewrite(cc['target-path'])
+    }
+    return new CompilerConfig(cc)
+  }
+
   getTargetDir(): string {
     const targetDir = this.cc['target-dir']
     if (targetDir == null) {

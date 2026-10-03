@@ -12,6 +12,7 @@ export type {
   SyncerOptions,
   SyncerKeySnapshot,
   SyncerSourceFilterFunc,
+  OutputKeyReaderFunc,
 } from './plugin-types.js'
 
 export { pluginRegistry } from './plugin-registry.js'
@@ -69,6 +70,7 @@ export { updateTrans, getSrcPaths } from './common.js'
 
 // Extractor, compiler, syncer functions
 export { extractKeys } from './extractor.js'
-export { compileAll } from './compiler.js'
+export { compileAll, findMissingOutputKeys, outputEntryId } from './compiler.js'
+export { resolveBaseRef } from './base-output.js'
 export { syncTransToTarget } from './syncer.js'
 export { materializeSnapshotsToTempDir } from './source-filter.js'

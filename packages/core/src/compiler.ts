@@ -1,8 +1,23 @@
+import log from 'npmlog'
+import { materializeBaseOutputs } from './base-output.js'
 import type { DomainConfig } from './config.js'
+import type { KeyEntry } from './entry.js'
 import type { CompileOptions } from './plugin-types.js'
 import { pluginRegistry } from './plugin-registry.js'
 
-export type { CompileOptions, CompilerFunc } from './plugin-types.js'
+export type { CompileOptions, CompilerFunc, OutputKeyReaderFunc } from './plugin-types.js'
+
+/**
+ * Identity of a translation entry as compilers merge it.
+ *
+ * The pair `(context, key)` is the merge unit everywhere: `(msgctxt, msgid)` for gettext,
+ * the `.strings` key for iOS, `<string name>` for Android, and the bare key for JSON
+ * (which has no contexts). Using one helper keeps output readers comparable with the
+ * local key entries they are matched against.
+ */
+export function outputEntryId(context: string | null | undefined, key: string): string {
+  return `${context ?? ''}\u0000${key}`
+}
 
 /**
  * Compile translations for all configured output formats.
@@ -32,5 +47,73 @@ export async function compileAll(
     }
 
     await compiler(domainName, config, transDir, options)
+  }
+}
+
+/**
+ * Key names that the local source uses but the compiled output does not contain yet.
+ *
+ * "Does not contain" means the entry is absent from **every** locale of at least one
+ * configured output. A key that exists in some locale but is untranslated in others is
+ * NOT reported — that is normal translation progress, not a missing key, and treating it
+ * as missing would drag every partially-translated key of the project into scope.
+ *
+ * With `baseRef`, the comparison is against the output that commit carries, so the answer
+ * is "keys this branch introduces". That has to be the default reading, because comparing
+ * against the working tree makes the answer depend on what a previous compile in the same
+ * branch already wrote: the key leaves the scope after the first partial apply, and the
+ * locales translated afterwards never reach the branch. Without a usable `baseRef` the
+ * working tree is all there is, so the gap is computed against it.
+ *
+ * Returns `null` when the gap cannot be computed for the domain as a whole — some
+ * configured output has no {@link OutputKeyReaderFunc}, or (working tree only) does not
+ * exist yet — so callers must fall back to their previous behavior rather than act on a
+ * partial answer. An output absent from `baseRef`, on the other hand, is not unknown at
+ * all: none of its keys are in the base, so all of them are missing.
+ */
+export async function findMissingOutputKeys(
+  domainName: string,
+  domainConfig: DomainConfig,
+  keyEntries: KeyEntry[],
+  locales: string[],
+  baseRef?: string | null,
+): Promise<Set<string> | null> {
+  const configs = domainConfig.getCompilerConfigs()
+  if (configs.length === 0) {
+    return null
+  }
+
+  const base = baseRef != null ? await materializeBaseOutputs(configs, baseRef) : null
+  if (baseRef != null && base == null) {
+    // The caller asked for the base commit but git could not produce it, so the gap is
+    // measured against the working tree instead. That silently reintroduces the moving
+    // baseline this function exists to avoid, and nothing else on the path reports it.
+    log.warn(
+      'compile',
+      `base output for '${baseRef}' is not available; `
+      + `measuring the output gap of '${domainName}' against the working tree`,
+    )
+  }
+  try {
+    const readConfigs = base?.configs ?? configs
+    const missing = new Set<string>()
+    for (const [i, config] of configs.entries()) {
+      const reader = pluginRegistry.getOutputKeyReader(config.getType())
+      if (!reader) {
+        return null
+      }
+      const present = await reader(domainName, readConfigs[i], locales)
+      if (present == null && base == null) {
+        return null
+      }
+      for (const keyEntry of keyEntries) {
+        if (present?.has(outputEntryId(keyEntry.context, keyEntry.key)) !== true) {
+          missing.add(keyEntry.key)
+        }
+      }
+    }
+    return missing
+  } finally {
+    await base?.cleanup()
   }
 }

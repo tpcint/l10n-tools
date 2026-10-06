@@ -2,8 +2,10 @@ name: E2E Tests
 
 on:
   pull_request:
-    # `edited`를 포함해서 PR body의 `tpc-agent-tag:` 마커 추가/변경 시 재실행되도록 한다.
-    types: [opened, synchronize, edited]
+    # PR body 수정으로는 실행하지 않는다. dependabot 은 rebase 할 때 본문도 수정해 같은 커밋에
+    # 런이 두 개 생성되고, 먼저 진입한 E2E job 이 concurrency 로 취소돼 PR 체크가 cancelled 로 표시될 수 있다.
+    # `tpc-agent-tag:` 마커를 바꾼 뒤에는 런을 수동으로 다시 실행한다.
+    types: [opened, synchronize]
 
 jobs:
   changes:
@@ -11,6 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+      pull-requests: read
     if: ${{ !startsWith(github.head_ref, 'release-please--') }}
     outputs:
       should_run: ${{ steps.filter.outputs.syncer_l10n_storage }}
@@ -30,11 +33,14 @@ jobs:
 
       - name: Resolve backend image from PR body
         # PR description에 `tpc-agent-tag: <tag>` 한 줄이 있으면 그 태그의 tpc-agent PR 빌드 이미지로
-        # e2e를 돌린다. 마커가 없으면 기본 BACKEND_IMAGE secret으로 fallback.
+        # e2e를 실행한다. 마커가 없으면 기본 BACKEND_IMAGE secret으로 fallback.
+        # 재실행은 처음 이벤트의 payload 를 그대로 쓰므로, 본문은 payload 가 아니라 API 로 현재 값을 조회한다.
         id: backend
         env:
-          PR_BODY: ${{ github.event.pull_request.body }}
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
         run: |
+          PR_BODY=$(gh pr view "$PR_NUMBER" --repo "$GITHUB_REPOSITORY" --json body --jq '.body // ""')
           TAG=$(printf '%s\n' "$PR_BODY" \
             | grep -iE '^[[:space:]]*tpc-agent-tag:[[:space:]]*[A-Za-z0-9._-]+[[:space:]]*$' \
             | head -1 \

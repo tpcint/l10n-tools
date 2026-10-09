@@ -30,7 +30,7 @@
     "domhandler": "^6.0.1",
     "domutils": "^4.0.2",
     "fast-xml-parser": "^5.11.2",
-    "he": "^1.2.0",
+    "he": "^2.0.0",
     "htmlparser2": "^12.0.0",
     "npmlog": "^7.0.1"
   },

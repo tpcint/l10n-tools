@@ -7,7 +7,7 @@ import { parseDocument } from 'htmlparser2'
 import { findOne } from 'domutils'
 import { type Element, isTag } from 'domhandler'
 import { containsAndroidXmlSpecialChars, decodeAndroidStrings } from './android-xml-utils.js'
-import he from 'he'
+import { decode as decodeHtmlEntities } from 'he'
 
 /**
  * Extracts module name from module path for use in context.
@@ -117,7 +117,7 @@ function getAndroidXmlStringContent(src: string, elem: Element) {
     } else {
       content = decodeAndroidStrings(content)
       if (containsAndroidXmlSpecialChars(content)) {
-        content = he.decode(content)
+        content = decodeHtmlEntities(content)
       }
     }
     return content

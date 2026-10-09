@@ -1,5 +1,13 @@
 # Changelog
 
+## [7.10.5](https://github.com/tpcint/l10n-tools/compare/l10n-tools-v7.10.4...l10n-tools-v7.10.5) (2026-10-09)
+
+
+### Miscellaneous Chores
+
+* **deps:** bump dotenv from 17.4.2 to 18.0.1 ([#447](https://github.com/tpcint/l10n-tools/issues/447)) ([e40f26b](https://github.com/tpcint/l10n-tools/commit/e40f26bbfb79dfda31b70c66bbe7a00762014656))
+* **deps:** bump dotenv from 18.0.1 to 18.0.5 ([#452](https://github.com/tpcint/l10n-tools/issues/452)) ([db2a152](https://github.com/tpcint/l10n-tools/commit/db2a152d50bfb29c28f9ccd05b51ffb26d2e5d67))
+
 ## [7.10.4](https://github.com/tpcint/l10n-tools/compare/l10n-tools-v7.10.3...l10n-tools-v7.10.4) (2026-09-17)
 
 

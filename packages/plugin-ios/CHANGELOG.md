@@ -1,5 +1,13 @@
 # Changelog
 
+## [7.4.3](https://github.com/tpcint/l10n-tools/compare/l10n-tools-plugin-ios-v7.4.2...l10n-tools-plugin-ios-v7.4.3) (2026-11-03)
+
+
+### Miscellaneous Chores
+
+* **deps:** bump p-queue from 9.3.3 to 9.3.5 ([#463](https://github.com/tpcint/l10n-tools/issues/463)) ([c4a342f](https://github.com/tpcint/l10n-tools/commit/c4a342fd6ddc8da0170c00118cb6f11eff60fc06))
+* **deps:** bump p-queue from 9.3.5 to 10.0.0 ([#467](https://github.com/tpcint/l10n-tools/issues/467)) ([a4d6f14](https://github.com/tpcint/l10n-tools/commit/a4d6f14a00b7bcd40eb58d04addc80fcb30e4847))
+
 ## [7.4.2](https://github.com/tpcint/l10n-tools/compare/l10n-tools-plugin-ios-v7.4.1...l10n-tools-plugin-ios-v7.4.2) (2026-07-27)
 
 

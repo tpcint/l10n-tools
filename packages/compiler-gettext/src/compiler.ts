@@ -10,6 +10,8 @@ import {
   getPluralKeys,
   isErrnoException,
   listTransPaths,
+  outputEntryId,
+  type OutputKeyReaderFunc,
   readTransEntries,
   type TransEntry,
 } from 'l10n-tools-core'
@@ -36,7 +38,7 @@ export async function compileToPoJson(
     let po = createPo(domainName, locale, await readTransEntries(transPath))
 
     if (mergeKeys != null) {
-      const base = await readPoJsonIfExists(jsonPath, domainName, locale)
+      const base = (await readPoJsonIfExists(jsonPath, domainName, locale)) ?? emptyPo(domainName, locale)
       po = mergePoTranslations(base, po, mergeKeys)
     }
     po = sortPoTranslations(po)
@@ -69,7 +71,7 @@ export async function compileToMo(
 
     let po = createPo(domainName, locale, await readTransEntries(transPath))
     if (mergeKeys != null) {
-      const base = await readMoIfExists(moPath, domainName, locale)
+      const base = (await readMoIfExists(moPath, domainName, locale)) ?? emptyPo(domainName, locale)
       po = mergePoTranslations(base, po, mergeKeys)
     }
     po = sortPoTranslations(po)
@@ -121,6 +123,61 @@ export function createPoEntry(locale: string, transEntry: TransEntry): GetTextTr
       msgid: transEntry.key,
       msgid_plural: transEntry.key,
       msgstr: msgstr,
+    }
+  }
+}
+
+/**
+ * Entry identities present in the compiled `po-json` output, unioned over `locales`.
+ * The identity is the `(msgctxt, msgid)` pair the merge already works on; the header
+ * entry (empty msgctxt + empty msgid) is not an entry and is skipped. `null` when none
+ * of the locale files exist — one locale file missing among others is normal, but no
+ * file at all means this output was never compiled.
+ */
+export function readPoJsonOutputKeys(): OutputKeyReaderFunc {
+  return async function (domainName, config, locales) {
+    const targetDir = config.getTargetDir()
+    const present = new Set<string>()
+    let read = 0
+    for (const locale of locales) {
+      const jsonPath = path.join(targetDir, locale + '.json')
+      const po = await readPoJsonIfExists(jsonPath, domainName, locale)
+      if (po == null) {
+        continue
+      }
+      read++
+      collectPoKeys(po, present)
+    }
+    return read > 0 ? present : null
+  }
+}
+
+/** Same as {@link readPoJsonOutputKeys} for the binary `.mo` output. */
+export function readMoOutputKeys(): OutputKeyReaderFunc {
+  return async function (domainName, config, locales) {
+    const targetDir = config.getTargetDir()
+    const present = new Set<string>()
+    let read = 0
+    for (const locale of locales) {
+      const moPath = path.join(targetDir, locale, 'LC_MESSAGES', domainName + '.mo')
+      const po = await readMoIfExists(moPath, domainName, locale)
+      if (po == null) {
+        continue
+      }
+      read++
+      collectPoKeys(po, present)
+    }
+    return read > 0 ? present : null
+  }
+}
+
+function collectPoKeys(po: GetTextTranslations, into: Set<string>): void {
+  for (const [msgctxt, entries] of Object.entries(po.translations)) {
+    for (const msgid of Object.keys(entries)) {
+      if (msgctxt === '' && msgid === '') {
+        continue
+      }
+      into.add(outputEntryId(msgctxt === '' ? null : msgctxt, msgid))
     }
   }
 }
@@ -211,7 +268,7 @@ async function readPoJsonIfExists(
   jsonPath: string,
   domainName: string,
   locale: string,
-): Promise<GetTextTranslations> {
+): Promise<GetTextTranslations | null> {
   try {
     const text = await fsp.readFile(jsonPath, { encoding: 'utf-8' })
     const parsed = JSON.parse(text) as GetTextTranslations
@@ -224,7 +281,7 @@ async function readPoJsonIfExists(
     return parsed
   } catch (err) {
     if (isErrnoException(err, 'ENOENT')) {
-      return emptyPo(domainName, locale)
+      return null
     }
     throw err
   }
@@ -234,7 +291,7 @@ async function readMoIfExists(
   moPath: string,
   domainName: string,
   locale: string,
-): Promise<GetTextTranslations> {
+): Promise<GetTextTranslations | null> {
   try {
     const buffer = await fsp.readFile(moPath)
     const parsed = gettextParser.mo.parse(buffer)
@@ -244,7 +301,7 @@ async function readMoIfExists(
     return parsed
   } catch (err) {
     if (isErrnoException(err, 'ENOENT')) {
-      return emptyPo(domainName, locale)
+      return null
     }
     throw err
   }

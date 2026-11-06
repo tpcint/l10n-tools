@@ -1,5 +1,12 @@
 # Changelog
 
+## [7.4.20](https://github.com/tpcint/l10n-tools/compare/l10n-tools-syncer-lokalise-v7.4.19...l10n-tools-syncer-lokalise-v7.4.20) (2026-11-06)
+
+
+### Miscellaneous Chores
+
+* **deps:** bump es-toolkit from 1.53.0 to 1.53.1 ([#476](https://github.com/tpcint/l10n-tools/issues/476)) ([2132663](https://github.com/tpcint/l10n-tools/commit/2132663c6208cececc12fe8a70faacfa6eb43481))
+
 ## [7.4.19](https://github.com/tpcint/l10n-tools/compare/l10n-tools-syncer-lokalise-v7.4.18...l10n-tools-syncer-lokalise-v7.4.19) (2026-11-03)
 
 

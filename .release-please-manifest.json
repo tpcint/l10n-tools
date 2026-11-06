@@ -8,6 +8,6 @@
   "packages/extractor-python": "7.0.16",
   "packages/compiler-json": "7.2.5",
   "packages/compiler-gettext": "7.2.6",
-  "packages/syncer-lokalise": "7.4.19",
-  "packages/syncer-l10n-storage": "1.4.6"
+  "packages/syncer-lokalise": "7.4.20",
+  "packages/syncer-l10n-storage": "1.4.7"
 }

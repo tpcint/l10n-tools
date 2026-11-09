@@ -3,13 +3,15 @@ import assert from 'node:assert/strict'
 import fsp from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
-import { CompilerConfig, type TransEntry, writeTransEntries } from 'l10n-tools-core'
+import { CompilerConfig, outputEntryId, type TransEntry, writeTransEntries } from 'l10n-tools-core'
 import {
   buildJsonTrans,
   compileToJson,
   compileToJsonDir,
   jsonKeyMatchesMergeKeys,
   mergeJsonTrans,
+  readJsonDirOutputKeys,
+  readJsonOutputKeys,
   sortJsonTrans,
 } from './compiler.js'
 
@@ -711,5 +713,78 @@ describe('compileToJsonDir with mergeKeys', () => {
     } finally {
       await fsp.rm(dir, { recursive: true, force: true })
     }
+  })
+})
+
+describe('output key readers', () => {
+  it('json-dir: unions keys across locale files — present in any locale counts as present', async () => {
+    // 미번역 키는 그 로케일 파일에서 빠지므로, 로케일마다 따로 보면 "부분 번역된 키" 전부가
+    // 누락으로 잡힌다. 존재 판정은 로케일 합집합이어야 한다.
+    const targetDir = await makeTempDir('json-read-')
+    await fsp.writeFile(path.join(targetDir, 'ko.json'), JSON.stringify({ both: 'ㄱ', koOnly: 'ㄴ' }))
+    await fsp.writeFile(path.join(targetDir, 'en.json'), JSON.stringify({ both: 'a' }))
+
+    const present = await readJsonDirOutputKeys()('d', makeJsonDirConfig(targetDir), ['ko', 'en'])
+
+    assert.ok(present != null)
+    assert.ok(present.has(outputEntryId(null, 'both')))
+    assert.ok(present.has(outputEntryId(null, 'koOnly')))
+    assert.ok(!present.has(outputEntryId(null, 'absent')))
+  })
+
+  it('json-dir: reads through the locale key wrapper', async () => {
+    const targetDir = await makeTempDir('json-read-')
+    await fsp.writeFile(path.join(targetDir, 'ko.json'), JSON.stringify({ ko: { wrapped: 'ㄱ' } }))
+
+    const present = await readJsonDirOutputKeys()('d', makeJsonDirConfig(targetDir, true), ['ko'])
+
+    assert.ok(present != null)
+    assert.deepEqual([...present], [outputEntryId(null, 'wrapped')])
+  })
+
+  it('json-dir: folds i18next plural suffixes back to the base key', async () => {
+    const targetDir = await makeTempDir('json-read-')
+    await fsp.writeFile(path.join(targetDir, 'ko.json'), JSON.stringify({ apple_one: 'ㄱ', apple_other: 'ㄴ' }))
+
+    const present = await readJsonDirOutputKeys('i18next')('d', makeJsonDirConfig(targetDir), ['ko'])
+
+    assert.ok(present != null)
+    assert.ok(present.has(outputEntryId(null, 'apple')))
+  })
+
+  it('json-dir: reports null when no locale file exists, so the caller can fall back', async () => {
+    const targetDir = await makeTempDir('json-read-')
+
+    const present = await readJsonDirOutputKeys()('d', makeJsonDirConfig(targetDir), ['ko'])
+
+    assert.equal(present, null)
+  })
+
+  it('json-dir: one locale file present is enough to report the gap', async () => {
+    const targetDir = await makeTempDir('json-read-')
+    await fsp.writeFile(path.join(targetDir, 'ko.json'), JSON.stringify({ onlyKo: 'ㄱ' }))
+
+    const present = await readJsonDirOutputKeys()('d', makeJsonDirConfig(targetDir), ['ko', 'en'])
+
+    assert.deepEqual([...present!], [outputEntryId(null, 'onlyKo')])
+  })
+
+  it('json: reports null when the output file does not exist', async () => {
+    const targetDir = await makeTempDir('json-read-')
+
+    const present = await readJsonOutputKeys()('d', makeJsonConfig(path.join(targetDir, 'trans.json')), ['ko'])
+
+    assert.equal(present, null)
+  })
+
+  it('json: reads the single-file shape and unions locales', async () => {
+    const targetDir = await makeTempDir('json-read-')
+    const targetPath = path.join(targetDir, 'trans.json')
+    await fsp.writeFile(targetPath, JSON.stringify({ ko: { a: 'ㄱ' }, en: { b: 'b' } }))
+
+    const present = await readJsonOutputKeys()('d', makeJsonConfig(targetPath), ['ko', 'en'])
+
+    assert.ok(present != null)
+    assert.deepEqual([...present].sort(), [outputEntryId(null, 'a'), outputEntryId(null, 'b')].sort())
   })
 })

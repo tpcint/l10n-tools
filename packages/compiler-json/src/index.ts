@@ -1,5 +1,5 @@
 import type { L10nPlugin } from 'l10n-tools-core'
-import { compileToJson, compileToJsonDir } from './compiler.js'
+import { compileToJson, compileToJsonDir, readJsonDirOutputKeys, readJsonOutputKeys } from './compiler.js'
 
 const plugin: L10nPlugin = {
   name: 'l10n-tools-compiler-json',
@@ -12,6 +12,14 @@ const plugin: L10nPlugin = {
       'vue-i18n': compileToJsonDir('vue-i18n'),
       'node-i18n': compileToJsonDir('node-i18n'),
       'i18next': compileToJsonDir('i18next'),
+    },
+    outputKeyReaders: {
+      'json': readJsonOutputKeys(),
+      'vue-gettext': readJsonOutputKeys(),
+      'json-dir': readJsonDirOutputKeys(),
+      'vue-i18n': readJsonDirOutputKeys('vue-i18n'),
+      'node-i18n': readJsonDirOutputKeys('node-i18n'),
+      'i18next': readJsonDirOutputKeys('i18next'),
     },
   }],
 }

@@ -4,13 +4,15 @@ import fsp from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
 import * as gettextParser from 'gettext-parser'
-import { CompilerConfig, type TransEntry, writeTransEntries } from 'l10n-tools-core'
+import { CompilerConfig, outputEntryId, type TransEntry, writeTransEntries } from 'l10n-tools-core'
 import {
   compileToMo,
   compileToPoJson,
   createPo,
   createPoEntry,
   mergePoTranslations,
+  readMoOutputKeys,
+  readPoJsonOutputKeys,
   sortPoTranslations,
 } from './compiler.js'
 
@@ -570,5 +572,60 @@ describe('compileToMo with mergeKeys', () => {
     } finally {
       await fsp.rm(dir, { recursive: true, force: true })
     }
+  })
+})
+
+describe('output key readers', () => {
+  async function makeTargetDir(): Promise<string> {
+    return await fsp.mkdtemp(path.join(os.tmpdir(), 'gettext-read-'))
+  }
+
+  it('po-json: reports (msgctxt, msgid) pairs and unions locales', async () => {
+    const targetDir = await makeTargetDir()
+    const po = createPo('d', 'ko', [
+      makeTransEntry({ key: 'plain' }),
+      makeTransEntry({ key: 'shared', context: 'ctx' }),
+    ])
+    await fsp.writeFile(path.join(targetDir, 'ko.json'), JSON.stringify(po))
+
+    const present = await readPoJsonOutputKeys()('d', makePoJsonConfig(targetDir), ['ko', 'en'])
+
+    assert.ok(present != null)
+    assert.ok(present.has(outputEntryId(null, 'plain')))
+    assert.ok(present.has(outputEntryId('ctx', 'shared')))
+    // 같은 msgid 라도 다른 msgctxt 는 별개 엔트리다
+    assert.ok(!present.has(outputEntryId(null, 'shared')))
+  })
+
+  it('po-json: does not report the header entry as a key', async () => {
+    const targetDir = await makeTargetDir()
+    await fsp.writeFile(path.join(targetDir, 'ko.json'), JSON.stringify(createPo('d', 'ko', [])))
+
+    const present = await readPoJsonOutputKeys()('d', makePoJsonConfig(targetDir), ['ko'])
+
+    assert.equal(present?.size, 0)
+  })
+
+  it('po-json: reports null when no locale file exists, so the caller can fall back', async () => {
+    const present = await readPoJsonOutputKeys()('d', makePoJsonConfig(await makeTargetDir()), ['ko'])
+    assert.equal(present, null)
+  })
+
+  it('mo: reports null when no locale file exists, so the caller can fall back', async () => {
+    const present = await readMoOutputKeys()('d', makeMoConfig(await makeTargetDir()), ['ko'])
+    assert.equal(present, null)
+  })
+
+  it('mo: reads back the compiled binary output', async () => {
+    const targetDir = await makeTargetDir()
+    const moDir = path.join(targetDir, 'ko', 'LC_MESSAGES')
+    await fsp.mkdir(moDir, { recursive: true })
+    const po = createPo('d', 'ko', [makeTransEntry({ key: 'fromMo' })])
+    await fsp.writeFile(path.join(moDir, 'd.mo'), gettextParser.mo.compile(po))
+
+    const present = await readMoOutputKeys()('d', makeMoConfig(targetDir), ['ko'])
+
+    assert.ok(present != null)
+    assert.ok(present.has(outputEntryId(null, 'fromMo')))
   })
 })

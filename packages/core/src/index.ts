@@ -30,6 +30,8 @@ export {
   type LokalisePlatform,
   type KeywordConfig,
   type L10nConf,
+  L10nConfSchema,
+  parseL10nConf,
 } from './config.js'
 
 // Entry types and utilities

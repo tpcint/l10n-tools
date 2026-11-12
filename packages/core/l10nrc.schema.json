@@ -1,39 +1,233 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "$schema": {
+      "type": "string"
+    },
+    "domains": {
+      "type": "object",
+      "propertyNames": {
+        "type": "string"
+      },
+      "additionalProperties": {
+        "$ref": "#/definitions/DomainConf"
+      }
+    },
+    "validation": {
+      "description": "Validation Config",
+      "allOf": [
+        {
+          "$ref": "#/definitions/ValidationConf"
+        }
+      ]
+    },
+    "sync-target": {
+      "allOf": [
+        {
+          "$ref": "#/definitions/SyncTarget"
+        }
+      ]
+    },
+    "lokalise": {
+      "allOf": [
+        {
+          "$ref": "#/definitions/LokaliseConf"
+        }
+      ]
+    },
+    "l10n-storage": {
+      "allOf": [
+        {
+          "$ref": "#/definitions/L10nStorageConf"
+        }
+      ]
+    }
+  },
+  "required": [
+    "domains"
+  ],
   "additionalProperties": false,
   "definitions": {
-    "CompilerConf": {
-      "additionalProperties": false,
+    "DomainConf": {
+      "type": "object",
       "properties": {
-        "default-locale": {
+        "type": {
+          "$ref": "#/definitions/DomainType"
+        },
+        "keywords": {
+          "description": "Extracting function name and index of key argument list",
+          "examples": [
+            [
+              "translate:1",
+              "translateAll:0",
+              {
+                "name": ".localized",
+                "comment": "comment"
+              }
+            ]
+          ],
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/KeywordConfig"
+          }
+        },
+        "tag": {
+          "type": "string",
+          "description": "Tag name for upload and download"
+        },
+        "locales": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Locales to translate"
+        },
+        "fallback-locale": {
+          "description": "Fill translations from fallback locale if not exists",
           "type": "string"
+        },
+        "cache-dir": {
+          "description": "Location to save intermediate files",
+          "type": "string"
+        },
+        "src-dir": {
+          "description": "Location of source root (ios only)",
+          "type": "string"
+        },
+        "src-dirs": {
+          "description": "List of location of source root.\nUsed with src-patterns",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "src-patterns": {
+          "description": "List of glob patterns of location of source root\nUsed with src-dirs",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "ignore-patterns": {
+          "description": "List of glob patterns of location of source root to ignore",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "res-dir": {
+          "description": "Location of res (android only)",
+          "type": "string"
+        },
+        "modules": {
+          "description": "List of module paths (android only, multi-module support)",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
         },
         "default-module": {
           "description": "Default module that omits prefix in context (android only)",
           "type": "string"
         },
-        "modules": {
-          "description": "List of module paths (android only, multi-module support)",
+        "lokalise-platform": {
+          "description": "Lokalise platform to use",
+          "allOf": [
+            {
+              "$ref": "#/definitions/LokalisePlatform"
+            }
+          ]
+        },
+        "extra-expr-attrs": {
+          "description": "Extra directive names whose attribute value should be parsed as JavaScript expressions containing translation function calls (vue extractor only).\n\nThese are appended to the built-in directive list the extractor already scans (the built-in list differs by extractor type — for example the vue-i18n extractor scans `v-html` by default while the vue-gettext extractor does not). Use this option to register custom directives such as sanitizing HTML wrappers.",
+          "examples": [
+            [
+              "v-dompurify-html"
+            ],
+            [
+              "v-dompurify-html",
+              "v-safe-html"
+            ]
+          ],
+          "type": "array",
           "items": {
             "type": "string"
-          },
-          "type": "array"
+          }
         },
-        "res-dir": {
-          "description": "Location of res (android)",
-          "type": "string"
-        },
-        "scan-src-dirs": {
-          "description": "(ios) Scan roots used when re-extracting keys during compile. When set, overrides the output's `src-dir` as the scan source. Defaults to `[src-dir]` when omitted. Output location is unaffected.",
+        "outputs": {
+          "type": "array",
           "items": {
-            "type": "string"
+            "$ref": "#/definitions/CompilerConf"
           },
-          "minItems": 1,
-          "type": "array"
-        },
-        "src-dir": {
-          "description": "Location of source root (ios)",
+          "description": "List of output formats"
+        }
+      },
+      "required": [
+        "type",
+        "tag",
+        "locales",
+        "outputs"
+      ],
+      "additionalProperties": false
+    },
+    "DomainType": {
+      "type": "string",
+      "enum": [
+        "vue-gettext",
+        "vue-i18n",
+        "react",
+        "javascript",
+        "typescript",
+        "i18next",
+        "python",
+        "android",
+        "ios"
+      ],
+      "description": "vue-gettext: Extract from $gettext like function, translate tag, and v-translate attrs\nvue-i18n: Extract from $t like function, i18n, i18n-t tag, v-t attrs and more\ntypescript (javascript, react, i18next): Extract from .js, .ts, .jsx file with keyword definitions\npython: Extract from python gettext functions\nandroid: Extract from android strings.xml res files\nios: Extract from iOS swift files, storyboard, and xib files"
+    },
+    "KeywordConfig": {
+      "anyOf": [
+        {
           "type": "string"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string",
+              "description": "Keyword name (e.g., \".localized\")"
+            },
+            "comment": {
+              "description": "Comment parameter specification\n- string: Named parameter name (e.g., \"comment\" for `localized(comment: \"...\")`)\n- number: Positional index (e.g., 0 for `localized(\"...\")`)",
+              "type": [
+                "string",
+                "number"
+              ]
+            }
+          },
+          "required": [
+            "name"
+          ],
+          "additionalProperties": false
+        }
+      ],
+      "description": "Keyword configuration for extraction\n- string: Simple keyword name (e.g., \".localized\", \"translate:1\")\n- object: Detailed configuration with parameter mapping"
+    },
+    "LokalisePlatform": {
+      "type": "string",
+      "enum": [
+        "ios",
+        "android",
+        "web",
+        "other"
+      ]
+    },
+    "CompilerConf": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "$ref": "#/definitions/CompilerType"
         },
         "target-dir": {
           "description": "Location of JSON files to be saved (json-dir, po-json, mo, node-gettext)",
@@ -43,8 +237,35 @@
           "description": "Path of JSON file to be saved (json)",
           "type": "string"
         },
-        "type": {
-          "$ref": "#/definitions/CompilerType"
+        "src-dir": {
+          "description": "Location of source root (ios)",
+          "type": "string"
+        },
+        "scan-src-dirs": {
+          "description": "(ios) Scan roots used when re-extracting keys during compile. When set, overrides the output's `src-dir` as the scan source. Defaults to `[src-dir]` when omitted. Output location is unaffected.",
+          "minItems": 1,
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "res-dir": {
+          "description": "Location of res (android)",
+          "type": "string"
+        },
+        "modules": {
+          "description": "List of module paths (android only, multi-module support)",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "default-module": {
+          "description": "Default module that omits prefix in context (android only)",
+          "type": "string"
+        },
+        "default-locale": {
+          "type": "string"
         },
         "use-locale-key": {
           "description": "Use locale as root key of json file if true (json-dir)",
@@ -54,10 +275,10 @@
       "required": [
         "type"
       ],
-      "type": "object"
+      "additionalProperties": false
     },
     "CompilerType": {
-      "description": "json (vue-gettext): Single JSON all locales merged json-dir: JSON file per locale (plural not supported) node-i18n: JSON file per locale with node-i18n plural type vue-i18n: JSON file per locale with vue-i18n plural type i18next: JSON file per locale with i18next plural type po-json: JSON PO file per locale mo (python): MO file per locale node-gettext: PO file per locale android: Generate Android strings.xml ios: Merge into iOS strings file",
+      "type": "string",
       "enum": [
         "json",
         "vue-gettext",
@@ -72,176 +293,87 @@
         "android",
         "ios"
       ],
-      "type": "string"
+      "description": "json (vue-gettext): Single JSON all locales merged\njson-dir: JSON file per locale (plural not supported)\nnode-i18n: JSON file per locale with node-i18n plural type\nvue-i18n: JSON file per locale with vue-i18n plural type\ni18next: JSON file per locale with i18next plural type\npo-json: JSON PO file per locale\nmo (python): MO file per locale\nnode-gettext: PO file per locale\nandroid: Generate Android strings.xml\nios: Merge into iOS strings file"
     },
-    "DomainConf": {
-      "additionalProperties": false,
+    "ValidationConf": {
+      "type": "object",
       "properties": {
-        "cache-dir": {
-          "description": "Location to save intermediate files",
+        "skip": {
+          "description": "If true, do not stop script on error occurs",
+          "type": "boolean"
+        },
+        "base-locale": {
+          "description": "Which locale is base text for validation (use key if not specified)",
           "type": "string"
-        },
-        "default-module": {
-          "description": "Default module that omits prefix in context (android only)",
-          "type": "string"
-        },
-        "extra-expr-attrs": {
-          "description": "Extra directive names whose attribute value should be parsed as JavaScript expressions containing translation function calls (vue extractor only).\n\nThese are appended to the built-in directive list the extractor already scans (the built-in list differs by extractor type — for example the vue-i18n extractor scans `v-html` by default while the vue-gettext extractor does not). Use this option to register custom directives such as sanitizing HTML wrappers.",
-          "examples": [
-            [
-              "v-dompurify-html"
-            ],
-            [
-              "v-dompurify-html",
-              "v-safe-html"
-            ]
-          ],
-          "items": {
-            "type": "string"
-          },
-          "type": "array"
-        },
-        "fallback-locale": {
-          "description": "Fill translations from fallback locale if not exists",
-          "type": "string"
-        },
-        "ignore-patterns": {
-          "description": "List of glob patterns of location of source root to ignore",
-          "items": {
-            "type": "string"
-          },
-          "type": "array"
-        },
-        "keywords": {
-          "description": "Extracting function name and index of key argument list",
-          "examples": [
-            "translate:1",
-            "translateAll:0",
-            {
-              "comment": "comment",
-              "name": ".localized"
-            }
-          ],
-          "items": {
-            "$ref": "#/definitions/KeywordConfig"
-          },
-          "type": "array"
-        },
-        "locales": {
-          "description": "Locales to translate",
-          "items": {
-            "type": "string"
-          },
-          "type": "array"
-        },
-        "lokalise-platform": {
-          "$ref": "#/definitions/LokalisePlatform",
-          "description": "Lokalise platform to use"
-        },
-        "modules": {
-          "description": "List of module paths (android only, multi-module support)",
-          "items": {
-            "type": "string"
-          },
-          "type": "array"
-        },
-        "outputs": {
-          "description": "List of output formats",
-          "items": {
-            "$ref": "#/definitions/CompilerConf"
-          },
-          "type": "array"
-        },
-        "res-dir": {
-          "description": "Location of res (android only)",
-          "type": "string"
-        },
-        "src-dir": {
-          "description": "Location of source root (ios only)",
-          "type": "string"
-        },
-        "src-dirs": {
-          "description": "List of location of source root. Used with src-patterns",
-          "items": {
-            "type": "string"
-          },
-          "type": "array"
-        },
-        "src-patterns": {
-          "description": "List of glob patterns of location of source root Used with src-dirs",
-          "items": {
-            "type": "string"
-          },
-          "type": "array"
-        },
-        "tag": {
-          "description": "Tag name for upload and download",
-          "type": "string"
-        },
-        "type": {
-          "$ref": "#/definitions/DomainType"
         }
       },
-      "required": [
-        "type",
-        "tag",
-        "locales",
-        "outputs"
-      ],
-      "type": "object"
+      "additionalProperties": false
     },
-    "DomainType": {
-      "description": "vue-gettext: Extract from $gettext like function, translate tag, and v-translate attrs vue-i18n: Extract from $t like function, i18n, i18n-t tag, v-t attrs and more typescript (javascript, react, i18next): Extract from .js, .ts, .jsx file with keyword definitions python: Extract from python gettext functions android: Extract from android strings.xml res files ios: Extract from iOS swift files, storyboard, and xib files",
+    "SyncTarget": {
+      "type": "string",
       "enum": [
-        "vue-gettext",
-        "vue-i18n",
-        "react",
-        "javascript",
-        "typescript",
-        "i18next",
-        "python",
-        "android",
-        "ios"
-      ],
-      "type": "string"
+        "lokalise",
+        "l10n-storage"
+      ]
     },
-    "KeywordConfig": {
-      "anyOf": [
-        {
+    "LokaliseConf": {
+      "type": "object",
+      "properties": {
+        "token": {
           "type": "string"
         },
-        {
-          "additionalProperties": false,
-          "properties": {
-            "comment": {
-              "description": "Comment parameter specification\n- string: Named parameter name (e.g., \"comment\" for `localized(comment: \"...\")`)\n- number: Positional index (e.g., 0 for `localized(\"...\")`)",
-              "type": [
-                "string",
-                "number"
-              ]
-            },
-            "name": {
-              "description": "Keyword name (e.g., \".localized\")",
-              "type": "string"
-            }
-          },
-          "required": [
-            "name"
-          ],
-          "type": "object"
-        }
-      ],
-      "description": "Keyword configuration for extraction\n- string: Simple keyword name (e.g., \".localized\", \"translate:1\")\n- object: Detailed configuration with parameter mapping"
-    },
-    "L10nStorageConf": {
-      "additionalProperties": false,
-      "properties": {
+        "projectId": {
+          "type": "string"
+        },
+        "fill-key-to-locale": {
+          "description": "fill key to specified locale",
+          "type": "string"
+        },
+        "pure-key-prefixes": {
+          "description": "key prefixes which 'fill-key-to-locale' option exclusion",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "locales-to-use-unverified": {
+          "description": "Locales to use unverified translations",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "skip-not-reviewed": {
+          "description": "Skip applying not-reviewed translations",
+          "type": "boolean"
+        },
         "locale-sync-map": {
+          "type": "object",
+          "propertyNames": {
+            "type": "string"
+          },
           "additionalProperties": {
             "type": "string"
           },
-          "description": "Locale map to pass to syncer",
-          "type": "object"
+          "description": "Locale map to pass to syncer"
+        }
+      },
+      "required": [
+        "token",
+        "projectId"
+      ],
+      "additionalProperties": false
+    },
+    "L10nStorageConf": {
+      "type": "object",
+      "properties": {
+        "url": {
+          "description": "Base URL of the tpc-agent service. Can be overridden by TPC_AGENT_URL env var",
+          "type": "string"
+        },
+        "web-url": {
+          "description": "Base URL of the TPC Space web app (used to build translation links). Can be overridden by TPC_SPACE_URL env var",
+          "type": "string"
         },
         "projectId": {
           "type": "string"
@@ -250,122 +382,21 @@
           "description": "Source identifier for tag ownership",
           "type": "string"
         },
-        "url": {
-          "description": "Base URL of the tpc-agent service. Can be overridden by TPC_AGENT_URL env var",
-          "type": "string"
-        },
-        "web-url": {
-          "description": "Base URL of the TPC Space web app (used to build translation links). Can be overridden by TPC_SPACE_URL env var",
-          "type": "string"
-        }
-      },
-      "required": [
-        "projectId"
-      ],
-      "type": "object"
-    },
-    "LokaliseConf": {
-      "additionalProperties": false,
-      "properties": {
-        "fill-key-to-locale": {
-          "description": "fill key to specified locale",
-          "type": "string"
-        },
         "locale-sync-map": {
+          "type": "object",
+          "propertyNames": {
+            "type": "string"
+          },
           "additionalProperties": {
             "type": "string"
           },
-          "description": "Locale map to pass to syncer",
-          "type": "object"
-        },
-        "locales-to-use-unverified": {
-          "description": "Locales to use unverified translations",
-          "items": {
-            "type": "string"
-          },
-          "type": "array"
-        },
-        "projectId": {
-          "type": "string"
-        },
-        "pure-key-prefixes": {
-          "description": "key prefixes which 'fill-key-to-locale' option exclusion",
-          "items": {
-            "type": "string"
-          },
-          "type": "array"
-        },
-        "skip-not-reviewed": {
-          "description": "Skip applying not-reviewed translations",
-          "type": "boolean"
-        },
-        "token": {
-          "type": "string"
+          "description": "Locale map to pass to syncer"
         }
       },
       "required": [
-        "token",
         "projectId"
       ],
-      "type": "object"
-    },
-    "LokalisePlatform": {
-      "enum": [
-        "ios",
-        "android",
-        "web",
-        "other"
-      ],
-      "type": "string"
-    },
-    "SyncTarget": {
-      "enum": [
-        "lokalise",
-        "l10n-storage"
-      ],
-      "type": "string"
-    },
-    "ValidationConf": {
-      "additionalProperties": false,
-      "properties": {
-        "base-locale": {
-          "description": "Which locale is base text for validation (use key if not specified)",
-          "type": "string"
-        },
-        "skip": {
-          "description": "If true, do not stop script on error occurs",
-          "type": "boolean"
-        }
-      },
-      "type": "object"
+      "additionalProperties": false
     }
-  },
-  "properties": {
-    "$schema": {
-      "type": "string"
-    },
-    "domains": {
-      "additionalProperties": {
-        "$ref": "#/definitions/DomainConf"
-      },
-      "type": "object"
-    },
-    "l10n-storage": {
-      "$ref": "#/definitions/L10nStorageConf"
-    },
-    "lokalise": {
-      "$ref": "#/definitions/LokaliseConf"
-    },
-    "sync-target": {
-      "$ref": "#/definitions/SyncTarget"
-    },
-    "validation": {
-      "$ref": "#/definitions/ValidationConf",
-      "description": "Validation Config"
-    }
-  },
-  "required": [
-    "domains"
-  ],
-  "type": "object"
+  }
 }

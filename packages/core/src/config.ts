@@ -1,4 +1,11 @@
-export type LokalisePlatform = 'ios' | 'android' | 'web' | 'other'
+import { z } from 'zod'
+
+// Objects are strict so that a mistyped key in the rc file is reported as an error
+// instead of being silently stripped by z.object().
+
+const LokalisePlatformSchema = z.enum(['ios', 'android', 'web', 'other'])
+  .meta({ id: 'LokalisePlatform' })
+export type LokalisePlatform = z.infer<typeof LokalisePlatformSchema>
 
 export type ProgramOptions = {
   rcfile?: string,
@@ -10,105 +17,216 @@ export type ProgramOptions = {
   quiet?: boolean,
 }
 
-export type L10nConf = {
-  '$schema'?: string,
-  'domains': { [name: string]: DomainConf },
-  /** Validation Config */
-  'validation'?: ValidationConf,
-  'sync-target'?: SyncTarget,
-  'lokalise'?: LokaliseConf,
-  'l10n-storage'?: L10nStorageConf,
-}
+const SyncTargetSchema = z.enum(['lokalise', 'l10n-storage'])
+  .meta({ id: 'SyncTarget' })
+export type SyncTarget = z.infer<typeof SyncTargetSchema>
 
-export type SyncTarget = 'lokalise' | 'l10n-storage'
+const DomainTypeSchema = z.enum([
+  'vue-gettext',
+  'vue-i18n',
+  'react',
+  'javascript',
+  'typescript',
+  'i18next',
+  'python',
+  'android',
+  'ios',
+]).meta({
+  id: 'DomainType',
+  description: [
+    'vue-gettext: Extract from $gettext like function, translate tag, and v-translate attrs',
+    'vue-i18n: Extract from $t like function, i18n, i18n-t tag, v-t attrs and more',
+    'typescript (javascript, react, i18next): Extract from .js, .ts, .jsx file with keyword definitions',
+    'python: Extract from python gettext functions',
+    'android: Extract from android strings.xml res files',
+    'ios: Extract from iOS swift files, storyboard, and xib files',
+  ].join('\n'),
+})
+export type DomainType = z.infer<typeof DomainTypeSchema>
+
+const KeywordConfigSchema = z.union([
+  z.string(),
+  z.strictObject({
+    name: z.string().meta({ description: 'Keyword name (e.g., ".localized")' }),
+    comment: z.union([z.string(), z.number()]).optional().meta({
+      description: [
+        'Comment parameter specification',
+        '- string: Named parameter name (e.g., "comment" for `localized(comment: "...")`)',
+        '- number: Positional index (e.g., 0 for `localized("...")`)',
+      ].join('\n'),
+    }),
+  }),
+]).meta({
+  id: 'KeywordConfig',
+  description: [
+    'Keyword configuration for extraction',
+    '- string: Simple keyword name (e.g., ".localized", "translate:1")',
+    '- object: Detailed configuration with parameter mapping',
+  ].join('\n'),
+})
+export type KeywordConfig = z.infer<typeof KeywordConfigSchema>
+
+const CompilerTypeSchema = z.enum([
+  'json',
+  'vue-gettext',
+  'json-dir',
+  'node-i18n',
+  'vue-i18n',
+  'i18next',
+  'po-json',
+  'mo',
+  'python',
+  'node-gettext',
+  'android',
+  'ios',
+]).meta({
+  id: 'CompilerType',
+  description: [
+    'json (vue-gettext): Single JSON all locales merged',
+    'json-dir: JSON file per locale (plural not supported)',
+    'node-i18n: JSON file per locale with node-i18n plural type',
+    'vue-i18n: JSON file per locale with vue-i18n plural type',
+    'i18next: JSON file per locale with i18next plural type',
+    'po-json: JSON PO file per locale',
+    'mo (python): MO file per locale',
+    'node-gettext: PO file per locale',
+    'android: Generate Android strings.xml',
+    'ios: Merge into iOS strings file',
+  ].join('\n'),
+})
+export type CompilerType = z.infer<typeof CompilerTypeSchema>
+
+const CompilerConfSchema = z.strictObject({
+  'type': CompilerTypeSchema,
+  'target-dir': z.string().optional()
+    .meta({ description: 'Location of JSON files to be saved (json-dir, po-json, mo, node-gettext)' }),
+  'target-path': z.string().optional()
+    .meta({ description: 'Path of JSON file to be saved (json)' }),
+  'src-dir': z.string().optional()
+    .meta({ description: 'Location of source root (ios)' }),
+  'scan-src-dirs': z.array(z.string()).min(1).optional().meta({
+    description: '(ios) Scan roots used when re-extracting keys during compile. '
+      + 'When set, overrides the output\'s `src-dir` as the scan source. '
+      + 'Defaults to `[src-dir]` when omitted. Output location is unaffected.',
+  }),
+  'res-dir': z.string().optional()
+    .meta({ description: 'Location of res (android)' }),
+  'modules': z.array(z.string()).optional()
+    .meta({ description: 'List of module paths (android only, multi-module support)' }),
+  'default-module': z.string().optional()
+    .meta({ description: 'Default module that omits prefix in context (android only)' }),
+  'default-locale': z.string().optional(),
+  'use-locale-key': z.boolean().optional()
+    .meta({ description: 'Use locale as root key of json file if true (json-dir)' }),
+}).meta({ id: 'CompilerConf' })
+type CompilerConf = z.infer<typeof CompilerConfSchema>
+
+const DomainConfSchema = z.strictObject({
+  'type': DomainTypeSchema,
+  'keywords': z.array(KeywordConfigSchema).optional().meta({
+    description: 'Extracting function name and index of key argument list',
+    examples: [['translate:1', 'translateAll:0', { name: '.localized', comment: 'comment' }]],
+  }),
+  'tag': z.string()
+    .meta({ description: 'Tag name for upload and download' }),
+  'locales': z.array(z.string())
+    .meta({ description: 'Locales to translate' }),
+  'fallback-locale': z.string().optional()
+    .meta({ description: 'Fill translations from fallback locale if not exists' }),
+  'cache-dir': z.string().optional()
+    .meta({ description: 'Location to save intermediate files' }),
+  'src-dir': z.string().optional()
+    .meta({ description: 'Location of source root (ios only)' }),
+  'src-dirs': z.array(z.string()).optional()
+    .meta({ description: 'List of location of source root.\nUsed with src-patterns' }),
+  'src-patterns': z.array(z.string()).optional()
+    .meta({ description: 'List of glob patterns of location of source root\nUsed with src-dirs' }),
+  'ignore-patterns': z.array(z.string()).optional()
+    .meta({ description: 'List of glob patterns of location of source root to ignore' }),
+  'res-dir': z.string().optional()
+    .meta({ description: 'Location of res (android only)' }),
+  'modules': z.array(z.string()).optional()
+    .meta({ description: 'List of module paths (android only, multi-module support)' }),
+  'default-module': z.string().optional()
+    .meta({ description: 'Default module that omits prefix in context (android only)' }),
+  'lokalise-platform': LokalisePlatformSchema.optional()
+    .meta({ description: 'Lokalise platform to use' }),
+  'extra-expr-attrs': z.array(z.string()).optional().meta({
+    description: 'Extra directive names whose attribute value should be parsed as JavaScript '
+      + 'expressions containing translation function calls (vue extractor only).\n\n'
+      + 'These are appended to the built-in directive list the extractor already '
+      + 'scans (the built-in list differs by extractor type — for example the '
+      + 'vue-i18n extractor scans `v-html` by default while the vue-gettext '
+      + 'extractor does not). Use this option to register custom directives such '
+      + 'as sanitizing HTML wrappers.',
+    examples: [['v-dompurify-html'], ['v-dompurify-html', 'v-safe-html']],
+  }),
+  'outputs': z.array(CompilerConfSchema)
+    .meta({ description: 'List of output formats' }),
+}).meta({ id: 'DomainConf' })
+type DomainConf = z.infer<typeof DomainConfSchema>
+
+const ValidationConfSchema = z.strictObject({
+  'skip': z.boolean().optional()
+    .meta({ description: 'If true, do not stop script on error occurs' }),
+  'base-locale': z.string().optional()
+    .meta({ description: 'Which locale is base text for validation (use key if not specified)' }),
+}).meta({ id: 'ValidationConf' })
+type ValidationConf = z.infer<typeof ValidationConfSchema>
+
+const LocaleSyncMapSchema = z.record(z.string(), z.string())
+  .meta({ description: 'Locale map to pass to syncer' })
+
+const L10nStorageConfSchema = z.strictObject({
+  'url': z.string().optional()
+    .meta({ description: 'Base URL of the tpc-agent service. Can be overridden by TPC_AGENT_URL env var' }),
+  'web-url': z.string().optional().meta({
+    description: 'Base URL of the TPC Space web app (used to build translation links). '
+      + 'Can be overridden by TPC_SPACE_URL env var',
+  }),
+  'projectId': z.string(),
+  'source': z.string().optional()
+    .meta({ description: 'Source identifier for tag ownership' }),
+  'locale-sync-map': LocaleSyncMapSchema.optional(),
+}).meta({ id: 'L10nStorageConf' })
+type L10nStorageConf = z.infer<typeof L10nStorageConfSchema>
+
+const LokaliseConfSchema = z.strictObject({
+  'token': z.string(),
+  'projectId': z.string(),
+  'fill-key-to-locale': z.string().optional()
+    .meta({ description: 'fill key to specified locale' }),
+  'pure-key-prefixes': z.array(z.string()).optional()
+    .meta({ description: 'key prefixes which \'fill-key-to-locale\' option exclusion' }),
+  'locales-to-use-unverified': z.array(z.string()).optional()
+    .meta({ description: 'Locales to use unverified translations' }),
+  'skip-not-reviewed': z.boolean().optional()
+    .meta({ description: 'Skip applying not-reviewed translations' }),
+  'locale-sync-map': LocaleSyncMapSchema.optional(),
+}).meta({ id: 'LokaliseConf' })
+type LokaliseConf = z.infer<typeof LokaliseConfSchema>
+
+export const L10nConfSchema = z.strictObject({
+  '$schema': z.string().optional(),
+  'domains': z.record(z.string(), DomainConfSchema),
+  'validation': ValidationConfSchema.optional()
+    .meta({ description: 'Validation Config' }),
+  'sync-target': SyncTargetSchema.optional(),
+  'lokalise': LokaliseConfSchema.optional(),
+  'l10n-storage': L10nStorageConfSchema.optional(),
+})
+export type L10nConf = z.infer<typeof L10nConfSchema>
 
 /**
- * vue-gettext: Extract from $gettext like function, translate tag, and v-translate attrs
- * vue-i18n: Extract from $t like function, i18n, i18n-t tag, v-t attrs and more
- * typescript (javascript, react, i18next): Extract from .js, .ts, .jsx file with keyword definitions
- * python: Extract from python gettext functions
- * android: Extract from android strings.xml res files
- * ios: Extract from iOS swift files, storyboard, and xib files
+ * Validate a loaded rc file and return it typed.
+ * Throws with a readable list of issues when the rc file does not match the schema.
  */
-export type DomainType =
-  'vue-gettext' |
-  'vue-i18n' |
-  'react' |
-  'javascript' |
-  'typescript' |
-  'i18next' |
-  'python' |
-  'android' |
-  'ios'
-
-/**
- * Keyword configuration for extraction
- * - string: Simple keyword name (e.g., ".localized", "translate:1")
- * - object: Detailed configuration with parameter mapping
- */
-export type KeywordConfig = string | {
-  /** Keyword name (e.g., ".localized") */
-  name: string,
-  /**
-   * Comment parameter specification
-   * - string: Named parameter name (e.g., "comment" for `localized(comment: "...")`)
-   * - number: Positional index (e.g., 0 for `localized("...")`)
-   */
-  comment?: string | number,
-}
-
-type DomainConf = {
-  'type': DomainType,
-  /**
-     * Extracting function name and index of key argument list
-     * @examples ["translate:1", "translateAll:0", { "name": ".localized", "comment": "comment" }]
-     */
-  'keywords'?: KeywordConfig[],
-  /** Tag name for upload and download */
-  'tag': string,
-  /** Locales to translate */
-  'locales': string[],
-  /** Fill translations from fallback locale if not exists */
-  'fallback-locale'?: string,
-  /** Location to save intermediate files */
-  'cache-dir'?: string,
-  /** Location of source root (ios only) */
-  'src-dir'?: string,
-  /**
-     * List of location of source root.
-     * Used with src-patterns
-     */
-  'src-dirs'?: string[],
-  /**
-     * List of glob patterns of location of source root
-     * Used with src-dirs
-     */
-  'src-patterns'?: string[],
-  /** List of glob patterns of location of source root to ignore */
-  'ignore-patterns'?: string[],
-  /** Location of res (android only) */
-  'res-dir'?: string,
-  /** List of module paths (android only, multi-module support) */
-  'modules'?: string[],
-  /** Default module that omits prefix in context (android only) */
-  'default-module'?: string,
-  /** Lokalise platform to use */
-  'lokalise-platform'?: LokalisePlatform,
-  /**
-   * Extra directive names whose attribute value should be parsed as JavaScript
-   * expressions containing translation function calls (vue extractor only).
-   *
-   * These are appended to the built-in directive list the extractor already
-   * scans (the built-in list differs by extractor type — for example the
-   * vue-i18n extractor scans `v-html` by default while the vue-gettext
-   * extractor does not). Use this option to register custom directives such
-   * as sanitizing HTML wrappers.
-   *
-   * @examples [["v-dompurify-html"], ["v-dompurify-html", "v-safe-html"]]
-   */
-  'extra-expr-attrs'?: string[],
-  /** List of output formats */
-  'outputs': CompilerConf[],
+export function parseL10nConf(rc: unknown): L10nConf {
+  const result = L10nConfSchema.safeParse(rc)
+  if (!result.success) {
+    throw new Error(`rc file is not valid\n${z.prettifyError(result.error)}`)
+  }
+  return result.data
 }
 
 export class L10nConfig {
@@ -267,57 +385,6 @@ export class DomainConfig {
   }
 }
 
-/**
- * json (vue-gettext): Single JSON all locales merged
- * json-dir: JSON file per locale (plural not supported)
- * node-i18n: JSON file per locale with node-i18n plural type
- * vue-i18n: JSON file per locale with vue-i18n plural type
- * i18next: JSON file per locale with i18next plural type
- * po-json: JSON PO file per locale
- * mo (python): MO file per locale
- * node-gettext: PO file per locale
- * android: Generate Android strings.xml
- * ios: Merge into iOS strings file
- */
-export type CompilerType =
-  'json' |
-  'vue-gettext' |
-  'json-dir' |
-  'node-i18n' |
-  'vue-i18n' |
-  'i18next' |
-  'po-json' |
-  'mo' |
-  'python' |
-  'node-gettext' |
-  'android' |
-  'ios'
-type CompilerConf = {
-  'type': CompilerType,
-  /** Location of JSON files to be saved (json-dir, po-json, mo, node-gettext) */
-  'target-dir'?: string,
-  /** Path of JSON file to be saved (json) */
-  'target-path'?: string,
-  /** Location of source root (ios) */
-  'src-dir'?: string,
-  /**
-   * (ios) Scan roots used when re-extracting keys during compile.
-   * When set, overrides the output's `src-dir` as the scan source.
-   * Defaults to `[src-dir]` when omitted. Output location is unaffected.
-   * @minItems 1
-   */
-  'scan-src-dirs'?: string[],
-  /** Location of res (android) */
-  'res-dir'?: string,
-  /** List of module paths (android only, multi-module support) */
-  'modules'?: string[],
-  /** Default module that omits prefix in context (android only) */
-  'default-module'?: string,
-  'default-locale'?: string,
-  /** Use locale as root key of json file if true (json-dir) */
-  'use-locale-key'?: boolean,
-}
-
 export class CompilerConfig {
   private readonly cc: CompilerConf
   constructor(cc: CompilerConf) {
@@ -395,13 +462,6 @@ export class CompilerConfig {
   }
 }
 
-type ValidationConf = {
-  /** If true, do not stop script on error occurs */
-  'skip'?: boolean,
-  /** Which locale is base text for validation (use key if not specified) */
-  'base-locale'?: string,
-}
-
 export class ValidationConfig {
   private readonly vc: ValidationConf | undefined
   private readonly opts: ValidationConf
@@ -417,18 +477,6 @@ export class ValidationConfig {
   getSkip(): boolean {
     return this.opts['skip'] ?? this.vc?.['skip'] ?? false
   }
-}
-
-type L10nStorageConf = {
-  /** Base URL of the tpc-agent service. Can be overridden by TPC_AGENT_URL env var */
-  'url'?: string,
-  /** Base URL of the TPC Space web app (used to build translation links). Can be overridden by TPC_SPACE_URL env var */
-  'web-url'?: string,
-  'projectId': string,
-  /** Source identifier for tag ownership */
-  'source'?: string,
-  /** Locale map to pass to syncer */
-  'locale-sync-map'?: { [locale: string]: string },
 }
 
 export class L10nStorageConfig {
@@ -471,21 +519,6 @@ export class L10nStorageConfig {
   getLocaleSyncMap(): { [locale: string]: string } | undefined {
     return this.sc['locale-sync-map']
   }
-}
-
-type LokaliseConf = {
-  'token': string,
-  'projectId': string,
-  /** fill key to specified locale */
-  'fill-key-to-locale'?: string,
-  /** key prefixes which 'fill-key-to-locale' option exclusion */
-  'pure-key-prefixes'?: string[],
-  /** Locales to use unverified translations */
-  'locales-to-use-unverified'?: string[],
-  /** Skip applying not-reviewed translations */
-  'skip-not-reviewed'?: boolean,
-  /** Locale map to pass to syncer */
-  'locale-sync-map'?: { [locale: string]: string },
 }
 
 export class LokaliseConfig {

@@ -26,6 +26,13 @@ jobs:
         uses: ./.github/actions/setup-node-cached
         with:
           node-version: ${{ matrix.version }}
+      - name: Check l10nrc.schema.json is up to date
+        run: |
+          npm run schema -w packages/core
+          if ! git diff --exit-code -- packages/core/l10nrc.schema.json; then
+            echo "::error file=packages/core/l10nrc.schema.json::l10nrc.schema.json is out of date. Run 'npm run schema' in packages/core and commit the result."
+            exit 1
+          fi
       - name: Build
         run: npm run build
       - name: Lint

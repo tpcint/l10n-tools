@@ -13,9 +13,9 @@ import {
   fileExists,
   getKeysPath,
   getTransPath,
-  type L10nConf,
   L10nConfig,
   materializeSnapshotsToTempDir,
+  parseL10nConf,
   pluginRegistry,
   type ProgramOptions,
   readKeyEntries,
@@ -30,7 +30,6 @@ import * as path from 'path'
 import fsp from 'node:fs/promises'
 import { cosmiconfig } from 'cosmiconfig'
 import { fileURLToPath } from 'url'
-import { Ajv } from 'ajv'
 
 const program = new Command('l10n-tools')
 const dirname = path.dirname(fileURLToPath(import.meta.url))
@@ -641,21 +640,7 @@ async function runSubCommand(cmdName: string, action: (domainName: string, confi
 async function loadConfig(rcPath: string): Promise<L10nConfig> {
   const explorer = cosmiconfig('l10n')
   const rc = await explorer.load(rcPath)
-  const ajv = new Ajv()
-
-  // Load schema from l10n-tools-core package
-  const corePackagePath = import.meta.resolve('l10n-tools-core')
-  const coreDir = path.dirname(fileURLToPath(corePackagePath))
-  const schemaPath = path.join(coreDir, '..', 'l10nrc.schema.json')
-  const schema = JSON.parse(await fsp.readFile(schemaPath, { encoding: 'utf-8' })) as object
-
-  const rcConfig: unknown = rc?.config
-  const validate = ajv.compile<L10nConf>(schema)
-  if (!validate(rcConfig)) {
-    log.error('l10n', 'rc file error', validate.errors)
-    throw new Error('rc file is not valid')
-  }
-  return new L10nConfig(rcConfig)
+  return new L10nConfig(parseL10nConf(rc?.config))
 }
 
 try {

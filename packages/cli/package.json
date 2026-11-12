@@ -18,7 +18,7 @@
     "dist"
   ],
   "dependencies": {
-    "commander": "^15.0.0",
+    "commander": "^15.1.0",
     "cosmiconfig": "^10.0.1",
     "dotenv": "^18.0.9",
     "l10n-tools-core": "^8.4.2",

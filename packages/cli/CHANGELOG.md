@@ -1,5 +1,19 @@
 # Changelog
 
+## [7.10.7](https://github.com/tpcint/l10n-tools/compare/l10n-tools-v7.10.6...l10n-tools-v7.10.7) (2026-11-12)
+
+
+### Code Refactoring
+
+* rc 설정 스키마를 zod 로 이관하고 ts-json-schema-generator·ajv 를 제거한다 ([#478](https://github.com/tpcint/l10n-tools/issues/478)) ([ead5a09](https://github.com/tpcint/l10n-tools/commit/ead5a09ece0d7be192a2febbfe882d6d3215ff78))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * l10n-tools-core bumped from ^8.4.2 to ^8.4.3
+
 ## [7.10.6](https://github.com/tpcint/l10n-tools/compare/l10n-tools-v7.10.5...l10n-tools-v7.10.6) (2026-11-03)
 
 

@@ -1,6 +1,6 @@
 {
   "name": "l10n-tools",
-  "version": "7.10.6",
+  "version": "7.10.7",
   "description": "Localization tools - CLI for managing translations",
   "type": "module",
   "engines": {
@@ -21,7 +21,7 @@
     "commander": "^15.0.0",
     "cosmiconfig": "^10.0.1",
     "dotenv": "^18.0.9",
-    "l10n-tools-core": "^8.4.2",
+    "l10n-tools-core": "^8.4.3",
     "npmlog": "^7.0.1"
   },
   "devDependencies": {

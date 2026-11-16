@@ -1,5 +1,25 @@
 # Changelog
 
+## [7.10.7](https://github.com/tpcint/l10n-tools/compare/l10n-tools-v7.10.6...l10n-tools-v7.10.7) (2026-11-16)
+
+
+### Miscellaneous Chores
+
+* **deps:** bump commander from 15.0.0 to 15.1.0 ([#482](https://github.com/tpcint/l10n-tools/issues/482)) ([516063b](https://github.com/tpcint/l10n-tools/commit/516063b16e67a491a41a2e4c59ff6bed767a3f98))
+* **deps:** bump dotenv from 18.0.9 to 18.0.10 ([#481](https://github.com/tpcint/l10n-tools/issues/481)) ([1eaec23](https://github.com/tpcint/l10n-tools/commit/1eaec236f8d5f2f6be6e4450f874521798ac3408))
+
+
+### Code Refactoring
+
+* rc 설정 스키마를 zod 로 이관하고 ts-json-schema-generator·ajv 를 제거한다 ([#478](https://github.com/tpcint/l10n-tools/issues/478)) ([ead5a09](https://github.com/tpcint/l10n-tools/commit/ead5a09ece0d7be192a2febbfe882d6d3215ff78))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * l10n-tools-core bumped from ^8.4.2 to ^8.4.3
+
 ## [7.10.6](https://github.com/tpcint/l10n-tools/compare/l10n-tools-v7.10.5...l10n-tools-v7.10.6) (2026-11-03)
 
 

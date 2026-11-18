@@ -7,6 +7,7 @@ import {
   EntryCollection,
   extractLocaleFromTransPath,
   isErrnoException,
+  type KeyMode,
   listTransPaths,
   readTransEntries,
   type TransEntry,
@@ -29,7 +30,7 @@ import {
   type XMLTagNode,
   type XMLTextNode,
 } from './android-xml-utils.js'
-import { getModuleName, isDefaultModule } from './extractor.js'
+import { getModuleName, isDefaultModule, L10N_ATTR_PREFIX } from './extractor.js'
 
 export async function compileToAndroidXml(
   domainName: string,
@@ -42,19 +43,20 @@ export async function compileToAndroidXml(
     return
   }
   const isMerge = mergeKeys != null
+  const keyMode = options?.keyMode ?? 'source'
 
   const modules = config.getModules()
 
   if (modules.length > 0) {
     // Multi-module mode
-    await compileMultiModule(modules, config, transDir, isMerge)
+    await compileMultiModule(modules, config, transDir, isMerge, keyMode)
   } else {
     // Single res-dir mode (backward compatibility)
-    await compileSingleResDir(config, transDir, isMerge)
+    await compileSingleResDir(config, transDir, isMerge, keyMode)
   }
 }
 
-async function compileSingleResDir(config: CompilerConfig, transDir: string, isMerge: boolean) {
+async function compileSingleResDir(config: CompilerConfig, transDir: string, isMerge: boolean, keyMode: KeyMode) {
   const resDir = config.getResDir()
   const defaultLocale = config.getDefaultLocale()
   log.info('compile', `generating res files '${resDir}/values-{locale}/strings.xml'`)
@@ -79,7 +81,7 @@ async function compileSingleResDir(config: CompilerConfig, transDir: string, isM
     } else {
       const transEntries = await readTransEntries(transPath)
       const dstXml = await readXml(resDir, locale, '<?xml version="1.0" encoding="utf-8"?>\n<resources></resources>')
-      const newDstXml = await generateAndroidXml(locale, transEntries, srcXml, dstXml, { merge: isMerge })
+      const newDstXml = await generateAndroidXml(locale, transEntries, srcXml, dstXml, { merge: isMerge, keyMode })
       await writeXml(newDstXml, resDir, locale)
     }
   }
@@ -90,6 +92,7 @@ async function compileMultiModule(
   config: CompilerConfig,
   transDir: string,
   isMerge: boolean,
+  keyMode: KeyMode,
 ) {
   const defaultLocale = config.getDefaultLocale()
   const defaultModule = config.getDefaultModule()
@@ -130,13 +133,15 @@ async function compileMultiModule(
       } else {
         const transEntries = await readTransEntries(transPath)
         // Filter entries for this module
-        const moduleTransEntries = filterTransEntriesForModule(transEntries, module, defaultModule)
+        const moduleTransEntries = keyMode === 'id'
+          ? filterTransEntriesForResources(transEntries, resNode)
+          : filterTransEntriesForModule(transEntries, module, defaultModule)
         // In merge mode, skip module/locale combinations with no PR-scope entries —
         // otherwise an empty fallback XML would be written to a missing locale file,
         // creating a brand-new values-{locale}/strings.xml unrelated to the PR scope.
         if (isMerge && moduleTransEntries.length === 0) continue
         const dstXml = await readXml(resDir, locale, '<?xml version="1.0" encoding="utf-8"?>\n<resources></resources>')
-        const newDstXml = await generateAndroidXml(locale, moduleTransEntries, srcXml, dstXml, { merge: isMerge })
+        const newDstXml = await generateAndroidXml(locale, moduleTransEntries, srcXml, dstXml, { merge: isMerge, keyMode })
         await writeXml(newDstXml, resDir, locale)
       }
     }
@@ -160,6 +165,16 @@ export function filterTransEntriesForModule(transEntries: TransEntry[], module: 
     }))
 }
 
+/**
+ * 공용 키 항목 중 `values/strings.xml` 에 리소스가 있는 항목만 선별한다.
+ * 공용 키에는 모듈 접두사가 없으므로, 모듈마다 자기 리소스의 키로 판정한다.
+ * @internal exported for testing
+ */
+export function filterTransEntriesForResources(transEntries: TransEntry[], srcResNode: XMLTagNode): TransEntry[] {
+  const keys = indexResources(srcResNode.resources, 'id')
+  return transEntries.filter(entry => entry.context == null && keys.has(entry.key))
+}
+
 export interface GenerateAndroidXmlOptions {
   /**
    * When true, the output is produced by patching `dstXml` in place: only the
@@ -169,6 +184,11 @@ export interface GenerateAndroidXmlOptions {
    * structure — every entry of dstXml is replaced.
    */
   merge?: boolean,
+  /**
+   * `id` 이면 `transEntry.key` 를 공용 키로 보고, 리소스의 `l10n:key`(없으면 리소스 이름)와 대응한다.
+   * `source`(default) 이면 `transEntry.context` 를 리소스 이름으로 보고 대응한다.
+   */
+  keyMode?: KeyMode,
 }
 
 // 공개 API 시그니처가 Promise<string>이라 async를 유지한다.
@@ -195,14 +215,51 @@ export async function generateAndroidXml(
     throw new Error('no resources tag')
   }
 
+  const keyMode = options?.keyMode ?? 'source'
   if (options?.merge) {
-    return patchAndroidXmlMerge(transEntries, resNode, dstResNode, dstXmlJson, builder)
+    return patchAndroidXmlMerge(transEntries, keyMode, resNode, dstResNode, dstXmlJson, builder)
   }
-  return rebuildAndroidXml(transEntries, resNode, dstResNode, dstXmlJson, builder)
+  return rebuildAndroidXml(transEntries, keyMode, resNode, dstResNode, dstXmlJson, builder)
+}
+
+/**
+ * 리소스에 대응하는 번역 항목의 조회 키. `id` 이면 공용 키, `source` 이면 리소스 이름(context)이다.
+ */
+function getResourceLookupKey(node: XMLTagNode, name: string, keyMode: KeyMode): string {
+  if (keyMode === 'id') {
+    return getAttrValue(node, `${L10N_ATTR_PREFIX}key`) ?? name
+  }
+  return name
+}
+
+function findTransEntry(trans: EntryCollection<TransEntry>, lookupKey: string, keyMode: KeyMode): TransEntry | null {
+  return keyMode === 'id' ? trans.find(null, lookupKey) : trans.find(lookupKey, null)
+}
+
+/**
+ * `l10n:` 속성을 제거한 노드를 반환한다. `values-xx` 에는 `xmlns:l10n` 선언이 없어서,
+ * 속성을 그대로 복사하면 선언되지 않은 접두사가 된다.
+ */
+function withoutL10nAttrs(node: XMLTagNode): XMLTagNode {
+  const attrs = node[':@']
+  if (attrs == null) {
+    return node
+  }
+  const attrPrefix = `@_${L10N_ATTR_PREFIX}`
+  const entries = Object.entries(attrs).filter(([attrName]) => !attrName.startsWith(attrPrefix))
+  if (entries.length === Object.keys(attrs).length) {
+    return node
+  }
+  const { ':@': _, ...rest } = node
+  if (entries.length === 0) {
+    return rest
+  }
+  return { ...rest, ':@': Object.fromEntries(entries) }
 }
 
 function rebuildAndroidXml(
   transEntries: TransEntry[],
+  keyMode: KeyMode,
   srcResNode: XMLTagNode,
   dstResNode: XMLTagNode,
   dstXmlJson: ReturnType<typeof parseAndroidXml>,
@@ -233,7 +290,7 @@ function rebuildAndroidXml(
         passingText = true
         continue
       }
-      const transEntry = trans.find(name, null)
+      const transEntry = findTransEntry(trans, getResourceLookupKey(node, name, keyMode), keyMode)
       if (transEntry == null) {
         passingText = true
         continue
@@ -244,7 +301,7 @@ function rebuildAndroidXml(
         continue
       }
       const valueNode = createValueNode(node, node.string, value)
-      dstResources.push({ ...node, string: [valueNode] })
+      dstResources.push(withoutL10nAttrs({ ...node, string: [valueNode] }))
     } else if (isTagNode(node, 'plurals')) {
       const translatable = getAttrValue(node, 'translatable')
       if (translatable == 'false') {
@@ -256,7 +313,7 @@ function rebuildAndroidXml(
         passingText = true
         continue
       }
-      const transEntry = trans.find(name, null)
+      const transEntry = findTransEntry(trans, getResourceLookupKey(node, name, keyMode), keyMode)
       if (transEntry == null) {
         passingText = true
         continue
@@ -282,24 +339,29 @@ function rebuildAndroidXml(
 
 function patchAndroidXmlMerge(
   transEntries: TransEntry[],
+  keyMode: KeyMode,
   srcResNode: XMLTagNode,
   dstResNode: XMLTagNode,
   dstXmlJson: ReturnType<typeof parseAndroidXml>,
   builder: ReturnType<typeof getAndroidXmlBuilder>,
 ): string {
-  const srcNodesByName = indexResourcesByName(srcResNode.resources)
+  const srcNodesByKey = indexResources(srcResNode.resources, keyMode)
   const dstResources = [...dstResNode.resources]
 
   for (const transEntry of transEntries) {
-    const name = transEntry.context
-    if (name == null) continue
+    const lookupKey = keyMode === 'id' ? transEntry.key : transEntry.context
+    if (lookupKey == null) continue
 
-    const srcNode = srcNodesByName.get(name)
+    const srcNode = srcNodesByKey.get(lookupKey)
     if (srcNode == null) {
       // PR-scope key not found in default values — drop it from dst as well.
-      removeFromResourcesByName(dstResources, name)
+      // 공용 키는 리소스 이름을 알 수 없으므로 dst 를 수정하지 않는다.
+      if (keyMode === 'source') {
+        removeFromResourcesByName(dstResources, lookupKey)
+      }
       continue
     }
+    const name = getAttrValue(srcNode, 'name')!
 
     if (isTagNode(srcNode, 'string')) {
       const translatable = getAttrValue(srcNode, 'translatable')
@@ -309,7 +371,7 @@ function patchAndroidXmlMerge(
         removeFromResourcesByName(dstResources, name)
         continue
       }
-      const newNode = { ...srcNode, string: [createValueNode(srcNode, srcNode.string, value)] }
+      const newNode = withoutL10nAttrs({ ...srcNode, string: [createValueNode(srcNode, srcNode.string, value)] })
       replaceOrAppendByName(dstResources, name, newNode)
     } else if (isTagNode(srcNode, 'plurals')) {
       const translatable = getAttrValue(srcNode, 'translatable')
@@ -356,17 +418,17 @@ function buildPluralsNode(srcNode: XMLTagNode, messages: TransEntry['messages'])
   if (plLastTextNode != null) {
     dstPlurals.push({ ...plLastTextNode })
   }
-  return { ...srcNode, plurals: dstPlurals }
+  return withoutL10nAttrs({ ...srcNode, plurals: dstPlurals })
 }
 
-function indexResourcesByName(resources: XMLNode[]): Map<string, XMLTagNode> {
+function indexResources(resources: XMLNode[], keyMode: KeyMode): Map<string, XMLTagNode> {
   const map = new Map<string, XMLTagNode>()
   for (const node of resources) {
     if (isTextNode(node)) continue
     if (!isTagNode(node, 'string') && !isTagNode(node, 'plurals')) continue
     const name = getAttrValue(node, 'name')
     if (name == null) continue
-    map.set(name, node)
+    map.set(getResourceLookupKey(node, name, keyMode), node)
   }
   return map
 }

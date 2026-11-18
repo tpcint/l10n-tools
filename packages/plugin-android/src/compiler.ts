@@ -185,8 +185,8 @@ export interface GenerateAndroidXmlOptions {
    */
   merge?: boolean,
   /**
-   * `id` 이면 `transEntry.key` 를 공용 키로 보고, 리소스의 `l10n:key`(없으면 리소스 이름)와 대응한다.
-   * `source`(default) 이면 `transEntry.context` 를 리소스 이름으로 보고 대응한다.
+   * `id` 이면 `transEntry.key` 를 공용 키로 간주하고, 리소스의 `l10n:key`(없으면 리소스 이름)와 대응한다.
+   * `source`(default) 이면 `transEntry.context` 를 리소스 이름으로 간주하고 대응한다.
    */
   keyMode?: KeyMode,
 }

@@ -120,15 +120,14 @@ export function extractAndroidStringsXml(
 
     if (elem.name == 'string') {
       const name = elem.attribs['name']
-      const content = getAndroidXmlStringContent(src, elem)
       const line = getLineTo(src, getElementContentIndex(elem), startLine)
       if (useIdKey) {
         const key = getIdKey(elem, filename, line)
-        const idKey = getIdKeyAttributes(elem, bodyAsDefaultValue ? content : null, filename, line)
+        const idKey = getIdKeyAttributes(elem, bodyAsDefaultValue ? () => getAndroidXmlStringContent(src, elem) : null, filename, line)
         extractor.addMessage({ filename, line }, key, { idKey })
       } else {
         const context = moduleName ? `${moduleName}:${name}` : name
-        extractor.addMessage({ filename, line }, content, { context })
+        extractor.addMessage({ filename, line }, getAndroidXmlStringContent(src, elem), { context })
       }
     } else if (elem.name == 'plurals') {
       const name = elem.attribs['name']
@@ -141,14 +140,14 @@ export function extractAndroidStringsXml(
         log.warn('extractKeys', `missing item tag of plurals ${name}`)
         continue
       }
-      const content = getAndroidXmlStringContent(src, itemElem)
+      const pluralItemElem = itemElem
       if (useIdKey) {
         const key = getIdKey(elem, filename, line)
-        const idKey = getIdKeyAttributes(elem, bodyAsDefaultValue ? content : null, filename, line)
+        const idKey = getIdKeyAttributes(elem, bodyAsDefaultValue ? () => getAndroidXmlStringContent(src, pluralItemElem) : null, filename, line)
         extractor.addMessage({ filename, line }, key, { isPlural: true, idKey })
       } else {
         const context = moduleName ? `${moduleName}:${name}` : name
-        extractor.addMessage({ filename, line }, content, { isPlural: true, context })
+        extractor.addMessage({ filename, line }, getAndroidXmlStringContent(src, pluralItemElem), { isPlural: true, context })
       }
     }
   }
@@ -169,13 +168,16 @@ function getIdKey(elem: Element, filename: string, line: number): string {
   return key
 }
 
-function getIdKeyAttributes(elem: Element, body: string | null, filename: string, line: number): IdKeyAttributes {
+/**
+ * @param readBody 본문을 기본 문구로 읽는 함수. 본문 디코딩은 실패할 수 있으므로 `l10n:defaultValue` 가 없을 때만 호출한다
+ */
+function getIdKeyAttributes(elem: Element, readBody: (() => string) | null, filename: string, line: number): IdKeyAttributes {
   const draft = elem.attribs[`${L10N_ATTR_PREFIX}draft`]
   if (draft != null && draft !== 'true' && draft !== 'false') {
     throw new Error(`invalid ${L10N_ATTR_PREFIX}draft value ${JSON.stringify(draft)} at ${filename}:${line}: must be "true" or "false"`)
   }
   return {
-    defaultValue: elem.attribs[`${L10N_ATTR_PREFIX}defaultValue`] ?? body,
+    defaultValue: elem.attribs[`${L10N_ATTR_PREFIX}defaultValue`] ?? readBody?.() ?? null,
     draft: draft === 'true',
   }
 }

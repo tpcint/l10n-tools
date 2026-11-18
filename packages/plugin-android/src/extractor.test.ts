@@ -211,6 +211,18 @@ describe('android extractor test', () => {
       assert.deepEqual(extractor.keys.find(null, 'registered')!.idKey, { defaultValue: null, draft: false })
     })
 
+    it('does not decode the body when it is not used as the default value', () => {
+      const srcXml = `<?xml version="1.0" encoding="utf-8"?>
+<resources ${L10N_NS}>
+    <string name="with_default" l10n:defaultValue="경로">C:\\users</string>
+    <string name="registered">C:\\users</string>
+</resources>`
+      const extractor = new KeyExtractor()
+      extractAndroidStringsXml(extractor, 'test-file', srcXml, 1, undefined, undefined, { keyMode: 'id', bodyAsDefaultValue: false })
+      assert.deepEqual(extractor.keys.find(null, 'with_default')!.idKey, { defaultValue: '경로', draft: false })
+      assert.deepEqual(extractor.keys.find(null, 'registered')!.idKey, { defaultValue: null, draft: false })
+    })
+
     it('throws when the resource name does not match the key pattern', () => {
       const srcXml = `<?xml version="1.0" encoding="utf-8"?>
 <resources>

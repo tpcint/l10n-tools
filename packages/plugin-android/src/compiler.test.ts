@@ -457,6 +457,27 @@ describe('android compiler test', () => {
 </resources>`)
     })
 
+    it('patches every resource that shares the same l10n:key in merge mode', async () => {
+      const sharedSrcXml = `<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:l10n="http://github.com/tpcint/l10n-tools">
+    <string name="publish_button">공개</string>
+    <string name="publish_cta" l10n:key="publish_button">공개</string>
+</resources>`
+      const dstXml = `<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="publish_button">Old publish</string>
+    <string name="publish_cta">Old publish</string>
+</resources>`
+      const newDstXml = await generateAndroidXml('en', [
+        { context: null, key: 'publish_button', messages: { other: 'Publish' }, flag: null },
+      ], sharedSrcXml, dstXml, { merge: true, keyMode: 'id' })
+      assert.equal(newDstXml, `<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="publish_button">Publish</string>
+    <string name="publish_cta">Publish</string>
+</resources>`)
+    })
+
     it('strips l10n: attributes in source key mode too', async () => {
       const dstXml = '<?xml version="1.0" encoding="utf-8"?>\n<resources></resources>'
       const newDstXml = await generateAndroidXml('en', [

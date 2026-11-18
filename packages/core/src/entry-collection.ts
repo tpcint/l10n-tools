@@ -5,8 +5,9 @@ export class EntryCollection<Entry extends BaseEntry> {
   private readonly byKey: { [key: string]: Entry | undefined }
 
   constructor() {
-    this.byContext = {}
-    this.byKey = {}
+    // prototype 이 있으면 `constructor` 같은 키가 Object.prototype 의 속성으로 조회된다
+    this.byContext = Object.create(null) as typeof this.byContext
+    this.byKey = Object.create(null) as typeof this.byKey
   }
 
   static loadEntries<Entry extends BaseEntry>(entries: Entry[]): EntryCollection<Entry> {

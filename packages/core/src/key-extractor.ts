@@ -15,7 +15,7 @@ export class KeyExtractor {
 
   /**
    * Add a translation message/key to the collection.
-   * `idKey` 를 지정하면 공용 키 항목으로 기록한다. 같은 키를 다시 추가할 때 키 종류·기본 문구·임시값 여부가 다르면 오류가 발생한다.
+   * `idKey` 를 지정하면 공용 키 항목으로 기록한다. 같은 키를 다시 추가할 때 키 종류·기본 문구·임시값 여부가 다르거나, 공용 키의 복수형 여부가 다르면 오류가 발생한다.
    */
   addMessage(
     { filename, line }: { filename: string, line?: string | number },
@@ -35,6 +35,11 @@ export class KeyExtractor {
       line = line.toString()
     }
     const keyEntry = this.keys.find(context, key)
+    if (keyEntry != null && idKey != null && keyEntry.idKey != null && keyEntry.isPlural !== isPlural) {
+      throw new Error(`conflicting key "${key}" at ${formatLocation(filename, line)}: `
+        + `${isPlural ? 'plural' : 'non-plural'} differs from ${keyEntry.isPlural ? 'plural' : 'non-plural'} `
+        + `at ${keyEntry.references.map(ref => formatLocation(ref.file, ref.loc)).join(', ')}`)
+    }
     if (keyEntry != null && !isSameIdKeyAttributes(keyEntry.idKey, idKey)) {
       throw new Error(`conflicting key "${key}" at ${formatLocation(filename, line)}: `
         + `${describeIdKey(idKey)} differs from ${describeIdKey(keyEntry.idKey)} `

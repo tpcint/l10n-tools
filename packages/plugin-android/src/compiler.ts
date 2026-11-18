@@ -352,8 +352,8 @@ function patchAndroidXmlMerge(
     const lookupKey = keyMode === 'id' ? transEntry.key : transEntry.context
     if (lookupKey == null) continue
 
-    const srcNode = srcNodesByKey.get(lookupKey)
-    if (srcNode == null) {
+    const srcNodes = srcNodesByKey.get(lookupKey)
+    if (srcNodes == null) {
       // PR-scope key not found in default values — drop it from dst as well.
       // 공용 키는 리소스 이름을 알 수 없으므로 dst 를 수정하지 않는다.
       if (keyMode === 'source') {
@@ -361,28 +361,30 @@ function patchAndroidXmlMerge(
       }
       continue
     }
-    const name = getAttrValue(srcNode, 'name')!
 
-    if (isTagNode(srcNode, 'string')) {
-      const translatable = getAttrValue(srcNode, 'translatable')
-      if (translatable === 'false') continue
-      const value = transEntry.messages.other
-      if (!value) {
-        removeFromResourcesByName(dstResources, name)
-        continue
+    for (const srcNode of srcNodes) {
+      const name = getAttrValue(srcNode, 'name')!
+      if (isTagNode(srcNode, 'string')) {
+        const translatable = getAttrValue(srcNode, 'translatable')
+        if (translatable === 'false') continue
+        const value = transEntry.messages.other
+        if (!value) {
+          removeFromResourcesByName(dstResources, name)
+          continue
+        }
+        const newNode = withoutL10nAttrs({ ...srcNode, string: [createValueNode(srcNode, srcNode.string, value)] })
+        replaceOrAppendByName(dstResources, name, newNode)
+      } else if (isTagNode(srcNode, 'plurals')) {
+        const translatable = getAttrValue(srcNode, 'translatable')
+        if (translatable === 'false') continue
+        if (Object.keys(transEntry.messages).length == 0) {
+          removeFromResourcesByName(dstResources, name)
+          continue
+        }
+        const pluralsNode = buildPluralsNode(srcNode, transEntry.messages)
+        if (pluralsNode == null) continue
+        replaceOrAppendByName(dstResources, name, pluralsNode)
       }
-      const newNode = withoutL10nAttrs({ ...srcNode, string: [createValueNode(srcNode, srcNode.string, value)] })
-      replaceOrAppendByName(dstResources, name, newNode)
-    } else if (isTagNode(srcNode, 'plurals')) {
-      const translatable = getAttrValue(srcNode, 'translatable')
-      if (translatable === 'false') continue
-      if (Object.keys(transEntry.messages).length == 0) {
-        removeFromResourcesByName(dstResources, name)
-        continue
-      }
-      const pluralsNode = buildPluralsNode(srcNode, transEntry.messages)
-      if (pluralsNode == null) continue
-      replaceOrAppendByName(dstResources, name, pluralsNode)
     }
   }
 
@@ -421,14 +423,21 @@ function buildPluralsNode(srcNode: XMLTagNode, messages: TransEntry['messages'])
   return withoutL10nAttrs({ ...srcNode, plurals: dstPlurals })
 }
 
-function indexResources(resources: XMLNode[], keyMode: KeyMode): Map<string, XMLTagNode> {
-  const map = new Map<string, XMLTagNode>()
+/**
+ * 조회 키마다 대응하는 리소스 목록. 공용 키는 한 모듈의 여러 리소스가 같은 `l10n:key` 를 쓸 수 있으므로 모두 기록한다.
+ * 원문 키 모드의 조회 키는 리소스 이름이므로 마지막 리소스 하나만 기록한다.
+ */
+function indexResources(resources: XMLNode[], keyMode: KeyMode): Map<string, XMLTagNode[]> {
+  const map = new Map<string, XMLTagNode[]>()
   for (const node of resources) {
     if (isTextNode(node)) continue
     if (!isTagNode(node, 'string') && !isTagNode(node, 'plurals')) continue
     const name = getAttrValue(node, 'name')
     if (name == null) continue
-    map.set(getResourceLookupKey(node, name, keyMode), node)
+    const lookupKey = getResourceLookupKey(node, name, keyMode)
+    const nodes = keyMode === 'id' ? map.get(lookupKey) ?? [] : []
+    nodes.push(node)
+    map.set(lookupKey, nodes)
   }
   return map
 }

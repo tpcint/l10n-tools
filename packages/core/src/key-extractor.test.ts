@@ -52,6 +52,21 @@ describe('KeyExtractor', () => {
       )
     })
 
+    it('throws when the same id key is both plural and non-plural', () => {
+      const extractor = new KeyExtractor()
+      extractor.addMessage({ filename: 'a.xml', line: 3 }, 'left_days', { idKey: { defaultValue: '%d일', draft: false } })
+      assert.throws(
+        () => extractor.addMessage({ filename: 'a.xml', line: 5 }, 'left_days', { isPlural: true, idKey: { defaultValue: '%d일', draft: false } }),
+        /conflicting key "left_days" at a\.xml:5: plural differs from non-plural at a\.xml:3/,
+      )
+    })
+
+    it('extracts a key that is also an Object.prototype property name', () => {
+      const extractor = new KeyExtractor()
+      extractor.addMessage({ filename: 'a.xml', line: 3 }, 'constructor', { idKey: { defaultValue: '생성자', draft: false } })
+      assert.deepEqual(extractor.keys.find(null, 'constructor')?.idKey, { defaultValue: '생성자', draft: false })
+    })
+
     it('keeps idKey through writeKeyEntries and readKeyEntries', async () => {
       const extractor = new KeyExtractor()
       extractor.addMessage({ filename: 'a.xml', line: 3 }, 'publish_button', { idKey: { defaultValue: '공개', draft: true } })

@@ -166,12 +166,17 @@ export function filterTransEntriesForModule(transEntries: TransEntry[], module: 
 }
 
 /**
- * 공용 키 항목 중 `values/strings.xml` 에 리소스가 있는 항목만 선별한다.
+ * 공용 키 항목 중 `values/strings.xml` 에 번역 대상 리소스가 있는 항목만 선별한다.
  * 공용 키에는 모듈 접두사가 없으므로, 모듈마다 자기 리소스의 키로 판정한다.
  * @internal exported for testing
  */
 export function filterTransEntriesForResources(transEntries: TransEntry[], srcResNode: XMLTagNode): TransEntry[] {
-  const keys = indexResources(srcResNode.resources, 'id')
+  const keys = new Set<string>()
+  for (const [key, nodes] of indexResources(srcResNode.resources, 'id')) {
+    if (nodes.some(node => getAttrValue(node, 'translatable') !== 'false')) {
+      keys.add(key)
+    }
+  }
   return transEntries.filter(entry => entry.context == null && keys.has(entry.key))
 }
 

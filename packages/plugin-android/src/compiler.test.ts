@@ -497,5 +497,13 @@ describe('android compiler test', () => {
       ], resNode)
       assert.deepEqual(filtered.map(entry => entry.key), ['publish_button', 'policy', 'left_days'])
     })
+
+    it('filterTransEntriesForResources excludes keys of non-translatable resources', () => {
+      const resNode = findFirstTagNode(parseAndroidXml(getAndroidXmlParser(), srcXml), 'resources')!
+      const filtered = filterTransEntriesForResources([
+        { context: null, key: 'no_trans_key', messages: { other: 'translated in another module' }, flag: null },
+      ], resNode)
+      assert.deepEqual(filtered, [])
+    })
   })
 })

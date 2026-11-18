@@ -1,9 +1,10 @@
-import { compareKeyReference, type KeyEntry, type KeyReference } from './entry.js'
+import { compareKeyReference, type IdKeyAttributes, type KeyEntry, type KeyReference } from './entry.js'
 import { sortSet } from './utils.js'
 
 export class KeyEntryBuilder {
   public references: Set<KeyReference>
   public comments: Set<string>
+  public idKey: IdKeyAttributes | undefined
 
   constructor(public context: string | null, public key: string, public isPlural: boolean) {
     this.references = new Set()
@@ -18,6 +19,9 @@ export class KeyEntryBuilder {
     for (const comment of keyEntry.comments) {
       builder.comments.add(comment)
     }
+    if (keyEntry.idKey != null) {
+      builder.idKey = { ...keyEntry.idKey }
+    }
     return builder
   }
 
@@ -31,13 +35,22 @@ export class KeyEntryBuilder {
     return this
   }
 
+  setIdKey(idKey: IdKeyAttributes): this {
+    this.idKey = { ...idKey }
+    return this
+  }
+
   toKeyEntry(): KeyEntry {
-    return {
+    const entry: KeyEntry = {
       context: this.context,
       key: this.key,
       isPlural: this.isPlural,
       references: sortSet(this.references, compareKeyReference),
       comments: sortSet(this.comments),
     }
+    if (this.idKey != null) {
+      entry.idKey = { ...this.idKey }
+    }
+    return entry
   }
 }

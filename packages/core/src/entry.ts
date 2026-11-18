@@ -25,10 +25,29 @@ export type BaseEntry = {
   key: string,
 }
 
+/**
+ * 공용 키 항목의 속성. 공용 키는 `key` 가 식별자이므로 코드에 적은 기본 문구를 따로 기록한다.
+ */
+export type IdKeyAttributes = {
+  /** 코드에 적은 기본 문구. 신규 키를 등록할 때 ko 초기값으로 쓴다. 코드에 적지 않았으면 null */
+  defaultValue: string | null,
+  /** 기본 문구가 임시값인지 여부 */
+  draft: boolean,
+}
+
 export type KeyEntry = BaseEntry & {
   isPlural: boolean,
   references: KeyReference[],
   comments: string[],
+  /** 공용 키 항목에만 있다. 없으면 원문 키 항목이다 */
+  idKey?: IdKeyAttributes,
+}
+
+export function isSameIdKeyAttributes(a: IdKeyAttributes | undefined, b: IdKeyAttributes | undefined): boolean {
+  if (a == null || b == null) {
+    return a == null && b == null
+  }
+  return a.defaultValue === b.defaultValue && a.draft === b.draft
 }
 
 export type TransPluralKey = 'zero' | 'one' | 'two' | 'few' | 'many' | 'other'
@@ -70,13 +89,20 @@ export async function readKeyEntries(file: string): Promise<KeyEntry[]> {
   const input = await fsp.readFile(file, { encoding: 'utf-8' })
   const { keys: entries } = JSON.parse(input) as { keys: Partial<KeyEntry>[] }
   return entries.map(entry => {
-    return {
+    const keyEntry: KeyEntry = {
       context: entry.context || null,
       key: entry.key || '',
       isPlural: entry.isPlural || false,
       references: entry.references || [],
       comments: entry.comments || [],
     }
+    if (entry.idKey != null) {
+      keyEntry.idKey = {
+        defaultValue: entry.idKey.defaultValue ?? null,
+        draft: entry.idKey.draft ?? false,
+      }
+    }
+    return keyEntry
   })
 }
 

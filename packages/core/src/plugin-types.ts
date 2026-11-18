@@ -2,6 +2,20 @@ import type { CompilerConfig, DomainConfig, L10nConfig } from './config.js'
 import type { KeyEntry, TransEntry, TransMessages } from './entry.js'
 
 /**
+ * 태그의 키 방식. `source` 는 원문을 키로 쓰고, `id` 는 공용 키를 쓴다.
+ * `id` 태그에서도 원문 키 항목이 함께 쓰일 수 있다.
+ */
+export type KeyMode = 'source' | 'id'
+
+/**
+ * Options that may be passed to an extractor invocation.
+ */
+export interface ExtractOptions {
+  /** 생략하면 `source` 로 동작한다 */
+  keyMode?: KeyMode,
+}
+
+/**
  * Extractor function signature
  * Extracts translation keys from source files
  */
@@ -9,6 +23,7 @@ export type ExtractorFunc = (
   domainName: string,
   domainConfig: DomainConfig,
   keysPath: string,
+  options?: ExtractOptions,
 ) => Promise<void>
 
 /**
@@ -32,6 +47,8 @@ export interface CompileOptions {
    * If not set, the compiler performs a full overwrite of the output (default behavior).
    */
   mergeKeys?: Set<string>,
+  /** 생략하면 `source` 로 동작한다 */
+  keyMode?: KeyMode,
 }
 
 /**

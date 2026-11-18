@@ -1,6 +1,6 @@
 import { KeyEntryBuilder } from './key-entry-builder.js'
 import { EntryCollection } from './entry-collection.js'
-import type { KeyEntry } from './entry.js'
+import { type IdKeyAttributes, isSameIdKeyAttributes, type KeyEntry } from './entry.js'
 
 /**
  * Base key extractor class providing core functionality for extracting translation keys.
@@ -14,14 +14,15 @@ export class KeyExtractor {
   }
 
   /**
-   * Add a translation message/key to the collection
+   * Add a translation message/key to the collection.
+   * `idKey` 를 지정하면 공용 키 항목으로 기록한다. 같은 키를 다시 추가할 때 키 종류·기본 문구·임시값 여부가 다르면 오류가 발생한다.
    */
   addMessage(
     { filename, line }: { filename: string, line?: string | number },
     key: string,
-    options?: { isPlural?: boolean, comment?: string | null, context?: string | null },
+    options?: { isPlural?: boolean, comment?: string | null, context?: string | null, idKey?: IdKeyAttributes },
   ) {
-    const { isPlural = false, comment = null, context = null } = options ?? {}
+    const { isPlural = false, comment = null, context = null, idKey } = options ?? {}
     if (context != null) {
       if (context != context.trim()) {
         throw new Error(`context has leading or trailing whitespace: "${context}"`)
@@ -30,12 +31,20 @@ export class KeyExtractor {
     if (key != key.trim()) {
       throw new Error(`key has leading or trailing whitespace: "${key}"`)
     }
-    const keyEntry = this.keys.find(context, key)
-    const builder = keyEntry ? KeyEntryBuilder.fromKeyEntry(keyEntry) : new KeyEntryBuilder(context, key, isPlural)
-
     if (typeof line === 'number') {
       line = line.toString()
     }
+    const keyEntry = this.keys.find(context, key)
+    if (keyEntry != null && !isSameIdKeyAttributes(keyEntry.idKey, idKey)) {
+      throw new Error(`conflicting key "${key}" at ${formatLocation(filename, line)}: `
+        + `${describeIdKey(idKey)} differs from ${describeIdKey(keyEntry.idKey)} `
+        + `at ${keyEntry.references.map(ref => formatLocation(ref.file, ref.loc)).join(', ')}`)
+    }
+    const builder = keyEntry ? KeyEntryBuilder.fromKeyEntry(keyEntry) : new KeyEntryBuilder(context, key, isPlural)
+    if (keyEntry == null && idKey != null) {
+      builder.setIdKey(idKey)
+    }
+
     builder.addReference(filename, line)
     if (comment) {
       builder.addComment(comment)
@@ -43,6 +52,18 @@ export class KeyExtractor {
 
     this.keys.set(builder.toKeyEntry())
   }
+}
+
+function formatLocation(file: string, loc: string | undefined): string {
+  return loc != null ? `${file}:${loc}` : file
+}
+
+function describeIdKey(idKey: IdKeyAttributes | undefined): string {
+  if (idKey == null) {
+    return 'source key'
+  }
+  const defaultValue = idKey.defaultValue != null ? JSON.stringify(idKey.defaultValue) : 'none'
+  return `id key (default value ${defaultValue}${idKey.draft ? ', draft' : ''})`
 }
 
 /**

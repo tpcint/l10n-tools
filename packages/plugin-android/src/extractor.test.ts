@@ -199,6 +199,18 @@ describe('android extractor test', () => {
       assert.deepEqual(extractor.keys.find(null, 'left_days')!.idKey, { defaultValue: '%d일 남음', draft: false })
     })
 
+    it('reads l10n:defaultValue of an html resource in the same form as its body', () => {
+      const srcXml = `<?xml version="1.0" encoding="utf-8"?>
+<resources ${L10N_NS}>
+    <string name="from_body" format="html"><b>AT&amp;T</b></string>
+    <string name="from_attr" format="html" l10n:defaultValue="&lt;b&gt;AT&amp;amp;T&lt;/b&gt;">AT&amp;T</string>
+</resources>`
+      const extractor = new KeyExtractor()
+      extractAndroidStringsXml(extractor, 'test-file', srcXml, 1, undefined, undefined, { keyMode: 'id' })
+      assert.equal(extractor.keys.find(null, 'from_body')!.idKey!.defaultValue, '<b>AT&amp;T</b>')
+      assert.equal(extractor.keys.find(null, 'from_attr')!.idKey!.defaultValue, '<b>AT&amp;T</b>')
+    })
+
     it('does not read body as default value when bodyAsDefaultValue is false', () => {
       const srcXml = `<?xml version="1.0" encoding="utf-8"?>
 <resources ${L10N_NS}>

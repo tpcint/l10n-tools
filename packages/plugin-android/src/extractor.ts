@@ -169,6 +169,8 @@ function getIdKey(elem: Element, filename: string, line: number): string {
 }
 
 /**
+ * `l10n:defaultValue` 는 XML 속성으로 디코딩한 값이 본문에서 추출하는 값과 같은 표현이어야 한다.
+ * `format="html"` 리소스는 본문을 마크업 그대로 추출하므로, 본문의 `&amp;` 는 속성에 `&amp;amp;` 로 적는다.
  * @param readBody 본문을 기본 문구로 읽는 함수. 본문 디코딩은 실패할 수 있으므로 `l10n:defaultValue` 가 없을 때만 호출한다
  */
 function getIdKeyAttributes(elem: Element, readBody: (() => string) | null, filename: string, line: number): IdKeyAttributes {

@@ -84,6 +84,8 @@ export interface SyncerOptions {
   tagMetadata?: Record<string, string>,
   /** Source identifier for tag ownership (l10n-storage) */
   source?: string,
+  /** 로컬 키를 추출한 키 방식. 생략하면 `source` 다 */
+  keyMode?: KeyMode,
 }
 
 /**
@@ -127,6 +129,42 @@ export type SyncerSourceFilterFunc = (
 ) => Promise<SyncerKeySnapshot[]>
 
 /**
+ * Optional capability: 동기화 대상에 설정된 태그의 키 방식을 조회한다.
+ * 추출·컴파일·sync 가 같은 키 방식을 쓰도록 CLI 가 명령 시작 시 호출한다.
+ */
+export type SyncerKeyModeFunc = (
+  config: L10nConfig,
+  domainConfig: DomainConfig,
+  tag: string,
+) => Promise<KeyMode>
+
+/**
+ * PR 체크에서 확인을 권하는 공용 키 경고. 체크를 실패시키지 않는다.
+ * - `renamed-key`: 새 공용 키의 기본 문구가 head 에서 사라진 공용 키의 원문과 같다 (키 지정 누락 의심)
+ * - `reusable-key`: 새 공용 키의 기본 문구와 원문이 같은 기존 공용 키가 있다 (재사용 검토)
+ */
+export interface SyncerKeyWarning {
+  kind: 'renamed-key' | 'reusable-key',
+  /** 경고 대상인 새 공용 키 */
+  keyName: string,
+  /** 원문이 같은 기존 공용 키 */
+  relatedKeyNames: string[],
+  /** 사람이 읽는 안내 */
+  message: string,
+}
+
+/**
+ * Optional capability: `source` 범위(PR-N)의 새 공용 키를 동기화 대상의 키와 비교해 경고를 만든다.
+ */
+export type SyncerKeyWarningsFunc = (
+  config: L10nConfig,
+  domainConfig: DomainConfig,
+  tag: string,
+  source: string,
+  keyEntries: KeyEntry[],
+) => Promise<SyncerKeyWarning[]>
+
+/**
  * Syncer plugin definition
  */
 export interface SyncerPlugin {
@@ -136,6 +174,10 @@ export interface SyncerPlugin {
   syncer: SyncerFunc,
   /** Optional: fetch keys narrowed by (tag, source). */
   sourceFilter?: SyncerSourceFilterFunc,
+  /** Optional: 태그의 키 방식 조회. 없으면 `source` 로 동작한다 */
+  keyMode?: SyncerKeyModeFunc,
+  /** Optional: PR 체크용 공용 키 경고 */
+  keyWarnings?: SyncerKeyWarningsFunc,
 }
 
 /**

@@ -46,6 +46,24 @@ describe('L10nStorageApiClient', () => {
     }
   })
 
+  it('splits source text lookups by the server limit and keeps the order', async () => {
+    mock.restoreAll()
+    const bodies: { texts: { other: string }[] }[] = []
+    mock.method(globalThis, 'fetch', async (_url: string, init: RequestInit) => {
+      const body = JSON.parse(init.body as string) as { texts: { other: string }[] }
+      bodies.push(body)
+      return Response.json({ results: body.texts.map(text => ({ text, keys: [] })) })
+    })
+    const client = new L10nStorageApiClient('https://example.test', 'token')
+    const texts = Array.from({ length: 1001 }, (_, i) => ({ other: `t${i}` }))
+
+    const results = await client.findKeysBySourceTexts('project', { texts, keyKind: 'id' })
+
+    assert.deepEqual(bodies.map(b => b.texts.length), [1000, 1])
+    assert.equal(bodies[1].texts[0].other, 't1000')
+    assert.deepEqual(results.map(r => r.text), texts)
+  })
+
   it('uses the header name shared with the l10n-storage server', () => {
     assert.equal(SYNCER_VERSION_HEADER, 'X-L10n-Tools-Syncer-Version')
   })

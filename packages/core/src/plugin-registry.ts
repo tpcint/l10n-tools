@@ -7,6 +7,8 @@ import type {
   L10nPlugin,
   PluginFactory,
   SyncerFunc,
+  SyncerKeyModeFunc,
+  SyncerKeyWarningsFunc,
   SyncerSourceFilterFunc,
 } from './plugin-types.js'
 
@@ -73,6 +75,8 @@ export class PluginRegistry {
   private compilers = new Map<string, CompilerFunc>()
   private syncers = new Map<string, SyncerFunc>()
   private sourceFilters = new Map<string, SyncerSourceFilterFunc>()
+  private keyModeResolvers = new Map<string, SyncerKeyModeFunc>()
+  private keyWarningsFuncs = new Map<string, SyncerKeyWarningsFunc>()
   private initialized = false
   private initPromise: Promise<void> | null = null
 
@@ -189,6 +193,12 @@ export class PluginRegistry {
       if (sync.sourceFilter) {
         this.sourceFilters.set(sync.syncTarget, sync.sourceFilter)
       }
+      if (sync.keyMode) {
+        this.keyModeResolvers.set(sync.syncTarget, sync.keyMode)
+      }
+      if (sync.keyWarnings) {
+        this.keyWarningsFuncs.set(sync.syncTarget, sync.keyWarnings)
+      }
     }
   }
 
@@ -218,6 +228,20 @@ export class PluginRegistry {
    */
   getSourceFilter(syncTarget: string): SyncerSourceFilterFunc | undefined {
     return this.sourceFilters.get(syncTarget)
+  }
+
+  /**
+   * Get a tag key mode resolver for a sync target (optional capability)
+   */
+  getKeyModeResolver(syncTarget: string): SyncerKeyModeFunc | undefined {
+    return this.keyModeResolvers.get(syncTarget)
+  }
+
+  /**
+   * Get a key warnings function for a sync target (optional capability)
+   */
+  getKeyWarnings(syncTarget: string): SyncerKeyWarningsFunc | undefined {
+    return this.keyWarningsFuncs.get(syncTarget)
   }
 
   /**

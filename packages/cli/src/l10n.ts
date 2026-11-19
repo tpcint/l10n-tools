@@ -13,6 +13,7 @@ import {
   fileExists,
   getKeysPath,
   getTransPath,
+  type KeyMode,
   L10nConfig,
   materializeSnapshotsToTempDir,
   parseL10nConf,
@@ -21,6 +22,7 @@ import {
   readKeyEntries,
   readTransEntries,
   type SyncerKeySnapshot,
+  type SyncerKeyWarning,
   type SyncerOptions,
   syncTransToTarget,
   type TransEntry,
@@ -52,6 +54,21 @@ function buildSyncerOptions(opts: { tags?: string, metadata?: Record<string, str
   }
 }
 
+/**
+ * 동기화 대상에 설정된 태그의 키 방식. 추출·컴파일·sync 가 같은 값을 써야 하므로 동기화 대상에 접속하는 명령이
+ * 시작할 때 한 번 조회한다. 키 방식 조회를 지원하지 않는 동기화 대상은 `source` 다.
+ */
+async function resolveKeyMode(config: L10nConfig, domainConfig: DomainConfig): Promise<KeyMode> {
+  const resolver = pluginRegistry.getKeyModeResolver(config.getSyncTarget())
+  if (!resolver) {
+    return 'source'
+  }
+  const tag = domainConfig.getTag()
+  const keyMode = await resolver(config, domainConfig, tag)
+  log.info('l10n', `tag ${tag} key mode: ${keyMode}`)
+  return keyMode
+}
+
 async function fetchSourceSnapshots(
   cmdName: string,
   config: L10nConfig,
@@ -78,12 +95,13 @@ async function compileFromSource(
   domainConfig: DomainConfig,
   domainName: string,
   source: string,
+  keyMode: KeyMode,
 ): Promise<void> {
   const snapshots = await fetchSourceSnapshots(cmdName, config, domainConfig, source)
   const mergeKeys = new Set(snapshots.map(s => s.keyName))
   const tempDir = await materializeSnapshotsToTempDir(domainName, snapshots, domainConfig.getLocales())
   try {
-    await compileAll(domainName, domainConfig, tempDir, { mergeKeys })
+    await compileAll(domainName, domainConfig, tempDir, { mergeKeys, keyMode })
   } finally {
     await fsp.rm(tempDir, { recursive: true, force: true })
   }
@@ -172,9 +190,10 @@ async function run() {
         const keysPath = getKeysPath(path.join(cacheDir, domainName))
         const transDir = path.join(cacheDir, domainName)
 
-        await extractKeys(domainName, domainConfig, keysPath)
+        const keyMode = await resolveKeyMode(config, domainConfig)
+        await extractKeys(domainName, domainConfig, keysPath, { keyMode })
         await updateTrans(keysPath, transDir, transDir, locales, null)
-        await syncTransToTarget(config, domainConfig, tag, keysPath, transDir, skipUpload, syncerOptions, true)
+        await syncTransToTarget(config, domainConfig, tag, keysPath, transDir, skipUpload, { ...syncerOptions, keyMode }, true)
         await updateTrans(keysPath, transDir, transDir, locales, validationConfig)
       })
     })
@@ -191,9 +210,10 @@ async function run() {
         const keysPath = getKeysPath(path.join(cacheDir, domainName))
         const transDir = path.join(cacheDir, domainName)
 
-        await extractKeys(domainName, domainConfig, keysPath)
+        const keyMode = await resolveKeyMode(config, domainConfig)
+        await extractKeys(domainName, domainConfig, keysPath, { keyMode })
         await updateTrans(keysPath, transDir, transDir, locales, null)
-        await syncTransToTarget(config, domainConfig, tag, keysPath, transDir, true)
+        await syncTransToTarget(config, domainConfig, tag, keysPath, transDir, true, { keyMode })
         await updateTrans(keysPath, transDir, transDir, locales, validationConfig)
       })
     })
@@ -221,15 +241,16 @@ async function run() {
         const keysPath = getKeysPath(path.join(cacheDir, domainName))
         const transDir = path.join(cacheDir, domainName)
 
-        await extractKeys(domainName, domainConfig, keysPath)
+        const keyMode = await resolveKeyMode(config, domainConfig)
+        await extractKeys(domainName, domainConfig, keysPath, { keyMode })
         await updateTrans(keysPath, transDir, transDir, locales, null)
-        await syncTransToTarget(config, domainConfig, tag, keysPath, transDir, skipUpload, syncerOptions)
+        await syncTransToTarget(config, domainConfig, tag, keysPath, transDir, skipUpload, { ...syncerOptions, keyMode })
         await updateTrans(keysPath, transDir, transDir, locales, validationConfig)
 
         if (opts.source) {
-          await compileFromSource(cmd.name(), config, domainConfig, domainName, opts.source)
+          await compileFromSource(cmd.name(), config, domainConfig, domainName, opts.source, keyMode)
         } else {
-          await compileAll(domainName, domainConfig, transDir)
+          await compileAll(domainName, domainConfig, transDir, { keyMode })
         }
       })
     })
@@ -251,6 +272,10 @@ async function run() {
     untranslatedCount: number,
     untranslatedKeys: string[],
   }
+  type CheckReportWarning = SyncerKeyWarning & {
+    domain: string,
+    tag: string,
+  }
   program.command('check')
     .description('Check all translated')
     .option('-l, --locales [locales]', 'locales to check, all if not specified (comma separated)')
@@ -260,12 +285,13 @@ async function run() {
     .option('--tag-metadata <key=value>', 'tag-specific metadata to apply when creating keys (repeatable)', collectKeyValue, {})
     .option('--source <source>', 'source identifier for tag ownership (l10n-storage)')
     .option('-c, --contexts <contexts>', 'contexts to check (comma separated)')
-    .option('--report <path>', 'write a machine-readable JSON report of untranslated keys (suppresses stdout dump); pair with --source for translation links')
+    .option('--report <path>', 'write a machine-readable JSON report of untranslated keys and id key warnings (suppresses stdout dump); pair with --source for translation links and warnings')
     .argument('[files...]', 'files to check, if not specified, all files will be checked')
     .action(async (files: string[], opts: CheckOptions, cmd: Command) => {
       const syncerOptions = buildSyncerOptions(opts)
       const reportActive = opts.report != null
       const reportDomains: CheckReportDomain[] = []
+      const reportWarnings: CheckReportWarning[] = []
       await runSubCommand(cmd.name(), async (domainName, config, domainConfig, skipUpload) => {
         const cacheDir = domainConfig.getCacheDir()
         const locales = opts['locales'] ? opts['locales'].split(',') : domainConfig.getLocales()
@@ -276,15 +302,28 @@ async function run() {
         const keysPath = getKeysPath(path.join(cacheDir, domainName))
         const transDir = path.join(cacheDir, domainName)
 
-        await extractKeys(domainName, domainConfig, keysPath)
+        // 동기화 대상에 접속하지 않는 실행은 원문 키 방식으로 추출한다
+        const keyMode = opts['forceSync'] || opts.source != null ? await resolveKeyMode(config, domainConfig) : 'source'
+        await extractKeys(domainName, domainConfig, keysPath, { keyMode })
         if (opts['forceSync']) {
           log.warn(cmd.name(), '--force-sync is deprecated. Run \'l10n download\' before \'l10n check\' instead.')
         }
         if (opts['forceSync'] || !await fileExists(transDir)) {
           await updateTrans(keysPath, transDir, transDir, locales, null)
-          await syncTransToTarget(config, domainConfig, tag, keysPath, transDir, skipUpload, syncerOptions)
+          await syncTransToTarget(config, domainConfig, tag, keysPath, transDir, skipUpload, { ...syncerOptions, keyMode })
         }
         await updateTrans(keysPath, transDir, transDir, locales, validationConfig)
+
+        if (opts.source != null) {
+          const keyWarnings = pluginRegistry.getKeyWarnings(config.getSyncTarget())
+          const warnings = keyWarnings
+            ? await keyWarnings(config, domainConfig, tag, opts.source, await readKeyEntries(keysPath))
+            : []
+          for (const warning of warnings) {
+            log.warn(cmd.name(), warning.message)
+            reportWarnings.push({ domain: domainName, tag, ...warning })
+          }
+        }
 
         const keys = await (async () => {
           const fileSet = new Set<string>(files)
@@ -372,6 +411,8 @@ async function run() {
         const report = {
           source: opts.source ?? null,
           domains: reportDomains,
+          // 체크 결과에 영향을 주지 않는 공용 키 확인 경고. --source 를 지정했을 때만 계산한다.
+          warnings: reportWarnings,
         }
         await fsp.writeFile(opts.report!, JSON.stringify(report, null, 2) + '\n', { encoding: 'utf-8' })
         log.info(cmd.name(), `wrote untranslated report to ${opts.report}`)
@@ -572,7 +613,8 @@ async function run() {
     .action(async (opts: CompileCmdOptions, cmd: Command) => {
       await runSubCommand(cmd.name(), async (domainName, config, domainConfig) => {
         if (opts.source) {
-          await compileFromSource(cmd.name(), config, domainConfig, domainName, opts.source)
+          const keyMode = await resolveKeyMode(config, domainConfig)
+          await compileFromSource(cmd.name(), config, domainConfig, domainName, opts.source, keyMode)
           return
         }
         const cacheDir = domainConfig.getCacheDir()

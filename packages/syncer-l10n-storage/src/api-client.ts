@@ -1,5 +1,14 @@
+import { readFileSync } from 'node:fs'
 import log from 'npmlog'
 import type { CreateL10nKeyInput, L10nKeyToServe, ListKeysToServeResponse, UpdateL10nKeyInput } from './api-types.js'
+
+export const SYNCER_VERSION_HEADER = 'X-L10n-Tools-Syncer-Version'
+
+// src/ 와 dist/ 모두 패키지 루트 바로 아래이므로 같은 상대 경로로 이 패키지의 package.json 을 읽는다.
+// 서버가 이 값으로 최소 버전을 검사하므로 release-please 가 올린 버전과 같아야 한다.
+export const SYNCER_VERSION = (JSON.parse(
+  readFileSync(new URL('../package.json', import.meta.url), 'utf-8'),
+) as { version: string }).version
 
 export class L10nStorageApiClient {
   private readonly baseUrl: string
@@ -24,6 +33,7 @@ export class L10nStorageApiClient {
         headers: {
           'Authorization': `Bearer ${this.token}`,
           'Content-Type': 'application/json',
+          [SYNCER_VERSION_HEADER]: SYNCER_VERSION,
         },
         body: body ? JSON.stringify(body) : undefined,
         signal: controller.signal,

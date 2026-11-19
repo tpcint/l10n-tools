@@ -61,6 +61,14 @@ const COMPILER_TYPE_TO_PLUGIN: Record<string, string> = {
 /**
  * Mapping from sync targets to suggested syncer plugins
  */
+function setOrDelete<T>(map: Map<string, T>, key: string, value: T | undefined): void {
+  if (value) {
+    map.set(key, value)
+  } else {
+    map.delete(key)
+  }
+}
+
 const SYNCER_TYPE_TO_PLUGIN: Record<string, string> = {
   'lokalise': 'l10n-tools-syncer-lokalise',
   'l10n-storage': 'l10n-tools-syncer-l10n-storage',
@@ -190,15 +198,10 @@ export class PluginRegistry {
         log.warn('plugin-registry', `Syncer for ${sync.syncTarget} already registered, overwriting`)
       }
       this.syncers.set(sync.syncTarget, sync.syncer)
-      if (sync.sourceFilter) {
-        this.sourceFilters.set(sync.syncTarget, sync.sourceFilter)
-      }
-      if (sync.keyMode) {
-        this.keyModeResolvers.set(sync.syncTarget, sync.keyMode)
-      }
-      if (sync.keyWarnings) {
-        this.keyWarningsFuncs.set(sync.syncTarget, sync.keyWarnings)
-      }
+      // 선택 기능은 syncer 와 같은 플러그인의 것만 쓴다. 덮어쓴 플러그인에 없는 기능은 이전 플러그인의 것을 제거한다.
+      setOrDelete(this.sourceFilters, sync.syncTarget, sync.sourceFilter)
+      setOrDelete(this.keyModeResolvers, sync.syncTarget, sync.keyMode)
+      setOrDelete(this.keyWarningsFuncs, sync.syncTarget, sync.keyWarnings)
     }
   }
 

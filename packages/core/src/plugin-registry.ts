@@ -7,6 +7,8 @@ import type {
   L10nPlugin,
   PluginFactory,
   SyncerFunc,
+  SyncerKeyModeFunc,
+  SyncerKeyWarningsFunc,
   SyncerSourceFilterFunc,
 } from './plugin-types.js'
 
@@ -59,6 +61,14 @@ const COMPILER_TYPE_TO_PLUGIN: Record<string, string> = {
 /**
  * Mapping from sync targets to suggested syncer plugins
  */
+function setOrDelete<T>(map: Map<string, T>, key: string, value: T | undefined): void {
+  if (value) {
+    map.set(key, value)
+  } else {
+    map.delete(key)
+  }
+}
+
 const SYNCER_TYPE_TO_PLUGIN: Record<string, string> = {
   'lokalise': 'l10n-tools-syncer-lokalise',
   'l10n-storage': 'l10n-tools-syncer-l10n-storage',
@@ -73,6 +83,8 @@ export class PluginRegistry {
   private compilers = new Map<string, CompilerFunc>()
   private syncers = new Map<string, SyncerFunc>()
   private sourceFilters = new Map<string, SyncerSourceFilterFunc>()
+  private keyModeResolvers = new Map<string, SyncerKeyModeFunc>()
+  private keyWarningsFuncs = new Map<string, SyncerKeyWarningsFunc>()
   private initialized = false
   private initPromise: Promise<void> | null = null
 
@@ -186,9 +198,10 @@ export class PluginRegistry {
         log.warn('plugin-registry', `Syncer for ${sync.syncTarget} already registered, overwriting`)
       }
       this.syncers.set(sync.syncTarget, sync.syncer)
-      if (sync.sourceFilter) {
-        this.sourceFilters.set(sync.syncTarget, sync.sourceFilter)
-      }
+      // 선택 기능은 syncer 와 같은 플러그인의 것만 쓴다. 덮어쓴 플러그인에 없는 기능은 이전 플러그인의 것을 제거한다.
+      setOrDelete(this.sourceFilters, sync.syncTarget, sync.sourceFilter)
+      setOrDelete(this.keyModeResolvers, sync.syncTarget, sync.keyMode)
+      setOrDelete(this.keyWarningsFuncs, sync.syncTarget, sync.keyWarnings)
     }
   }
 
@@ -218,6 +231,20 @@ export class PluginRegistry {
    */
   getSourceFilter(syncTarget: string): SyncerSourceFilterFunc | undefined {
     return this.sourceFilters.get(syncTarget)
+  }
+
+  /**
+   * Get a tag key mode resolver for a sync target (optional capability)
+   */
+  getKeyModeResolver(syncTarget: string): SyncerKeyModeFunc | undefined {
+    return this.keyModeResolvers.get(syncTarget)
+  }
+
+  /**
+   * Get a key warnings function for a sync target (optional capability)
+   */
+  getKeyWarnings(syncTarget: string): SyncerKeyWarningsFunc | undefined {
+    return this.keyWarningsFuncs.get(syncTarget)
   }
 
   /**

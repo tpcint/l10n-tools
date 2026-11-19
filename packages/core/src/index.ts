@@ -14,6 +14,9 @@ export type {
   SyncerOptions,
   SyncerKeySnapshot,
   SyncerSourceFilterFunc,
+  SyncerKeyModeFunc,
+  SyncerKeyWarning,
+  SyncerKeyWarningsFunc,
 } from './plugin-types.js'
 
 export { pluginRegistry } from './plugin-registry.js'

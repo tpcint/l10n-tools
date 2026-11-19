@@ -1,4 +1,5 @@
 import type { L10nPlugin } from 'l10n-tools-core'
+import { keyModeForL10nStorage, keyWarningsForL10nStorage } from './id-keys.js'
 import { syncTransToL10nStorage } from './l10n-storage.js'
 import { sourceFilterForL10nStorage } from './source-filter.js'
 
@@ -8,6 +9,8 @@ const plugin: L10nPlugin = {
     syncTarget: 'l10n-storage',
     syncer: syncTransToL10nStorage,
     sourceFilter: sourceFilterForL10nStorage,
+    keyMode: keyModeForL10nStorage,
+    keyWarnings: keyWarningsForL10nStorage,
   }],
 }
 

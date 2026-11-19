@@ -3,6 +3,7 @@ import {
   type DomainConfig,
   EntryCollection,
   type KeyEntry,
+  type KeyMode,
   type KeyReference,
   type L10nConfig,
   type SyncerOptions,
@@ -14,6 +15,7 @@ import { L10nStorageApiClient } from './api-client.js'
 import type {
   CreateL10nKeyInput,
   CreateSuggestionInput,
+  L10nKeyKind,
   L10nKeyMetadata,
   L10nKeyTag,
   L10nKeyToServe,
@@ -74,6 +76,14 @@ export async function syncTransToL10nStorage(
 
   const apiClient = new L10nStorageApiClient(url, token)
 
+  // 로컬 키를 태그와 다른 키 방식으로 추출했으면 원문 키와 공용 키가 섞여 기록되므로 업로드하지 않는다.
+  const { keyMode } = await apiClient.getTagSyncSettings(projectId, tag)
+  const extractedKeyMode = options?.keyMode ?? 'source'
+  log.info('l10n-storage', `tag ${tag} key mode: ${keyMode}`)
+  if (extractedKeyMode !== keyMode) {
+    throw new Error(`tag ${tag} uses keyMode=${keyMode}, but keys were extracted with keyMode=${extractedKeyMode}`)
+  }
+
   // 1. 이 sync가 다루는 태그가 달린 키만 l10n-storage에서 조회 (keys-to-serve, tag-filtered).
   // 핵심 원칙: l10n-storage 호출은 항상 "태그"를 동반한다 — 이 프로젝트가 관리하는 키의 범위.
   // tag 필터는 orphan(어떤 태그/source에서도 claim되지 않은 키)을 자연 제외하므로, 결과는
@@ -83,14 +93,11 @@ export async function syncTransToL10nStorage(
   // 또는 orphan으로 부활시킬 키다 — 둘 다 Pass 2의 createKeys 경로가 서버 측에서 처리한다
   // (keyName 중복 시 서버가 자동으로 add-tag로 부활시킨다).
   const listedKeys = await apiClient.listKeysToServeByTag(projectId, tag)
-  const listedKeyMap: { [keyName: string]: L10nKeyToServe } = {}
-  for (const key of listedKeys) {
-    listedKeyMap[key.keyName] = key
-  }
+  const listedKeyMap = buildListedKeyMap(listedKeys)
 
   // 2. 로컬과 비교하여 create/update 대상 분류
   const { creatingKeys, updatingKeys } = buildKeyChanges(
-    source, tag, keyEntries, allTransData, listedKeyMap, localeSyncMap, options, isFullSync,
+    source, tag, keyEntries, allTransData, listedKeyMap, localeSyncMap, options, isFullSync, keyMode,
   )
 
   // 3. 서버 번역을 로컬에 반영
@@ -98,6 +105,65 @@ export async function syncTransToL10nStorage(
 
   // 4. l10n-storage에 업로드
   await uploadToL10nStorage(apiClient, projectId, creatingKeys, updatingKeys, skipUpload)
+}
+
+// --- Key identity ---
+
+/**
+ * 서버 키와 로컬 항목을 `(keyKind, keyName)` 단위로 대응시키는 식별자.
+ * 원문 키는 이름을 그대로 쓴다. 공용 키는 원문 키와 이름이 같을 수 있으므로(`username`) 원문에 쓰이지 않는 문자를 앞에 둔다.
+ * @internal exported for testing
+ */
+export function listedKeyId(keyKind: L10nKeyKind, keyName: string): string {
+  return keyKind === 'id' ? `\0id\0${keyName}` : keyName
+}
+
+function listedKeyKind(key: L10nKeyToServe): L10nKeyKind {
+  return key.keyKind ?? 'source'
+}
+
+/** @internal exported for testing */
+export function keyEntryKind(keyEntry: KeyEntry): L10nKeyKind {
+  return keyEntry.idKey != null ? 'id' : 'source'
+}
+
+/**
+ * 서버 키를 {@link listedKeyId} 로 색인한다.
+ * @internal exported for testing
+ */
+export function buildListedKeyMap(keys: L10nKeyToServe[]): { [listedKeyId: string]: L10nKeyToServe } {
+  const listedKeyMap: { [listedKeyId: string]: L10nKeyToServe } = {}
+  for (const key of keys) {
+    listedKeyMap[listedKeyId(listedKeyKind(key), key.keyName)] = key
+  }
+  return listedKeyMap
+}
+
+function transEntryKindKey(context: string | null, key: string): string {
+  return JSON.stringify([context, key])
+}
+
+function buildCreatingKey(
+  entries: KeyEntry[],
+  tags: L10nKeyTag[],
+  metadata: L10nKeyMetadata[],
+): CreateL10nKeyInput {
+  const creating: CreateL10nKeyInput = {
+    keyName: entries[0].key,
+    isPlural: entries[0].isPlural,
+    tags,
+    metadata: metadata.length > 0 ? metadata : undefined,
+  }
+  if (keyEntryKind(entries[0]) === 'id') {
+    // 같은 공용 키가 여러 모듈에 있으면 기본 문구가 없는 항목이 있을 수 있으므로 기본 문구가 있는 항목을 우선한다.
+    const idKey = entries.find(e => e.idKey?.defaultValue)?.idKey ?? entries[0].idKey!
+    creating.keyKind = 'id'
+    if (idKey.defaultValue) {
+      creating.defaultText = { other: idKey.defaultValue }
+    }
+    creating.isDraft = idKey.draft
+  }
+  return creating
 }
 
 // --- Key change detection ---
@@ -153,9 +219,9 @@ function createSuggestion(locale: string, isPlural: boolean, messages: TransMess
     for (const [form, value] of Object.entries(messages)) {
       if (value) translation[form] = value
     }
-    return { locale, translation, suggestedBy: 'syncer' }
+    return { locale, translation, suggestedBy: 'syncer', origin: { type: 'local' } }
   } else {
-    return { locale, translation: { other: messages.other! }, suggestedBy: 'syncer' }
+    return { locale, translation: { other: messages.other! }, suggestedBy: 'syncer', origin: { type: 'local' } }
   }
 }
 
@@ -191,31 +257,33 @@ export function buildKeyChanges(
   tag: string,
   keyEntries: KeyEntry[],
   allTransEntries: { [locale: string]: TransEntry[] },
-  listedKeyMap: { [keyName: string]: L10nKeyToServe },
+  listedKeyMap: { [listedKeyId: string]: L10nKeyToServe },
   localeSyncMap?: { [locale: string]: string },
   options?: SyncerOptions,
   isFullSync: boolean = true,
+  keyMode: KeyMode = 'source',
 ): {
   creatingKeys: CreateL10nKeyInput[],
   updatingKeys: UpdateL10nKeyInput[],
 } {
-  const creatingKeyMap: { [keyName: string]: CreateL10nKeyInput } = {}
-  const updatingKeyMap: { [keyName: string]: UpdateL10nKeyInput } = {}
+  const creatingKeyMap: { [listedKeyId: string]: CreateL10nKeyInput } = {}
+  const updatingKeyMap: { [listedKeyId: string]: UpdateL10nKeyInput } = {}
 
   const additionalTags = options?.additionalTags
   const globalMetadata = options?.globalMetadata
   const tagMetadata = options?.tagMetadata
 
-  // 로컬 keyEntries를 keyName 단위로 group한다. 같은 keyName이 서로 다른 context로 여러 KeyEntry로
+  // 로컬 keyEntries를 (keyKind, keyName) 단위로 group한다. 같은 keyName이 서로 다른 context로 여러 KeyEntry로
   // 들어오는 패턴(Android에서 동일 원문이 여러 <string name>에 쓰이는 경우 등)을 한 번에 처리하기
   // 위함이다. 이렇게 하면 setMetadata의 (tag, 'context')/(tag, 'description') 엔트리가 동일 group
   // 내에서 서로를 덮어쓰지 않고 누적되며, addTags도 (tag, source) 단위로 한 번만 push된다.
   // Pass 1의 orphan 판정(로컬 추출에 없는 키)에도 사용하므로 두 pass보다 먼저 만든다.
-  const entriesByKeyName = new Map<string, KeyEntry[]>()
+  const entriesByKeyId = new Map<string, KeyEntry[]>()
   for (const ke of keyEntries) {
-    const arr = entriesByKeyName.get(ke.key)
+    const entryId = listedKeyId(keyEntryKind(ke), ke.key)
+    const arr = entriesByKeyId.get(entryId)
     if (arr) arr.push(ke)
-    else entriesByKeyName.set(ke.key, [ke])
+    else entriesByKeyId.set(entryId, [ke])
   }
 
   // Pass 1: 서버에 있는(이미 tag-filtered) 키 중 로컬 추출에 없는 것의 정리.
@@ -232,16 +300,21 @@ export function buildKeyChanges(
   // 마련되기 전까지는 정리하지 않는 쪽을 택한다. 그 대가로 지워진 키의 (tag, main) claim과 폐기 PR의
   // orphan이 storage에 누적되지만(full 태그 전체 _remoteCount가 과대 집계됨), source-scoped PR
   // 체크와 full compile-diff 체크의 동작은 영향받지 않는다.
-  if (!isFullSync) {
-    for (const [keyName, listedKey] of Object.entries(listedKeyMap)) {
+  //
+  // **예외 — 공용 키 방식(keyMode=id) 태그의 전체 sync** 는 기본 source(configSource) 점유 중 로컬에 없는 키의 점유를
+  // 제거한다. 미머지 PR 의 키는 `PR-N` 점유이고 이 sync 는 자기 (tag, configSource) 만 제거하므로 영향이 없다. 이 정리는
+  // 이관 직후 실행 중이던 옛 syncer 가 `PUT /keys` 로 원문 키에 다시 추가한 점유를 제거하는 경로이고, PR 체크의
+  // 이름 변경 경고는 이 정리로 (tag, configSource) 점유가 base 의 공용 키 목록과 같다는 것을 전제한다.
+  if (!isFullSync || keyMode === 'id') {
+    for (const [listedId, listedKey] of Object.entries(listedKeyMap)) {
       if (!hasTag(listedKey.tags, tag, source)) continue
       // 로컬 추출에 아직 있으면 Pass 2에서 처리(claim 유지). 사라진 키만 orphan으로 본다.
-      if (entriesByKeyName.has(keyName)) continue
+      if (entriesByKeyId.has(listedId)) continue
 
-      let updating = updatingKeyMap[keyName]
+      let updating = updatingKeyMap[listedId]
       if (!updating) {
         updating = { keyId: listedKey.id }
-        updatingKeyMap[keyName] = updating
+        updatingKeyMap[listedId] = updating
       }
       // 자기 (tag, source) 태그만 제거. 공유 context/description metadata는 건드리지 않는다.
       pushRemoveTag(updating, { tag, source })
@@ -249,8 +322,8 @@ export function buildKeyChanges(
   }
 
   // Pass 2: 로컬 keyEntries → 새 키 생성 또는 기존 키 업데이트.
-  for (const [entryKey, entries] of entriesByKeyName) {
-    const listedKey = listedKeyMap[entryKey]
+  for (const [entryId, entries] of entriesByKeyId) {
+    const listedKey = listedKeyMap[entryId]
 
     if (listedKey != null) {
       let baseMetadata: L10nKeyMetadata[] = listedKey.metadata
@@ -297,10 +370,10 @@ export function buildKeyChanges(
       const needsTagAdd = !hasOwnSourceTag && (isFullSync || contextAdded || !hasAnyOwnTag)
 
       if (needsTagAdd || metaUpdates.length > 0 || refsChanged) {
-        let updating = updatingKeyMap[entryKey]
+        let updating = updatingKeyMap[entryId]
         if (!updating) {
           updating = { keyId: listedKey.id }
-          updatingKeyMap[entryKey] = updating
+          updatingKeyMap[entryId] = updating
         }
         if (needsTagAdd) {
           pushAddTag(updating, { tag, source })
@@ -349,31 +422,32 @@ export function buildKeyChanges(
         }
       }
 
-      creatingKeyMap[entryKey] = {
-        keyName: entryKey,
-        isPlural: entries[0].isPlural,
-        tags,
-        metadata: metadata.length > 0 ? metadata : undefined,
-      }
+      creatingKeyMap[entryId] = buildCreatingKey(entries, tags, metadata)
     }
   }
 
   // Pass 3: 로컬 번역 → suggestions 첨부
+  // 번역 항목에는 키 종류가 없으므로 같은 (context, key) 의 keyEntry 로 정한다.
+  const kindByTransEntry = new Map<string, L10nKeyKind>()
+  for (const ke of keyEntries) {
+    kindByTransEntry.set(transEntryKindKey(ke.context, ke.key), keyEntryKind(ke))
+  }
   for (const [locale, transEntries] of Object.entries(allTransEntries)) {
     const serverLocale = localeSyncMap?.[locale] ?? locale
     for (const transEntry of transEntries) {
-      const entryKey = transEntry.key
       if (!transEntry.messages.other) continue
+      const kind = kindByTransEntry.get(transEntryKindKey(transEntry.context, transEntry.key)) ?? 'source'
+      const entryId = listedKeyId(kind, transEntry.key)
 
-      const listedKey = listedKeyMap[entryKey]
+      const listedKey = listedKeyMap[entryId]
       if (listedKey != null) {
         // keys-to-serve는 정책 적용된 단일 translations만 노출. 해당 locale 항목이 없으면 suggestion 추가.
         // 이미 pending suggestion이 서버에 있는 경우는 storage 측 dedup에 위임.
         if (!hasTranslation(listedKey, serverLocale)) {
-          let updating = updatingKeyMap[entryKey]
+          let updating = updatingKeyMap[entryId]
           if (!updating) {
             updating = { keyId: listedKey.id }
-            updatingKeyMap[entryKey] = updating
+            updatingKeyMap[entryId] = updating
           }
           if (!updatingSuggestionHasLocale(updating, serverLocale)) {
             pushSuggestion(updating, createSuggestion(serverLocale, listedKey.isPlural, transEntry.messages))
@@ -381,7 +455,7 @@ export function buildKeyChanges(
         }
       } else {
         // 새 키
-        const creating = creatingKeyMap[entryKey]
+        const creating = creatingKeyMap[entryId]
         if (creating && !creatingSuggestionHasLocale(creating, serverLocale)) {
           if (!creating.suggestions) creating.suggestions = []
           creating.suggestions.push(createSuggestion(serverLocale, creating.isPlural ?? false, transEntry.messages))
@@ -402,7 +476,7 @@ export function buildKeyChanges(
 export function updateTransEntries(
   keyEntries: KeyEntry[],
   allTransEntries: { [locale: string]: TransEntry[] },
-  listedKeyMap: { [keyName: string]: L10nKeyToServe },
+  listedKeyMap: { [listedKeyId: string]: L10nKeyToServe },
   localeSyncMap?: { [locale: string]: string },
 ) {
   // 로컬 keyEntries(소스의 한국어 원문 기준)를 순회하며, 같은 한국어 keyName을 가진 서버 키의
@@ -415,7 +489,7 @@ export function updateTransEntries(
     const trans = EntryCollection.loadEntries(transEntries)
 
     for (const keyEntry of keyEntries) {
-      const listedKey = listedKeyMap[keyEntry.key]
+      const listedKey = listedKeyMap[listedKeyId(keyEntryKind(keyEntry), keyEntry.key)]
       if (listedKey == null) continue
 
       const tr = listedKey.translations.find(t => t.locale === serverLocale)

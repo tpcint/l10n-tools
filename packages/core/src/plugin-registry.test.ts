@@ -47,6 +47,27 @@ describe('PluginRegistry', () => {
       assert.equal(registry.getSyncer('unknown'), undefined)
     })
 
+    it('drops optional syncer capabilities of an overwritten plugin', () => {
+      const registry = new PluginRegistry()
+      registry.register(makePlugin({
+        name: 'first',
+        syncers: [{
+          syncTarget: 'l10n-storage',
+          syncer: noopSyncer,
+          sourceFilter: async () => [],
+          keyMode: async () => 'id',
+          keyWarnings: async () => [],
+        }],
+      }))
+      const second = async () => {}
+      registry.register(makePlugin({ name: 'second', syncers: [{ syncTarget: 'l10n-storage', syncer: second }] }))
+
+      assert.equal(registry.getSyncer('l10n-storage'), second)
+      assert.equal(registry.getSourceFilter('l10n-storage'), undefined)
+      assert.equal(registry.getKeyModeResolver('l10n-storage'), undefined)
+      assert.equal(registry.getKeyWarnings('l10n-storage'), undefined)
+    })
+
     it('skips a plugin already registered with the same name', () => {
       const registry = new PluginRegistry()
       const first = async () => {}

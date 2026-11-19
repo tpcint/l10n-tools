@@ -4,6 +4,8 @@ export type {
   PluginFactory,
   ExtractorPlugin,
   ExtractorFunc,
+  ExtractOptions,
+  KeyMode,
   CompilerPlugin,
   CompilerFunc,
   CompileOptions,
@@ -37,6 +39,7 @@ export {
 // Entry types and utilities
 export {
   type KeyEntry,
+  type IdKeyAttributes,
   type TransEntry,
   type TransMessages,
   type TransPluralKey,

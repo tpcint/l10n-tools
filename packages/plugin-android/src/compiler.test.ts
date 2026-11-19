@@ -1,7 +1,8 @@
 import { describe, it } from 'node:test'
 import assert from 'node:assert/strict'
 import type { TransEntry } from 'l10n-tools-core'
-import { filterTransEntriesForModule, generateAndroidXml } from './compiler.js'
+import { filterTransEntriesForModule, filterTransEntriesForResources, generateAndroidXml } from './compiler.js'
+import { findFirstTagNode, getAndroidXmlParser, parseAndroidXml } from './android-xml-utils.js'
 
 describe('android compiler test', () => {
   it('parse and build preserving all', async () => {
@@ -397,6 +398,112 @@ describe('android compiler test', () => {
       assert.match(newDstXml, /<string name="b_key">B-NEW<\/string>/)
       assert.match(newDstXml, /<string name="c_key">C-OLD<\/string>/)
       assert.equal(newDstXml.includes('name="a_key"'), false)
+    })
+  })
+
+  describe('id key mode', () => {
+    const srcXml = `<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:l10n="http://github.com/tpcint/l10n-tools">
+    <string name="publish_cta" l10n:key="publish_button" l10n:defaultValue="공개">공개</string>
+    <string name="policy" l10n:draft="true">무슨무슨 정책</string>
+    <string name="untranslated">미번역</string>
+    <string name="no_trans_key" translatable="false">(+%1$s)</string>
+    <plurals name="left_days" l10n:defaultValue="%d일 남음">
+        <item quantity="other">%d일 남음</item>
+    </plurals>
+</resources>`
+
+    const transEntries: TransEntry[] = [
+      { context: null, key: 'publish_button', messages: { other: 'Publish' }, flag: null },
+      { context: null, key: 'policy', messages: { other: 'Some policy' }, flag: null },
+      { context: null, key: 'left_days', messages: { one: '%d day left', other: '%d days left' }, flag: null },
+      { context: null, key: 'publish_cta', messages: { other: 'must not be used' }, flag: null },
+    ]
+
+    it('finds translations by l10n:key or resource name and strips l10n: attributes', async () => {
+      const dstXml = '<?xml version="1.0" encoding="utf-8"?>\n<resources></resources>'
+      const newDstXml = await generateAndroidXml('en', transEntries, srcXml, dstXml, { keyMode: 'id' })
+      assert.equal(newDstXml, `<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="publish_cta">Publish</string>
+    <string name="policy">Some policy</string>
+    <plurals name="left_days">
+        <item quantity="one">%d day left</item>
+        <item quantity="other">%d days left</item>
+    </plurals>
+</resources>`)
+    })
+
+    it('does not match id key translations by context in source key mode', async () => {
+      const dstXml = '<?xml version="1.0" encoding="utf-8"?>\n<resources></resources>'
+      const newDstXml = await generateAndroidXml('en', transEntries, srcXml, dstXml)
+      assert.equal(newDstXml, '<?xml version="1.0" encoding="utf-8"?>\n<resources>\n    </resources>')
+    })
+
+    it('patches dst by resource name in merge mode', async () => {
+      const dstXml = `<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="publish_cta">Old publish</string>
+    <string name="other_module_key">Keep</string>
+</resources>`
+      const newDstXml = await generateAndroidXml('en', [
+        { context: null, key: 'publish_button', messages: { other: 'Publish' }, flag: null },
+        { context: null, key: 'not_in_this_module', messages: { other: 'Ignored' }, flag: null },
+      ], srcXml, dstXml, { merge: true, keyMode: 'id' })
+      assert.equal(newDstXml, `<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="publish_cta">Publish</string>
+    <string name="other_module_key">Keep</string>
+</resources>`)
+    })
+
+    it('patches every resource that shares the same l10n:key in merge mode', async () => {
+      const sharedSrcXml = `<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:l10n="http://github.com/tpcint/l10n-tools">
+    <string name="publish_button">공개</string>
+    <string name="publish_cta" l10n:key="publish_button">공개</string>
+</resources>`
+      const dstXml = `<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="publish_button">Old publish</string>
+    <string name="publish_cta">Old publish</string>
+</resources>`
+      const newDstXml = await generateAndroidXml('en', [
+        { context: null, key: 'publish_button', messages: { other: 'Publish' }, flag: null },
+      ], sharedSrcXml, dstXml, { merge: true, keyMode: 'id' })
+      assert.equal(newDstXml, `<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="publish_button">Publish</string>
+    <string name="publish_cta">Publish</string>
+</resources>`)
+    })
+
+    it('strips l10n: attributes in source key mode too', async () => {
+      const dstXml = '<?xml version="1.0" encoding="utf-8"?>\n<resources></resources>'
+      const newDstXml = await generateAndroidXml('en', [
+        { context: 'publish_cta', key: '공개', messages: { other: 'Publish' }, flag: null },
+      ], srcXml, dstXml)
+      assert.equal(newDstXml, `<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="publish_cta">Publish</string>
+    </resources>`)
+    })
+
+    it('filterTransEntriesForResources keeps only id keys of the resources', () => {
+      const resNode = findFirstTagNode(parseAndroidXml(getAndroidXmlParser(), srcXml), 'resources')!
+      const filtered = filterTransEntriesForResources([
+        ...transEntries,
+        { context: 'publish_cta', key: 'publish_button', messages: { other: 'source key' }, flag: null },
+      ], resNode)
+      assert.deepEqual(filtered.map(entry => entry.key), ['publish_button', 'policy', 'left_days'])
+    })
+
+    it('filterTransEntriesForResources excludes keys of non-translatable resources', () => {
+      const resNode = findFirstTagNode(parseAndroidXml(getAndroidXmlParser(), srcXml), 'resources')!
+      const filtered = filterTransEntriesForResources([
+        { context: null, key: 'no_trans_key', messages: { other: 'translated in another module' }, flag: null },
+      ], resNode)
+      assert.deepEqual(filtered, [])
     })
   })
 })

@@ -85,5 +85,23 @@ describe('KeyEntryBuilder', () => {
       const builder = KeyEntryBuilder.fromKeyEntry(original)
       assert.equal(builder.context, null)
     })
+
+    it('preserves idKey attributes', () => {
+      const original: KeyEntry = {
+        context: null,
+        key: 'publish_button',
+        isPlural: false,
+        references: [{ file: 'a.xml', loc: '3' }],
+        comments: [],
+        idKey: { defaultValue: '공개', draft: true },
+      }
+      const rebuilt = KeyEntryBuilder.fromKeyEntry(original).toKeyEntry()
+      assert.deepEqual(rebuilt, original)
+    })
+
+    it('omits idKey for source key entries', () => {
+      const entry = new KeyEntryBuilder(null, '공개', false).toKeyEntry()
+      assert.equal('idKey' in entry, false)
+    })
   })
 })

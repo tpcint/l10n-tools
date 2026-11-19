@@ -1,9 +1,10 @@
 import * as path from 'path'
 import fsp from 'node:fs/promises'
 import type { DomainConfig } from './config.js'
+import type { ExtractOptions } from './plugin-types.js'
 import { pluginRegistry } from './plugin-registry.js'
 
-export type { ExtractorFunc } from './plugin-types.js'
+export type { ExtractOptions, ExtractorFunc } from './plugin-types.js'
 
 /**
  * Extracts translation keys for the specified domain and writes them to the provided keys path.
@@ -11,8 +12,9 @@ export type { ExtractorFunc } from './plugin-types.js'
  * @param domainName - The domain identifier to extract keys from
  * @param domainConfig - Configuration object describing the domain (type and related settings)
  * @param keysPath - Filesystem path where the extracted keys file will be created or updated
+ * @param options - Optional extractor options (e.g., {@link ExtractOptions.keyMode})
  */
-export async function extractKeys(domainName: string, domainConfig: DomainConfig, keysPath: string) {
+export async function extractKeys(domainName: string, domainConfig: DomainConfig, keysPath: string, options?: ExtractOptions) {
   const type = domainConfig.getType()
   await fsp.mkdir(path.dirname(keysPath), { recursive: true })
 
@@ -25,5 +27,5 @@ export async function extractKeys(domainName: string, domainConfig: DomainConfig
     throw new Error(`No extractor found for domain type: ${type}${installHint}`)
   }
 
-  await extractor(domainName, domainConfig, keysPath)
+  await extractor(domainName, domainConfig, keysPath, options)
 }

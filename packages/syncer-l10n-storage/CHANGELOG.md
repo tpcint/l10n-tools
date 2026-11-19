@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.5.0](https://github.com/tpcint/l10n-tools/compare/l10n-tools-syncer-l10n-storage-v1.4.7...l10n-tools-syncer-l10n-storage-v1.5.0) (2026-11-19)
+
+
+### Features
+
+* **syncer-l10n-storage:** l10n-storage 요청에 syncer 버전 헤더 추가 ([#486](https://github.com/tpcint/l10n-tools/issues/486)) ([156c0e9](https://github.com/tpcint/l10n-tools/commit/156c0e9ec8d8d53a89de5e376a6441705b09ea84))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * peerDependencies
+    * l10n-tools-core bumped from ^8.4.3 to ^8.5.0
+
 ## [1.4.7](https://github.com/tpcint/l10n-tools/compare/l10n-tools-syncer-l10n-storage-v1.4.6...l10n-tools-syncer-l10n-storage-v1.4.7) (2026-11-16)
 
 

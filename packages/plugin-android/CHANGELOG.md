@@ -1,5 +1,19 @@
 # Changelog
 
+## [7.6.0](https://github.com/tpcint/l10n-tools/compare/l10n-tools-plugin-android-v7.5.10...l10n-tools-plugin-android-v7.6.0) (2026-11-19)
+
+
+### Features
+
+* **plugin-android:** 공용 키 모드 추출기·컴파일러 추가 ([#487](https://github.com/tpcint/l10n-tools/issues/487)) ([77b520b](https://github.com/tpcint/l10n-tools/commit/77b520bfc66323e65a89f38065ed5a8b9be970bf))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * peerDependencies
+    * l10n-tools-core bumped from ^8.4.3 to ^8.5.0
+
 ## [7.5.10](https://github.com/tpcint/l10n-tools/compare/l10n-tools-plugin-android-v7.5.9...l10n-tools-plugin-android-v7.5.10) (2026-11-16)
 
 

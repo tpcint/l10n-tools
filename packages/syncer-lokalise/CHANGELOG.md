@@ -1,5 +1,14 @@
 # Changelog
 
+## [7.4.21](https://github.com/tpcint/l10n-tools/compare/l10n-tools-syncer-lokalise-v7.4.20...l10n-tools-syncer-lokalise-v7.4.21) (2026-11-19)
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * peerDependencies
+    * l10n-tools-core bumped from ^8.4.3 to ^8.5.0
+
 ## [7.4.20](https://github.com/tpcint/l10n-tools/compare/l10n-tools-syncer-lokalise-v7.4.19...l10n-tools-syncer-lokalise-v7.4.20) (2026-11-16)
 
 

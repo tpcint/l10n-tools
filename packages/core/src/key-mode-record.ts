@@ -23,6 +23,10 @@ export async function writeKeyModeRecord(domainCacheDir: string, tag: string, ke
   await fsp.writeFile(getKeyModeRecordPath(domainCacheDir), JSON.stringify(record, null, 2) + '\n', { encoding: 'utf-8' })
 }
 
+export async function removeKeyModeRecord(domainCacheDir: string): Promise<void> {
+  await fsp.rm(getKeyModeRecordPath(domainCacheDir), { force: true })
+}
+
 /**
  * 기록된 키 방식을 반환한다. 기록이 없거나, 형식이 잘못됐거나, 다른 태그의 기록이면 null 이다.
  * 형식이 잘못된 기록과 다른 태그의 기록은 경고를 출력한다. 파일 읽기 오류는 다른 캐시 파일처럼 전파한다.

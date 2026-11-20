@@ -24,6 +24,7 @@ import {
   readKeyEntries,
   readKeyModeRecord,
   readTransEntries,
+  removeKeyModeRecord,
   type SyncerKeyMigration,
   type SyncerKeySnapshot,
   type SyncerKeyWarning,
@@ -79,20 +80,20 @@ async function resolveKeyMode(config: L10nConfig, domainConfig: DomainConfig): P
  * keys 파일을 추출하고 그 키 방식을 keys 파일과 같은 디렉토리에 기록한다.
  * 기록은 캐시의 keys·trans 파일이 어느 키 방식인지 나타내므로, keys 파일을 추출하는 경로는 모두 이 함수를 쓰고
  * 캐시를 수정하지 않는 명령은 기록하지 않는다.
+ * 추출이나 기록이 실패해도 이전 기록이 새 keys 파일과 함께 남지 않도록 추출 전에 기록을 삭제한다.
  */
 async function extractKeysWithRecord(domainName: string, domainConfig: DomainConfig, keysPath: string, keyMode: KeyMode): Promise<void> {
+  const keysDir = path.dirname(keysPath)
+  await removeKeyModeRecord(keysDir)
   await extractKeys(domainName, domainConfig, keysPath, { keyMode })
-  await writeKeyModeRecord(path.dirname(keysPath), domainConfig.getTag(), keyMode)
+  await writeKeyModeRecord(keysDir, domainConfig.getTag(), keyMode)
 }
 
 /**
  * 동기화 대상에 접속하지 않는 명령의 키 방식. 캐시의 keys 파일을 추출할 때 기록한 값을 쓰고, 기록이 없으면 `source` 다.
  * 캐시의 keys·trans 파일과 다른 키 방식으로 추출하면 번역이 대응되지 않는다.
  */
-async function readRecordedKeyMode(config: L10nConfig, domainName: string, domainConfig: DomainConfig): Promise<KeyMode> {
-  if (!pluginRegistry.getKeyModeResolver(config.getSyncTarget())) {
-    return 'source'
-  }
+async function readRecordedKeyMode(domainName: string, domainConfig: DomainConfig): Promise<KeyMode> {
   const tag = domainConfig.getTag()
   const keyMode = await readKeyModeRecord(path.join(domainConfig.getCacheDir(), domainName), tag)
   if (keyMode == null) {
@@ -195,7 +196,7 @@ async function run() {
         const keysPath = getKeysPath(path.join(cacheDir, domainName))
         const transDir = path.join(cacheDir, domainName)
 
-        const keyMode = await readRecordedKeyMode(config, domainName, domainConfig)
+        const keyMode = await readRecordedKeyMode(domainName, domainConfig)
         await extractKeysWithRecord(domainName, domainConfig, keysPath, keyMode)
         await updateTrans(keysPath, transDir, transDir, locales, validationConfig)
 
@@ -340,7 +341,7 @@ async function run() {
 
         const keyMode = opts['forceSync'] || opts.source != null
           ? await resolveKeyMode(config, domainConfig)
-          : await readRecordedKeyMode(config, domainName, domainConfig)
+          : await readRecordedKeyMode(domainName, domainConfig)
         await extractKeysWithRecord(domainName, domainConfig, keysPath, keyMode)
         if (opts['forceSync']) {
           log.warn(cmd.name(), '--force-sync is deprecated. Run \'l10n download\' before \'l10n check\' instead.')
@@ -585,7 +586,7 @@ async function run() {
         const cacheDir = opts['keysDir'] || domainConfig.getCacheDir()
         const keysPath = getKeysPath(path.join(cacheDir, domainName))
 
-        const keyMode = await readRecordedKeyMode(config, domainName, domainConfig)
+        const keyMode = await readRecordedKeyMode(domainName, domainConfig)
         await extractKeysWithRecord(domainName, domainConfig, keysPath, keyMode)
       })
     })
@@ -775,7 +776,7 @@ async function run() {
         }
         const cacheDir = domainConfig.getCacheDir()
         const transDir = path.join(cacheDir, domainName)
-        const keyMode = await readRecordedKeyMode(config, domainName, domainConfig)
+        const keyMode = await readRecordedKeyMode(domainName, domainConfig)
         await compileAll(domainName, domainConfig, transDir, { keyMode })
       })
     })
@@ -802,7 +803,7 @@ async function run() {
         const keysPath = getKeysPath(path.join(cacheDir, domainName))
 
         // 캐시의 keys 파일을 추출한 키 방식이다. 태그의 키 방식과 다르면 syncer 가 실패한다
-        const keyMode = await readRecordedKeyMode(config, domainName, domainConfig)
+        const keyMode = await readRecordedKeyMode(domainName, domainConfig)
         await syncTransToTarget(config, domainConfig, tag, keysPath, transDir, skipUpload, { ...syncerOptions, keyMode })
       })
     })

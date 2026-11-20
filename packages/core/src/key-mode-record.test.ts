@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 import fsp from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
-import { getKeyModeRecordPath, readKeyModeRecord, writeKeyModeRecord } from './key-mode-record.js'
+import { getKeyModeRecordPath, readKeyModeRecord, removeKeyModeRecord, writeKeyModeRecord } from './key-mode-record.js'
 
 describe('key mode record', () => {
   let tempDir: string
@@ -26,6 +26,14 @@ describe('key mode record', () => {
 
   it('returns null without a record', async () => {
     assert.equal(await readKeyModeRecord(domainDir, 'app'), null)
+  })
+
+  it('removes the record', async () => {
+    await writeKeyModeRecord(domainDir, 'app', 'id')
+    await removeKeyModeRecord(domainDir)
+    assert.equal(await readKeyModeRecord(domainDir, 'app'), null)
+    // 기록이 없어도 실패하지 않는다
+    await removeKeyModeRecord(domainDir)
   })
 
   it('ignores a record of another tag', async () => {

@@ -167,6 +167,18 @@ l10n check --locales ko,ja
 l10n check src/components/Header.vue  # Check specific files
 ```
 
+### Key mode of commands that do not connect to the sync target (l10n-storage)
+
+A tag of l10n-storage uses source keys or id keys (`keyMode`). Commands that connect to l10n-storage (`upload`,
+`download`, `sync`, `check` with `--source` or `--force-sync`) read the tag's key mode from the server and extract the
+cached keys with it. Commands that do not connect (`update`, `check` without `--source`, `_extractKeys`, `_compile`
+without `--source`) extract and compile with the key mode the cached keys were extracted with, so they match the cached
+translations. Every command that extracts the keys records its key mode in `<cache-dir>/<domain>/key-mode.json`. Without
+a record, or with an invalid record or a record of another tag, commands that do not connect use source keys. `_sync` syncs the cached keys, so it also uses the recorded key mode and fails if the tag's key
+mode differs. `_compile --source` does not change the cache and does not update the record.
+
+Run `l10n download` after the tag's key mode changes (e.g. after `l10n migrate-keys --apply`) to update the record.
+
 ### CLI Options
 
 ```

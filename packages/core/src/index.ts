@@ -79,6 +79,8 @@ export {
   execWithLog,
 } from './utils.js'
 
+export { getKeyModeRecordPath, readKeyModeRecord, removeKeyModeRecord, writeKeyModeRecord } from './key-mode-record.js'
+
 export { updateTrans, getSrcPaths } from './common.js'
 
 // Extractor, compiler, syncer functions

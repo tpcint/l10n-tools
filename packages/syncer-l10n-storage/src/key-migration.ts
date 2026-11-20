@@ -174,7 +174,10 @@ export function formatKeyMigrationResponse(response: L10nKeyMigrationResponse, p
         + `retag ${plan.retag.length} source keys, restore ${plan.restoreMetadata.length} metadata, `
         + `tag settings back to ${formatTagSettings(plan.tagSettings)}`,
     })
-    lines.push({ level: 'info', message: `to roll back: ${rollbackCommand(projectId, response.migrationId)}` })
+    lines.push({
+      level: 'info',
+      message: `to roll back: ${rollbackCommand(projectId, response.migrationId)} (run it without --apply first to check the plan)`,
+    })
   } else if (response.dryRun) {
     lines.push({
       level: 'info',
@@ -187,7 +190,7 @@ export function formatKeyMigrationResponse(response: L10nKeyMigrationResponse, p
 
 /** 되돌리기는 이관한 프로젝트에 요청해야 하고 그 프로젝트는 rc 의 프로젝트와 다를 수 있으므로 항상 지정한다 */
 function rollbackCommand(projectId: string, migrationId: string): string {
-  return `l10n --project-id ${projectId} migrate-keys --rollback ${migrationId}`
+  return `l10n --project-id ${projectId} migrate-keys --rollback ${migrationId} --apply`
 }
 
 /** @internal exported for testing */

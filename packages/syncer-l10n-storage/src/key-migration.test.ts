@@ -157,7 +157,7 @@ describe('formatKeyMigrationResponse', () => {
     assert.match(lines[0].message, /^\[dry-run\] 1 items: 1 id keys created, 0 reused, 2 translations and 0 suggestions copied/)
     assert.equal(lines[1].message,
       '[dry-run] tag android: keyMode=source, minSyncerVersion=null -> keyMode=id, minSyncerVersion=1.6.0')
-    assert.match(lines[2].message, /'l10n --project-id project-1 migrate-keys --rollback <migrationId>'.*back to keyMode=source, minSyncerVersion=null/)
+    assert.match(lines[2].message, /'l10n --project-id project-1 migrate-keys --rollback <migrationId> --apply'.*back to keyMode=source, minSyncerVersion=null/)
   })
 
   it('prints errors, conflicts and item warnings', () => {
@@ -202,7 +202,7 @@ describe('formatKeyMigrationResponse', () => {
     assert.deepEqual(lines.slice(2).map(line => line.message), [
       'migration mig-1 applied. rollback plan: untag 1 id keys, retag 1 source keys, restore 1 metadata, '
       + 'tag settings back to keyMode=source, minSyncerVersion=null',
-      'to roll back: l10n --project-id clone-project migrate-keys --rollback mig-1',
+      'to roll back: l10n --project-id clone-project migrate-keys --rollback mig-1 --apply (run it without --apply first to check the plan)',
     ])
   })
 })

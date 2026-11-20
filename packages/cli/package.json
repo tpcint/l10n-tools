@@ -9,7 +9,8 @@
   },
   "scripts": {
     "build": "tsc",
-    "watch": "tsc -w"
+    "watch": "tsc -w",
+    "test": "tsx --conditions source --test \"src/**/*.test.ts\""
   },
   "bin": {
     "l10n": "dist/l10n.js"

@@ -96,6 +96,15 @@ describe('buildKeyMigrationItems', () => {
     ]), /plural in source mode but not plural in id mode/)
   })
 
+  it('throws when a key has no reference', () => {
+    assert.throws(() => buildKeyMigrationItems([
+      sourceEntry('publish_button', '공개', APP_XML, '3'),
+    ], [
+      idEntry('publish_button', [[APP_XML, '3']]),
+      idEntry('orphan', []),
+    ]), /id-mode key "orphan" has no reference/)
+  })
+
   it('throws when references cannot tell resources apart', () => {
     assert.throws(() => buildKeyMigrationItems([
       { context: 'a', key: '가', isPlural: false, references: [{ file: APP_XML }], comments: [] },

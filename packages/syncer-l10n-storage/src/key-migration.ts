@@ -36,6 +36,9 @@ function formatReference(ref: KeyReference): string {
 function indexByReference(entries: KeyEntry[], label: string): Map<string, KeyEntry> {
   const map = new Map<string, KeyEntry>()
   for (const entry of entries) {
+    if (entry.references.length === 0) {
+      throw new Error(`cannot pair keys: ${label} key ${JSON.stringify(entry.key)} has no reference`)
+    }
     for (const ref of entry.references) {
       const id = referenceId(ref)
       const existing = map.get(id)

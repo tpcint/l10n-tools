@@ -479,6 +479,10 @@ async function run() {
           )
           outputs.push({ domain: domainName, tag, response: result.response })
           await writeOutput()
+          // 되돌리기에 필요한 값이므로 -q 로 로그를 숨겨도 출력한다
+          if (result.migrationId != null) {
+            process.stdout.write(`${result.migrationId}\n`)
+          }
           if (result.errorCount > 0) {
             process.exitCode = 1
             if (!dryRun) {

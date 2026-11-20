@@ -205,7 +205,7 @@ migration, compiling `values-xx/` gives the same output and `values/` is untouch
 # Dry-run (default): the server computes the plan, reports errors and conflicts, and writes nothing
 l10n migrate-keys --min-syncer-version 1.6.0 --output plan.json
 
-# Apply. Keep the migration id printed at the end
+# Apply. The migration id is printed to stdout (also with -q); keep it for rollback
 l10n migrate-keys --min-syncer-version 1.6.0 --apply --output applied.json
 
 # Roll back: dry-run first, then apply
@@ -234,7 +234,10 @@ Before applying to the production project, clone it, migrate the clone, and comp
 production output. `--project-id` runs any command against the clone with the repository's rc file. Cloning and deleting a
 project require a member token in `TPC_AGENT_TOKEN`.
 
-Start from a clean working tree and index: step 1 stages the baseline and step 5 unstages everything.
+Start from a clean working tree and index: step 1 stages the baseline and step 5 unstages everything. This compares the
+outputs with git, so it assumes the compiled outputs are tracked; if they are ignored, copy them aside after step 1 and
+compare them with `diff -r` in step 4. With `--project-id` the translation cache is kept per project
+(`<cache-dir>/projects/<projectId>`), so the clone's output does not include translations cached from the production project.
 
 ```bash
 PROJECT=<projectId in .l10nrc>

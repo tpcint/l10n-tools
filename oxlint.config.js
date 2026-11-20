@@ -104,6 +104,9 @@ export default defineConfig({
     'import/newline-after-import': ['error', { count: 1, exactCount: true, considerComments: true }],
     'import-newlines/enforce': ['error', 20, 120],
     ...stylisticRules,
+    // list-style 은 목록을 한 줄 또는 항목마다 한 줄 중 하나로만 허용한다. 함수 호출 인자·
+    // 파라미터는 여러 개를 한 줄에 묶어 쓰는 형태를 허용하기 위해 `()` 만 제외한다.
+    '@stylistic/list-style': ['error', { overrides: { '()': 'off' } }],
     '@stylistic/arrow-parens': ['error', 'as-needed'],
     '@stylistic/function-call-spacing': ['error', 'never'],
     '@stylistic/member-delimiter-style': ['error', {

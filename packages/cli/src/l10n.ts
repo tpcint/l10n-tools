@@ -13,6 +13,7 @@ import {
   fileExists,
   getKeysPath,
   getTransPath,
+  type KeyEntry,
   type KeyMode,
   L10nConfig,
   materializeSnapshotsToTempDir,
@@ -463,9 +464,17 @@ async function run() {
         process.exit(1)
       }
       const minSyncerVersion = opts.minSyncerVersion
+      // 한 도메인을 적용한 뒤 다른 도메인에서 실패하지 않도록, 모든 도메인을 추출해 검사한 뒤 요청한다
+      type DomainKeys = {
+        domainName: string,
+        config: L10nConfig,
+        domainConfig: DomainConfig,
+        sourceKeyEntries: KeyEntry[],
+        idKeyEntries: KeyEntry[],
+      }
+      const domainKeys: DomainKeys[] = []
       await runSubCommand(cmd.name(), async (domainName, config, domainConfig) => {
-        const keyMigration = getKeyMigrationOrExit(cmd.name(), config)
-        const tag = domainConfig.getTag()
+        getKeyMigrationOrExit(cmd.name(), config)
         // 리포 파일을 두 키 방식으로 각각 추출한다. 캐시의 keys 파일은 수정하지 않는다.
         const tempDir = await fsp.mkdtemp(path.join(os.tmpdir(), 'l10n-migrate-keys-'))
         try {
@@ -473,26 +482,48 @@ async function run() {
           const idKeysPath = getKeysPath(path.join(tempDir, 'id'))
           await extractKeys(domainName, domainConfig, sourceKeysPath, { keyMode: 'source' })
           await extractKeys(domainName, domainConfig, idKeysPath, { keyMode: 'id' })
-          const result = await keyMigration.migrate(
-            config, domainConfig, tag, await readKeyEntries(sourceKeysPath), await readKeyEntries(idKeysPath),
-            { dryRun, minSyncerVersion },
-          )
-          outputs.push({ domain: domainName, tag, response: result.response })
-          await writeOutput()
-          // 되돌리기에 필요한 값이므로 -q 로 로그를 숨겨도 출력한다
-          if (result.migrationId != null) {
-            process.stdout.write(`${result.migrationId}\n`)
+          const idKeyEntries = await readKeyEntries(idKeysPath)
+          if (!idKeyEntries.some(entry => entry.idKey != null)) {
+            log.error(cmd.name(), `domain ${domainName}: no resource uses an id key; the extractor of this domain does not support id keys`)
+            process.exit(1)
           }
-          if (result.errorCount > 0) {
-            process.exitCode = 1
-            if (!dryRun) {
-              throw new Error(`migration of tag ${tag} was rejected with ${result.errorCount} errors`)
-            }
-          }
+          domainKeys.push({ domainName, config, domainConfig, sourceKeyEntries: await readKeyEntries(sourceKeysPath), idKeyEntries })
         } finally {
           await fsp.rm(tempDir, { recursive: true, force: true })
         }
       }, { uniqueTags: true })
+
+      // 여러 도메인을 적용하면 이관 계획 오류도 모든 도메인을 dry-run 으로 확인한 뒤 적용한다
+      if (!dryRun && domainKeys.length > 1) {
+        for (const { domainName, config, domainConfig, sourceKeyEntries, idKeyEntries } of domainKeys) {
+          log.heading = `[${domainName}] ${cmd.name()}`
+          const tag = domainConfig.getTag()
+          const result = await getKeyMigrationOrExit(cmd.name(), config)
+            .migrate(config, domainConfig, tag, sourceKeyEntries, idKeyEntries, { dryRun: true, minSyncerVersion })
+          if (result.errorCount > 0) {
+            throw new Error(`migration of tag ${tag} has ${result.errorCount} errors; nothing was applied`)
+          }
+        }
+      }
+
+      for (const { domainName, config, domainConfig, sourceKeyEntries, idKeyEntries } of domainKeys) {
+        log.heading = `[${domainName}] ${cmd.name()}`
+        const tag = domainConfig.getTag()
+        const keyMigration = getKeyMigrationOrExit(cmd.name(), config)
+        const result = await keyMigration.migrate(config, domainConfig, tag, sourceKeyEntries, idKeyEntries, { dryRun, minSyncerVersion })
+        outputs.push({ domain: domainName, tag, response: result.response })
+        await writeOutput()
+        // 되돌리기에 필요한 값이므로 -q 로 로그를 숨겨도 출력한다
+        if (result.migrationId != null) {
+          process.stdout.write(`${result.migrationId}\n`)
+        }
+        if (result.errorCount > 0) {
+          process.exitCode = 1
+          if (!dryRun) {
+            throw new Error(`migration of tag ${tag} was rejected with ${result.errorCount} errors`)
+          }
+        }
+      }
     })
 
   type ExtractKeysOptions = {

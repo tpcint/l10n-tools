@@ -194,8 +194,10 @@ transaction:
 - moves the `(tag, source)` claim and the resource's `context` metadata from the source key to the id key
 - sets the tag to `keyMode=id` with `--min-syncer-version`
 
-It works for domains whose extractor supports id keys (currently Android `strings.xml`); for other domains it fails without
-sending anything. A tag used by several domains of the rc file is not supported.
+It works for domains whose extractor supports id keys (currently Android `strings.xml`). The CLI extracts every selected
+domain first and fails without sending anything if one of them has no id key. With `--apply` on several domains it runs a
+dry-run for all of them first and applies only when none has errors; each tag is still migrated in its own transaction. A
+tag used by several domains of the rc file is not supported.
 
 Only the claims of `l10n-storage.source` in the rc file (the default branch sync, usually `main`) are migrated. Claims of
 open pull requests (`PR-N`) stay on the source keys. Nothing is deleted and repository files are not changed: after the

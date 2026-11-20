@@ -805,7 +805,8 @@ async function runSubCommand(
 ) {
   const globalOpts = program.opts<ProgramOptions>()
   const config = await loadCommandConfig(cmdName)
-  const domainNames = globalOpts['domains'] || config.getDomainNames()
+  // -d 에 같은 도메인을 두 번 적으면 같은 작업을 두 번 실행하게 된다
+  const domainNames = [...new Set(globalOpts['domains'] || config.getDomainNames())]
   const skipUpload = globalOpts['drySync'] || false
   if (skipUpload) {
     log.warn(cmdName, '--dry-sync is deprecated. Use \'l10n download\' instead of \'l10n -n sync\'.')

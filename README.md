@@ -222,10 +222,11 @@ l10n migrate-keys --rollback <migrationId> --apply
 | `--rollback <migrationId>` | Roll back an applied migration. The server applies the rollback plan it stored when the migration was applied: it removes the id keys' claims, restores the source keys' claims and `context` metadata, and restores the tag settings. Copied translations and created id keys are kept. |
 | `--output <path>` | Write the server responses as JSON (per-item copied locales, conflicts, rollback plan). |
 
-Run it on the default branch after its sync has finished, while no sync of the tag is running. A resource the default
-branch sync has not uploaded fails with `source-key-not-found`. After applying, run the dry-run again: it should report
-`0 tag claims moved`; otherwise a sync that started before the migration claimed source keys again, and applying the same
-plan again moves them.
+Run it on a full checkout of the default branch after its sync has finished, while no sync of the tag is running. The
+Android extractor skips a module whose `strings.xml` is missing with only a warning, so a sparse checkout migrates part of
+the tag. A resource the default branch sync has not uploaded fails with `source-key-not-found`. After applying, run the
+dry-run again: it should report `0 tag claims moved`; otherwise a sync that started before the migration claimed source
+keys again, and applying the same plan again moves them.
 
 Use an `l10n-tools-syncer-l10n-storage` version at or above `--min-syncer-version`, and update the repository's CI to it
 before applying: after the migration the server rejects older syncers for the tag with `426`.
@@ -266,7 +267,7 @@ l10n --project-id "$CLONE" migrate-keys --min-syncer-version 1.6.0 --apply
 # 4. Compile from the clone without uploading. The compiled output must not differ from the baseline
 #    (Android: values-xx/ and values/ strings.xml)
 l10n --project-id "$CLONE" -n sync
-git diff --stat -- '*/values*/strings.xml'
+git diff --stat -- ':(glob)**/values*/strings.xml'
 
 # 5. Delete the clone and unstage the baseline
 curl -sS -X DELETE "$TPC_AGENT_URL/api/l10n/projects/$CLONE" -H "Authorization: Bearer $TPC_AGENT_TOKEN"

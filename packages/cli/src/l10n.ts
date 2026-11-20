@@ -445,6 +445,8 @@ async function run() {
           await fsp.writeFile(opts.output, JSON.stringify(outputs, null, 2) + '\n', { encoding: 'utf-8' })
         }
       }
+      // 적용한 뒤에 파일 쓰기가 실패해 나머지 도메인이 중단되지 않도록 요청 전에 쓸 수 있는지 확인한다
+      await writeOutput()
 
       if (opts.rollback != null) {
         if (opts.minSyncerVersion != null) {

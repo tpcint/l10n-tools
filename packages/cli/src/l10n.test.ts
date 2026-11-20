@@ -5,7 +5,7 @@ import fsp from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { readKeyEntries, writeKeyModeRecord, writeTransEntries } from 'l10n-tools-core'
+import { readKeyEntries, readKeyModeRecord, writeKeyModeRecord, writeTransEntries } from 'l10n-tools-core'
 
 // 동기화 대상에 접속하지 않는 명령을 실제 CLI 로 실행한다. 플러그인은 cwd 의 node_modules 에서 찾으므로
 // 임시 프로젝트에 리포의 node_modules 를 연결한다. 플러그인은 빌드된 dist 를 쓰므로 pretest 가 빌드한다.
@@ -86,6 +86,7 @@ describe('offline commands use the recorded key mode', () => {
     const result = runCli('update')
     assert.equal(result.status, 0, result.stderr)
     assert.deepEqual(await readExtractedKeys(), [{ context: 'greeting', key: 'Hello' }])
+    assert.equal(await readKeyModeRecord(domainCacheDir, 'app'), 'source')
     const koXml = await fsp.readFile(path.join(projectDir, 'res', 'values-ko', 'strings.xml'), { encoding: 'utf-8' })
     assert.doesNotMatch(koXml, /안녕하세요/)
   })
@@ -96,6 +97,15 @@ describe('offline commands use the recorded key mode', () => {
     const result = runCli('check')
     assert.equal(result.status, 0, result.stdout + result.stderr)
     assert.deepEqual(await readExtractedKeys(), [{ context: null, key: 'common_greeting' }])
+  })
+
+  it('update replaces a record of another tag with the key mode it extracted with', async () => {
+    await writeKeyModeRecord(domainCacheDir, 'web', 'id')
+
+    const result = runCli('update')
+    assert.equal(result.status, 0, result.stderr)
+    assert.deepEqual(await readExtractedKeys(), [{ context: 'greeting', key: 'Hello' }])
+    assert.equal(await readKeyModeRecord(domainCacheDir, 'app'), 'source')
   })
 
   it('check extracts with source key mode without a record', async () => {

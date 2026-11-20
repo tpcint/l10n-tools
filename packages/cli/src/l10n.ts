@@ -445,8 +445,11 @@ async function run() {
           await fsp.writeFile(opts.output, JSON.stringify(outputs, null, 2) + '\n', { encoding: 'utf-8' })
         }
       }
-      // 적용한 뒤에 파일 쓰기가 실패해 나머지 도메인이 중단되지 않도록 요청 전에 쓸 수 있는지 확인한다
-      await writeOutput()
+      // 적용한 뒤에 파일 쓰기가 실패해 나머지 도메인이 중단되지 않도록 요청 전에 쓸 수 있는지 확인한다.
+      // 실패한 실행이 이전 실행의 이관 id 를 지우지 않도록 내용은 수정하지 않는다.
+      if (opts.output != null) {
+        await (await fsp.open(opts.output, 'a')).close()
+      }
 
       if (opts.rollback != null) {
         if (opts.minSyncerVersion != null) {

@@ -495,15 +495,23 @@ async function run() {
 
       // 여러 도메인을 적용하면 이관 계획 오류도 모든 도메인을 dry-run 으로 확인한 뒤 적용한다
       if (!dryRun && domainKeys.length > 1) {
+        const failedTags: string[] = []
         for (const { domainName, config, domainConfig, sourceKeyEntries, idKeyEntries } of domainKeys) {
           log.heading = `[${domainName}] ${cmd.name()}`
           const tag = domainConfig.getTag()
           const result = await getKeyMigrationOrExit(cmd.name(), config)
             .migrate(config, domainConfig, tag, sourceKeyEntries, idKeyEntries, { dryRun: true, minSyncerVersion })
+          outputs.push({ domain: domainName, tag, response: result.response })
           if (result.errorCount > 0) {
-            throw new Error(`migration of tag ${tag} has ${result.errorCount} errors; nothing was applied`)
+            failedTags.push(tag)
           }
         }
+        if (failedTags.length > 0) {
+          await writeOutput()
+          log.error(cmd.name(), `migration of tags ${failedTags.join(', ')} has errors; nothing was applied`)
+          process.exit(1)
+        }
+        outputs.length = 0
       }
 
       for (const { domainName, config, domainConfig, sourceKeyEntries, idKeyEntries } of domainKeys) {
@@ -511,16 +519,17 @@ async function run() {
         const tag = domainConfig.getTag()
         const keyMigration = getKeyMigrationOrExit(cmd.name(), config)
         const result = await keyMigration.migrate(config, domainConfig, tag, sourceKeyEntries, idKeyEntries, { dryRun, minSyncerVersion })
-        outputs.push({ domain: domainName, tag, response: result.response })
-        await writeOutput()
-        // 되돌리기에 필요한 값이므로 -q 로 로그를 숨겨도 출력한다
+        // 되돌리기에 필요한 값이므로 -q 로 로그를 숨겨도, --output 파일 쓰기가 실패해도 출력한다
         if (result.migrationId != null) {
           process.stdout.write(`${result.migrationId}\n`)
         }
+        outputs.push({ domain: domainName, tag, response: result.response })
+        await writeOutput()
         if (result.errorCount > 0) {
           process.exitCode = 1
           if (!dryRun) {
-            throw new Error(`migration of tag ${tag} was rejected with ${result.errorCount} errors`)
+            log.error(cmd.name(), `migration of tag ${tag} was rejected with ${result.errorCount} errors`)
+            process.exit(1)
           }
         }
       }

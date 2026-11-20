@@ -185,7 +185,7 @@ export function formatKeyMigrationResponse(response: L10nKeyMigrationResponse, p
   return lines
 }
 
-/** 되돌리기는 이관한 프로젝트에 요청해야 하므로 rc 의 프로젝트가 아니어도 되도록 항상 지정한다 */
+/** 되돌리기는 이관한 프로젝트에 요청해야 하고 그 프로젝트는 rc 의 프로젝트와 다를 수 있으므로 항상 지정한다 */
 function rollbackCommand(projectId: string, migrationId: string): string {
   return `l10n --project-id ${projectId} migrate-keys --rollback ${migrationId}`
 }

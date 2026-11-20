@@ -242,6 +242,8 @@ compare them with `diff -r` in step 4. With `--project-id` the translation cache
 (`<cache-dir>/projects/<projectId>`), so the clone's output does not include translations cached from the production project.
 
 ```bash
+# curl does not read .env or the rc file: export the tpc-agent URL and the member token in the shell
+export TPC_AGENT_URL=<tpc-agent URL> TPC_AGENT_TOKEN=<member token>
 PROJECT=<projectId in .l10nrc>
 
 # 1. Baseline: compile from the production project without uploading, and stage the output

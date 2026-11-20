@@ -1,20 +1,8 @@
 import log from 'npmlog'
 import type { DomainConfig, KeyEntry, KeyMode, L10nConfig, SyncerKeyWarning } from 'l10n-tools-core'
-import { L10nStorageApiClient } from './api-client.js'
+import { createApiClient } from './api-client.js'
 import type { L10nKeyToServe, L10nSourceTextMatchResult } from './api-types.js'
 import { buildListedKeyMap, keyEntryKind, listedKeyId } from './l10n-storage.js'
-
-function createApiClient(config: L10nConfig): { apiClient: L10nStorageApiClient, projectId: string } {
-  const storageConfig = config.getL10nStorageConfig()
-  const token = process.env.TPC_AGENT_TOKEN
-  if (!token) {
-    throw new Error('TPC_AGENT_TOKEN environment variable is required')
-  }
-  return {
-    apiClient: new L10nStorageApiClient(storageConfig.getUrl(), token),
-    projectId: storageConfig.getProjectId(),
-  }
-}
 
 export async function keyModeForL10nStorage(
   config: L10nConfig,

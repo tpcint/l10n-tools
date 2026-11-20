@@ -192,6 +192,26 @@ describe('id key migration', () => {
     }
   })
 
+  // `l10n migrate-keys` 는 두 키 방식 추출 결과의 같은 참조 위치를 같은 리소스로 판정한다
+  it('records the same reference for a resource in both key modes', () => {
+    const idKeyByReference = new Map<string, string>()
+    for (const entry of idKeys) {
+      for (const ref of entry.references) {
+        const file = path.relative(idRoot, ref.file)
+        assert.ok(ref.loc != null)
+        assert.ok(!idKeyByReference.has(`${file}:${ref.loc}`))
+        idKeyByReference.set(`${file}:${ref.loc}`, entry.key)
+      }
+    }
+    for (const entry of sourceKeys) {
+      assert.equal(entry.references.length, 1)
+      const ref = entry.references[0]
+      const resourceName = entry.context!.split(':').at(-1)
+      assert.equal(idKeyByReference.get(`${path.relative(sourceRoot, ref.file)}:${ref.loc}`), resourceName)
+    }
+    assert.equal(idKeyByReference.size, sourceKeys.length)
+  })
+
   it('generates the same values-xx as source key mode', async () => {
     const sourceOutputs = await readOutputs(sourceRoot)
     const idOutputs = await readOutputs(idRoot)

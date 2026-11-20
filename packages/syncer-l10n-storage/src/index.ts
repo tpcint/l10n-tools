@@ -1,5 +1,6 @@
 import type { L10nPlugin } from 'l10n-tools-core'
 import { keyModeForL10nStorage, keyWarningsForL10nStorage } from './id-keys.js'
+import { migrateKeysInL10nStorage, rollbackKeyMigrationInL10nStorage } from './key-migration.js'
 import { syncTransToL10nStorage } from './l10n-storage.js'
 import { sourceFilterForL10nStorage } from './source-filter.js'
 
@@ -11,6 +12,10 @@ const plugin: L10nPlugin = {
     sourceFilter: sourceFilterForL10nStorage,
     keyMode: keyModeForL10nStorage,
     keyWarnings: keyWarningsForL10nStorage,
+    keyMigration: {
+      migrate: migrateKeysInL10nStorage,
+      rollback: rollbackKeyMigrationInL10nStorage,
+    },
   }],
 }
 

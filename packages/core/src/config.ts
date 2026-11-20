@@ -15,6 +15,8 @@ export type ProgramOptions = {
   drySync?: boolean,
   verbose?: boolean,
   quiet?: boolean,
+  /** rc 파일의 l10n-storage `projectId` 대신 쓸 프로젝트 */
+  projectId?: string,
 }
 
 const SyncTargetSchema = z.enum(['lokalise', 'l10n-storage'])
@@ -227,6 +229,18 @@ export function parseL10nConf(rc: unknown): L10nConf {
     throw new Error(`rc file is not valid\n${z.prettifyError(result.error)}`)
   }
   return result.data
+}
+
+/**
+ * rc 파일의 l10n-storage `projectId` 를 다른 프로젝트로 바꾼 설정을 반환한다.
+ * 이관 리허설처럼 복제 프로젝트에 같은 리포 설정으로 명령을 실행할 때 쓴다.
+ */
+export function overrideL10nStorageProjectId(rc: L10nConf, projectId: string): L10nConf {
+  const sc = rc['l10n-storage']
+  if (sc == null) {
+    throw new Error('--project-id requires l10n-storage in rc')
+  }
+  return { ...rc, 'l10n-storage': { ...sc, projectId } }
 }
 
 export class L10nConfig {

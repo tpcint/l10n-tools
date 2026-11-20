@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, it } from 'node:test'
 import assert from 'node:assert/strict'
-import { CompilerConfig, L10nStorageConfig } from './config.js'
+import { CompilerConfig, type L10nConf, L10nStorageConfig, overrideL10nStorageProjectId } from './config.js'
 
 describe('L10nStorageConfig', () => {
   const savedSpaceUrl = process.env.TPC_SPACE_URL
@@ -95,5 +95,22 @@ describe('CompilerConfig.getScanSrcDirs', () => {
       'scan-src-dirs': [],
     } as never)
     assert.throws(() => cc.getScanSrcDirs(), /must not be empty/)
+  })
+})
+
+describe('overrideL10nStorageProjectId', () => {
+  it('replaces only the l10n-storage projectId', () => {
+    const rc: L10nConf = {
+      'domains': {},
+      'sync-target': 'l10n-storage',
+      'l10n-storage': { projectId: 'prod', source: 'main' },
+    }
+    const overridden = overrideL10nStorageProjectId(rc, 'rehearsal')
+    assert.deepEqual(overridden['l10n-storage'], { projectId: 'rehearsal', source: 'main' })
+    assert.equal(rc['l10n-storage']?.projectId, 'prod')
+  })
+
+  it('throws when the rc file has no l10n-storage', () => {
+    assert.throws(() => overrideL10nStorageProjectId({ domains: {} }, 'rehearsal'), /requires l10n-storage/)
   })
 })

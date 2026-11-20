@@ -57,8 +57,13 @@ describe('PluginRegistry', () => {
           sourceFilter: async () => [],
           keyMode: async () => 'id',
           keyWarnings: async () => [],
+          keyMigration: {
+            migrate: async () => ({ migrationId: null, errorCount: 0, response: null }),
+            rollback: async () => ({ response: null }),
+          },
         }],
       }))
+      assert.notEqual(registry.getKeyMigration('l10n-storage'), undefined)
       const second = async () => {}
       registry.register(makePlugin({ name: 'second', syncers: [{ syncTarget: 'l10n-storage', syncer: second }] }))
 
@@ -66,6 +71,7 @@ describe('PluginRegistry', () => {
       assert.equal(registry.getSourceFilter('l10n-storage'), undefined)
       assert.equal(registry.getKeyModeResolver('l10n-storage'), undefined)
       assert.equal(registry.getKeyWarnings('l10n-storage'), undefined)
+      assert.equal(registry.getKeyMigration('l10n-storage'), undefined)
     })
 
     it('skips a plugin already registered with the same name', () => {

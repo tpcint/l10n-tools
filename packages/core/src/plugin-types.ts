@@ -164,6 +164,50 @@ export type SyncerKeyWarningsFunc = (
   keyEntries: KeyEntry[],
 ) => Promise<SyncerKeyWarning[]>
 
+export interface SyncerKeyMigrationOptions {
+  /** true 이면 동기화 대상이 계획만 계산하고 아무것도 기록하지 않는다 */
+  dryRun: boolean,
+  /** 이관을 적용한 뒤 태그에 지정할 syncer 최소 버전(semver) */
+  minSyncerVersion: string,
+}
+
+export interface SyncerKeyMigrationResult {
+  /** 적용한 이관의 id. dry-run 이거나 적용하지 못했으면 null */
+  migrationId: string | null,
+  /** 계획 오류 건수. 0 이 아니면 이관을 적용할 수 없다 */
+  errorCount: number,
+  /** 동기화 대상의 응답. CLI 가 `--output` 파일에 그대로 기록한다 */
+  response: unknown,
+}
+
+/**
+ * Optional capability: 태그를 공용 키 방식으로 전환하면서, 리소스마다 지금 쓰는 원문 키의 번역을 그 리소스의 공용 키로
+ * 복사한다. `sourceKeyEntries`·`idKeyEntries` 는 같은 리포 파일을 각각 원문 키 방식과 공용 키 방식으로 추출한 결과이고,
+ * 두 결과의 같은 참조 위치(`references`)가 같은 리소스다.
+ */
+export type SyncerKeyMigrationFunc = (
+  config: L10nConfig,
+  domainConfig: DomainConfig,
+  tag: string,
+  sourceKeyEntries: KeyEntry[],
+  idKeyEntries: KeyEntry[],
+  options: SyncerKeyMigrationOptions,
+) => Promise<SyncerKeyMigrationResult>
+
+/**
+ * Optional capability: 적용한 이관을 되돌린다. 응답은 CLI 가 `--output` 파일에 그대로 기록한다.
+ */
+export type SyncerKeyMigrationRollbackFunc = (
+  config: L10nConfig,
+  migrationId: string,
+  options: { dryRun: boolean },
+) => Promise<{ response: unknown }>
+
+export interface SyncerKeyMigration {
+  migrate: SyncerKeyMigrationFunc,
+  rollback: SyncerKeyMigrationRollbackFunc,
+}
+
 /**
  * Syncer plugin definition
  */
@@ -178,6 +222,8 @@ export interface SyncerPlugin {
   keyMode?: SyncerKeyModeFunc,
   /** Optional: PR 체크용 공용 키 경고 */
   keyWarnings?: SyncerKeyWarningsFunc,
+  /** Optional: 원문 키를 공용 키로 이관 (`l10n migrate-keys`) */
+  keyMigration?: SyncerKeyMigration,
 }
 
 /**

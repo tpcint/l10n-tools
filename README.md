@@ -178,8 +178,87 @@ Options:
   -n, --dry-sync                     Simulate sync without changes
   -v, --verbose                      Verbose output
   -q, --quiet                        Minimal output
+  --project-id <projectId>           Use this l10n-storage project instead of the one in the rc file
   -t, --tags <tags>                  Additional tags for keys (comma separated)
 ```
+
+### Migrate source keys to id keys (l10n-storage)
+
+`l10n migrate-keys` switches a resource-format tag (Android `strings.xml`, iOS `Info.plist`) from source keys to id keys
+without losing translations ([#484](https://github.com/tpcint/l10n-tools/issues/484)). The CLI extracts the repository files
+in both key modes, pairs each resource's id key with the source key it uses now, and sends the plan to l10n-storage, which
+applies it in one transaction:
+
+- creates the id key (or reuses an existing one) and copies the source key's confirmed translations and pending suggestions,
+  including the source locale
+- moves the `(tag, source)` claim and the resource's `context` metadata from the source key to the id key
+- sets the tag to `keyMode=id` with `--min-syncer-version`
+
+Only the claims of `l10n-storage.source` in the rc file (the default branch sync, usually `main`) are migrated. Claims of
+open pull requests (`PR-N`) stay on the source keys. Nothing is deleted and repository files are not changed: after the
+migration, compiling `values-xx/` gives the same output and `values/` is untouched.
+
+```bash
+# Dry-run (default): the server computes the plan, reports errors and conflicts, and writes nothing
+l10n migrate-keys --min-syncer-version 1.6.0 --output plan.json
+
+# Apply. Keep the migration id printed at the end
+l10n migrate-keys --min-syncer-version 1.6.0 --apply --output applied.json
+
+# Roll back: dry-run first, then apply
+l10n migrate-keys --rollback <migrationId>
+l10n migrate-keys --rollback <migrationId> --apply
+```
+
+| Option | Description |
+|--------|-------------|
+| `--apply` | Apply the migration or rollback. Without it the command is a dry-run. |
+| `--min-syncer-version <version>` | Minimum `l10n-tools-syncer-l10n-storage` version set on the tag. Older syncers are rejected for this tag after the migration. Required unless `--rollback`. |
+| `--rollback <migrationId>` | Roll back an applied migration. The server applies the rollback plan it stored when the migration was applied: it removes the id keys' claims, restores the source keys' claims and `context` metadata, and restores the tag settings. Copied translations and created id keys are kept. |
+| `--output <path>` | Write the server responses as JSON (per-item copied locales, conflicts, rollback plan). |
+
+Run it on the default branch after its sync has finished, while no sync of the tag is running. A resource the default
+branch sync has not uploaded fails with `source-key-not-found`. After applying, run the dry-run again: it should report
+`0 tag claims moved`; otherwise a sync that started before the migration claimed source keys again, and applying the same
+plan again moves them.
+
+Use an `l10n-tools-syncer-l10n-storage` version at or above `--min-syncer-version`, and update the repository's CI to it
+before applying: after the migration the server rejects older syncers for the tag with `426`.
+
+#### Rehearsal on a cloned project
+
+Before applying to the production project, clone it, migrate the clone, and compare the clone's compiled output with the
+production output. `--project-id` runs any command against the clone with the repository's rc file. Cloning and deleting a
+project require a member token in `TPC_AGENT_TOKEN`.
+
+```bash
+PROJECT=<projectId in .l10nrc>
+
+# 1. Baseline: compile from the production project without uploading, and stage the output
+l10n -n sync
+git add -A
+
+# 2. Clone the project and note project.id of the response
+curl -sS -X POST "$TPC_AGENT_URL/api/l10n/projects/$PROJECT/clone" \
+  -H "Authorization: Bearer $TPC_AGENT_TOKEN" -H 'Content-Type: application/json' \
+  -d '{"name": "rehearsal-20261120"}'
+CLONE=<project.id>
+
+# 3. Migrate the clone
+l10n --project-id "$CLONE" migrate-keys --min-syncer-version 1.6.0
+l10n --project-id "$CLONE" migrate-keys --min-syncer-version 1.6.0 --apply
+
+# 4. Compile from the clone without uploading. The compiled output must not differ from the baseline
+#    (Android: values-xx/ and values/ strings.xml)
+l10n --project-id "$CLONE" -n sync
+git diff --stat -- '*/values*/strings.xml'
+
+# 5. Delete the clone and unstage the baseline
+curl -sS -X DELETE "$TPC_AGENT_URL/api/l10n/projects/$CLONE" -H "Authorization: Bearer $TPC_AGENT_TOKEN"
+git reset
+```
+
+`-n sync` is used because it downloads and compiles with the tag's key mode without uploading; `download` does not compile.
 
 ## Internal commands
 

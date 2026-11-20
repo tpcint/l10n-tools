@@ -1,5 +1,19 @@
 # Changelog
 
+## [7.12.1](https://github.com/tpcint/l10n-tools/compare/l10n-tools-v7.12.0...l10n-tools-v7.12.1) (2026-11-20)
+
+
+### Bug Fixes
+
+* **cli:** 동기화 대상에 접속하지 않는 명령도 태그의 공용 키 방식으로 추출 ([#496](https://github.com/tpcint/l10n-tools/issues/496)) ([e2d0205](https://github.com/tpcint/l10n-tools/commit/e2d0205ab342e1aab34f8c61deed0c06f6331cb8))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * l10n-tools-core bumped from ^8.7.0 to ^8.7.1
+
 ## [7.12.0](https://github.com/tpcint/l10n-tools/compare/l10n-tools-v7.11.0...l10n-tools-v7.12.0) (2026-11-20)
 
 

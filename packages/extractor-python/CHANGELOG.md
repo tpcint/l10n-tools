@@ -1,5 +1,14 @@
 # Changelog
 
+## [7.0.21](https://github.com/tpcint/l10n-tools/compare/l10n-tools-extractor-python-v7.0.20...l10n-tools-extractor-python-v7.0.21) (2026-11-20)
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * peerDependencies
+    * l10n-tools-core bumped from ^8.7.0 to ^8.7.1
+
 ## [7.0.20](https://github.com/tpcint/l10n-tools/compare/l10n-tools-extractor-python-v7.0.19...l10n-tools-extractor-python-v7.0.20) (2026-11-20)
 
 

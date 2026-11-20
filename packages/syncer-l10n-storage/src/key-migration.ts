@@ -134,7 +134,7 @@ export function formatKeyMigrationErrors(errors: L10nKeyMigrationError[]): KeyMi
  * 이관 응답을 사람이 읽는 줄로 만든다. 오류·충돌·경고는 모두 출력하고, 항목별 복사 내역은 `--output` 파일에만 기록한다.
  * @internal exported for testing
  */
-export function formatKeyMigrationResponse(response: L10nKeyMigrationResponse): KeyMigrationLogLine[] {
+export function formatKeyMigrationResponse(response: L10nKeyMigrationResponse, projectId: string): KeyMigrationLogLine[] {
   const { summary } = response
   const prefix = response.dryRun ? '[dry-run] ' : ''
   const lines: KeyMigrationLogLine[] = [
@@ -171,15 +171,20 @@ export function formatKeyMigrationResponse(response: L10nKeyMigrationResponse): 
         + `retag ${plan.retag.length} source keys, restore ${plan.restoreMetadata.length} metadata, `
         + `tag settings back to ${formatTagSettings(plan.tagSettings)}`,
     })
-    lines.push({ level: 'info', message: `to roll back: l10n migrate-keys --rollback ${response.migrationId}` })
+    lines.push({ level: 'info', message: `to roll back: ${rollbackCommand(projectId, response.migrationId)}` })
   } else if (response.dryRun) {
     lines.push({
       level: 'info',
-      message: '[dry-run] applying this plan can be rolled back with \'l10n migrate-keys --rollback <migrationId>\': '
+      message: `[dry-run] applying this plan can be rolled back with '${rollbackCommand(projectId, '<migrationId>')}': `
         + `moved tag claims and contexts are restored and tag settings go back to ${formatTagSettings(response.tagSettings.before)}`,
     })
   }
   return lines
+}
+
+/** 되돌리기는 이관한 프로젝트에 요청해야 하므로 rc 의 프로젝트가 아니어도 되도록 항상 지정한다 */
+function rollbackCommand(projectId: string, migrationId: string): string {
+  return `l10n --project-id ${projectId} migrate-keys --rollback ${migrationId}`
 }
 
 /** @internal exported for testing */
@@ -217,8 +222,9 @@ export async function migrateKeysInL10nStorage(
   }
   const items = buildKeyMigrationItems(sourceKeyEntries, idKeyEntries)
   if (items.length === 0) {
-    log.warn('migrate-keys', `tag ${tag}: no resource uses an id key, nothing to migrate`)
-    return { migrationId: null, errorCount: 0, response: null }
+    // 추출기가 공용 키 방식을 지원하지 않는 도메인이다. 성공으로 끝내면 태그가 전환되지 않은 것을 알 수 없다.
+    log.error('migrate-keys', `tag ${tag}: no resource uses an id key; the extractor of this domain does not support id keys`)
+    return { migrationId: null, errorCount: 1, response: null }
   }
 
   const { apiClient, projectId } = createApiClient(config)
@@ -234,7 +240,7 @@ export async function migrateKeysInL10nStorage(
       items,
       tagSettings: { keyMode: 'id', minSyncerVersion: options.minSyncerVersion },
     })
-    writeLogLines(formatKeyMigrationResponse(response))
+    writeLogLines(formatKeyMigrationResponse(response, projectId))
     return { migrationId: response.migrationId, errorCount: response.errors.length, response }
   } catch (err) {
     if (err instanceof L10nKeyMigrationInvalidError) {

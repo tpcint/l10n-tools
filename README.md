@@ -184,15 +184,18 @@ Options:
 
 ### Migrate source keys to id keys (l10n-storage)
 
-`l10n migrate-keys` switches a resource-format tag (Android `strings.xml`, iOS `Info.plist`) from source keys to id keys
-without losing translations ([#484](https://github.com/tpcint/l10n-tools/issues/484)). The CLI extracts the repository files
-in both key modes, pairs each resource's id key with the source key it uses now, and sends the plan to l10n-storage, which
-applies it in one transaction:
+`l10n migrate-keys` switches a resource-format tag from source keys to id keys without losing translations
+([#484](https://github.com/tpcint/l10n-tools/issues/484)). The CLI extracts the repository files in both key modes, pairs
+each resource's id key with the source key it uses now, and sends the plan to l10n-storage, which applies it in one
+transaction:
 
 - creates the id key (or reuses an existing one) and copies the source key's confirmed translations and pending suggestions,
   including the source locale
 - moves the `(tag, source)` claim and the resource's `context` metadata from the source key to the id key
 - sets the tag to `keyMode=id` with `--min-syncer-version`
+
+It works for domains whose extractor supports id keys (currently Android `strings.xml`); for other domains it fails without
+sending anything. A tag used by several domains of the rc file is not supported.
 
 Only the claims of `l10n-storage.source` in the rc file (the default branch sync, usually `main`) are migrated. Claims of
 open pull requests (`PR-N`) stay on the source keys. Nothing is deleted and repository files are not changed: after the
@@ -230,6 +233,8 @@ before applying: after the migration the server rejects older syncers for the ta
 Before applying to the production project, clone it, migrate the clone, and compare the clone's compiled output with the
 production output. `--project-id` runs any command against the clone with the repository's rc file. Cloning and deleting a
 project require a member token in `TPC_AGENT_TOKEN`.
+
+Start from a clean working tree and index: step 1 stages the baseline and step 5 unstages everything.
 
 ```bash
 PROJECT=<projectId in .l10nrc>

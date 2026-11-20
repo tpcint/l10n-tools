@@ -760,19 +760,20 @@ async function runSubCommand(
     log.warn(cmdName, '--dry-sync is deprecated. Use \'l10n download\' instead of \'l10n -n sync\'.')
   }
 
-  const domainNameByTag = new Map<string, string>()
   for (const domainName of domainNames) {
     const domainConfig = config.getDomainConfig(domainName)
     if (domainConfig == null) {
       log.error(cmdName, `no config found for domain ${domainName}`)
       process.exit(1)
     }
-    const otherDomainName = domainNameByTag.get(domainConfig.getTag())
-    if (options?.uniqueTags && otherDomainName != null) {
-      log.error(cmdName, `domains ${otherDomainName} and ${domainName} share tag ${domainConfig.getTag()}, which ${cmdName} does not support`)
+    // -d 로 일부 도메인만 지정해도 rc 의 다른 도메인이 같은 태그를 쓰면 그 도메인의 리소스가 처리되지 않는다
+    const sharingDomainNames = config.getDomainNames()
+      .filter(name => name !== domainName && config.getDomainConfig(name)?.getTag() === domainConfig.getTag())
+    if (options?.uniqueTags && sharingDomainNames.length > 0) {
+      const sharing = sharingDomainNames.join(', ')
+      log.error(cmdName, `domain ${domainName} shares tag ${domainConfig.getTag()} with ${sharing}, which ${cmdName} does not support`)
       process.exit(1)
     }
-    domainNameByTag.set(domainConfig.getTag(), domainName)
   }
 
   for (const domainName of domainNames) {

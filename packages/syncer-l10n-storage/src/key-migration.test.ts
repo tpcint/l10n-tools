@@ -142,13 +142,13 @@ function migrationResponse(overrides: Partial<L10nKeyMigrationResponse> = {}): L
 
 describe('formatKeyMigrationResponse', () => {
   it('prints the summary, tag settings change and how to roll back for a dry-run', () => {
-    const lines = formatKeyMigrationResponse(migrationResponse())
+    const lines = formatKeyMigrationResponse(migrationResponse(), 'project-1')
 
     assert.deepEqual(lines.map(line => line.level), ['info', 'info', 'info'])
     assert.match(lines[0].message, /^\[dry-run\] 1 items: 1 id keys created, 0 reused, 2 translations and 0 suggestions copied/)
     assert.equal(lines[1].message,
       '[dry-run] tag android: keyMode=source, minSyncerVersion=null -> keyMode=id, minSyncerVersion=1.6.0')
-    assert.match(lines[2].message, /--rollback <migrationId>.*back to keyMode=source, minSyncerVersion=null/)
+    assert.match(lines[2].message, /'l10n --project-id project-1 migrate-keys --rollback <migrationId>'.*back to keyMode=source, minSyncerVersion=null/)
   })
 
   it('prints errors, conflicts and item warnings', () => {
@@ -163,7 +163,7 @@ describe('formatKeyMigrationResponse', () => {
     response.items[0].conflicts = [{ locale: 'en', status: 'confirmed', existing: { other: 'Publish' }, incoming: { other: 'Open' } }]
     response.items[0].warnings = ['source key is claimed by PR-12']
 
-    const lines = formatKeyMigrationResponse(response).filter(line => line.level !== 'info')
+    const lines = formatKeyMigrationResponse(response, 'project-1').filter(line => line.level !== 'info')
 
     assert.deepEqual(lines, [
       { level: 'error', message: '[source-key-not-found] items[0] publish_button <- "공개": source key not found' },
@@ -188,12 +188,12 @@ describe('formatKeyMigrationResponse', () => {
         restoreMetadata: [{ keyId: 'source-1', metaKey: 'context', metaValue: '["publish_button"]' }],
         tagSettings: { tag: 'android', keyMode: 'source', minSyncerVersion: null },
       },
-    }))
+    }), 'clone-project')
 
     assert.deepEqual(lines.slice(2).map(line => line.message), [
       'migration mig-1 applied. rollback plan: untag 1 id keys, retag 1 source keys, restore 1 metadata, '
       + 'tag settings back to keyMode=source, minSyncerVersion=null',
-      'to roll back: l10n migrate-keys --rollback mig-1',
+      'to roll back: l10n --project-id clone-project migrate-keys --rollback mig-1',
     ])
   })
 })
@@ -329,11 +329,11 @@ describe('key migration requests', () => {
     assert.equal(requests.length, 0)
   })
 
-  it('does not call the server when no resource uses an id key', async () => {
+  it('fails without calling the server when no resource uses an id key', async () => {
     const result = await migrateKeysInL10nStorage(buildConfig(), buildDomain(), 'android', sourceEntries,
       [{ ...sourceEntries[0] }], { dryRun: true, minSyncerVersion: '1.6.0' })
 
-    assert.deepEqual(result, { migrationId: null, errorCount: 0, response: null })
+    assert.deepEqual(result, { migrationId: null, errorCount: 1, response: null })
     assert.equal(requests.length, 0)
   })
 

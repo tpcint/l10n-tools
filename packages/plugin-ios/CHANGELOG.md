@@ -1,5 +1,19 @@
 # Changelog
 
+## [7.4.7](https://github.com/tpcint/l10n-tools/compare/l10n-tools-plugin-ios-v7.4.6...l10n-tools-plugin-ios-v7.4.7) (2026-11-20)
+
+
+### Miscellaneous Chores
+
+* **deps:** bump plist from 5.0.0 to 5.1.1 ([#492](https://github.com/tpcint/l10n-tools/issues/492)) ([2ae5901](https://github.com/tpcint/l10n-tools/commit/2ae590103d691d5d9d86b822b8bcdb5bd148ac9b))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * peerDependencies
+    * l10n-tools-core bumped from ^8.6.0 to ^8.7.0
+
 ## [7.4.6](https://github.com/tpcint/l10n-tools/compare/l10n-tools-plugin-ios-v7.4.5...l10n-tools-plugin-ios-v7.4.6) (2026-11-19)
 
 

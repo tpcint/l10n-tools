@@ -1,5 +1,24 @@
 # Changelog
 
+## [7.7.0](https://github.com/tpcint/l10n-tools/compare/l10n-tools-plugin-android-v7.6.1...l10n-tools-plugin-android-v7.7.0) (2026-11-20)
+
+
+### Miscellaneous Chores
+
+* **deps:** bump fast-xml-parser from 5.12.0 to 5.12.1 ([#493](https://github.com/tpcint/l10n-tools/issues/493)) ([0d701f9](https://github.com/tpcint/l10n-tools/commit/0d701f96817ce1eb3f8704d217f410d8370a769d))
+
+
+### Features
+
+* **cli:** 공용 키 이관 명령 migrate-keys 와 프로젝트 지정 옵션 추가 ([#494](https://github.com/tpcint/l10n-tools/issues/494)) ([d742042](https://github.com/tpcint/l10n-tools/commit/d742042f01a47bf0e982f45b34b29bb84474938b))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * peerDependencies
+    * l10n-tools-core bumped from ^8.6.0 to ^8.7.0
+
 ## [7.6.1](https://github.com/tpcint/l10n-tools/compare/l10n-tools-plugin-android-v7.6.0...l10n-tools-plugin-android-v7.6.1) (2026-11-19)
 
 

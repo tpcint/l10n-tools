@@ -1,5 +1,12 @@
 # Changelog
 
+## [8.7.0](https://github.com/tpcint/l10n-tools/compare/l10n-tools-core-v8.6.0...l10n-tools-core-v8.7.0) (2026-11-20)
+
+
+### Features
+
+* **cli:** 공용 키 이관 명령 migrate-keys 와 프로젝트 지정 옵션 추가 ([#494](https://github.com/tpcint/l10n-tools/issues/494)) ([d742042](https://github.com/tpcint/l10n-tools/commit/d742042f01a47bf0e982f45b34b29bb84474938b))
+
 ## [8.6.0](https://github.com/tpcint/l10n-tools/compare/l10n-tools-core-v8.5.0...l10n-tools-core-v8.6.0) (2026-11-19)
 
 

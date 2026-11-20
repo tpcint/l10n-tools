@@ -1,5 +1,12 @@
 # Changelog
 
+## [8.6.0](https://github.com/tpcint/l10n-tools/compare/l10n-tools-core-v8.5.0...l10n-tools-core-v8.6.0) (2026-11-19)
+
+
+### Features
+
+* **syncer-l10n-storage:** 공용 키 방식 태그의 sync 지원 ([#489](https://github.com/tpcint/l10n-tools/issues/489)) ([52dbb3f](https://github.com/tpcint/l10n-tools/commit/52dbb3f3d0297fa53e1b19b4ade2564f6fe6bcd3))
+
 ## [8.5.0](https://github.com/tpcint/l10n-tools/compare/l10n-tools-core-v8.4.3...l10n-tools-core-v8.5.0) (2026-11-19)
 
 

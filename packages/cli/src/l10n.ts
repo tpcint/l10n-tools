@@ -490,6 +490,8 @@ async function run() {
           const idKeyEntries = await readKeyEntries(idKeysPath)
           if (!idKeyEntries.some(entry => entry.idKey != null)) {
             log.error(cmd.name(), `domain ${domainName}: no resource uses an id key; the extractor of this domain does not support id keys`)
+            // process.exit 는 finally 를 실행하지 않는다
+            await fsp.rm(tempDir, { recursive: true, force: true })
             process.exit(1)
           }
           domainKeys.push({ domainName, config, domainConfig, sourceKeyEntries: await readKeyEntries(sourceKeysPath), idKeyEntries })

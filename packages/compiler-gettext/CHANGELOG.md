@@ -1,5 +1,14 @@
 # Changelog
 
+## [7.2.10](https://github.com/tpcint/l10n-tools/compare/l10n-tools-compiler-gettext-v7.2.9...l10n-tools-compiler-gettext-v7.2.10) (2026-11-20)
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * peerDependencies
+    * l10n-tools-core bumped from ^8.6.0 to ^8.7.0
+
 ## [7.2.9](https://github.com/tpcint/l10n-tools/compare/l10n-tools-compiler-gettext-v7.2.8...l10n-tools-compiler-gettext-v7.2.9) (2026-11-19)
 
 

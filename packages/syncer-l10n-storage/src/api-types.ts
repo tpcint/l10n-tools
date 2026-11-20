@@ -118,3 +118,116 @@ export interface L10nSyncerUpgradeRequiredPayload {
   minSyncerVersion: string,
   requestVersion: string | null,
 }
+
+export interface L10nKeyMigrationItemInput {
+  idKeyName: string,
+  sourceKeyName: string,
+  /** 원문 키의 태그 context 메타데이터 중 이 리소스에 해당하는 항목. 최대 10개 */
+  contexts: string[],
+}
+
+export interface L10nKeyMigrationInput {
+  dryRun: boolean,
+  tag: string,
+  source: string,
+  items: L10nKeyMigrationItemInput[],
+  tagSettings: { keyMode: 'id', minSyncerVersion: string },
+}
+
+export interface L10nKeyMigrationSummary {
+  items: number,
+  idKeysCreated: number,
+  idKeysReused: number,
+  translationsCopied: number,
+  suggestionsCopied: number,
+  conflicts: number,
+  tagsMoved: number,
+}
+
+export interface L10nKeyMigrationConflict {
+  locale: string,
+  status: 'confirmed' | 'suggestion',
+  /** 공용 키에 이미 있던 값 (유지) */
+  existing: Record<string, string>,
+  /** 원문 키의 같은 종류 값 (복사하지 않음) */
+  incoming: Record<string, string> | null,
+}
+
+export interface L10nKeyMigrationItemResult {
+  idKeyName: string,
+  idKeyId: string | null,
+  idKeyCreated: boolean,
+  sourceKeyId: string,
+  sourceKeyName: string,
+  translationsCopied: string[],
+  suggestionsCopied: string[],
+  conflicts: L10nKeyMigrationConflict[],
+  tagMoved: boolean,
+  contextsMoved: string[],
+  warnings: string[],
+}
+
+export type L10nKeyMigrationErrorReason =
+  | 'source-key-not-found'
+  | 'plural-mismatch'
+  | 'duplicate-id-key-name'
+  | 'id-key-tag-conflict'
+
+export interface L10nKeyMigrationError {
+  /** 요청 `items` 배열의 위치 */
+  index: number,
+  idKeyName: string,
+  sourceKeyName: string,
+  reason: L10nKeyMigrationErrorReason,
+  message: string,
+}
+
+export interface L10nKeyMigrationTagSettingsChange {
+  before: L10nTagSyncSettings,
+  after: L10nTagSyncSettings,
+}
+
+export interface L10nKeyMigrationKeyTagRef {
+  keyId: string,
+  source: string,
+}
+
+export interface L10nKeyMigrationRollbackPlan {
+  migrationId: string,
+  tag: string,
+  untag: L10nKeyMigrationKeyTagRef[],
+  retag: L10nKeyMigrationKeyTagRef[],
+  restoreMetadata: { keyId: string, metaKey: string, metaValue: string | null }[],
+  tagSettings: L10nTagSyncSettings,
+}
+
+export interface L10nKeyMigrationResponse {
+  migrationId: string | null,
+  dryRun: boolean,
+  summary: L10nKeyMigrationSummary,
+  items: L10nKeyMigrationItemResult[],
+  /** dry-run 에서만 채워진다. 실제 적용에서 오류가 있으면 400 으로 거부된다 */
+  errors: L10nKeyMigrationError[],
+  tagSettings: L10nKeyMigrationTagSettingsChange,
+  rollbackPlan: L10nKeyMigrationRollbackPlan | null,
+}
+
+export interface L10nKeyMigrationInvalidPayload {
+  errors: L10nKeyMigrationError[],
+}
+
+export interface L10nKeyMigrationRollbackInput {
+  migrationId: string,
+  dryRun: boolean,
+}
+
+export interface L10nKeyMigrationRollbackResponse {
+  dryRun: boolean,
+  migrationId: string,
+  untagged: number,
+  retagged: number,
+  metadataRestored: number,
+  tagSettings: L10nKeyMigrationTagSettingsChange,
+  /** 이미 되돌려져 있거나 키가 없어 건너뛴 항목 */
+  warnings: string[],
+}

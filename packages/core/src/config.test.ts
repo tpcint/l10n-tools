@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, it } from 'node:test'
 import assert from 'node:assert/strict'
-import { CompilerConfig, L10nStorageConfig } from './config.js'
+import path from 'node:path'
+import { CompilerConfig, type L10nConf, L10nStorageConfig, overrideL10nStorageProjectId } from './config.js'
 
 describe('L10nStorageConfig', () => {
   const savedSpaceUrl = process.env.TPC_SPACE_URL
@@ -95,5 +96,28 @@ describe('CompilerConfig.getScanSrcDirs', () => {
       'scan-src-dirs': [],
     } as never)
     assert.throws(() => cc.getScanSrcDirs(), /must not be empty/)
+  })
+})
+
+describe('overrideL10nStorageProjectId', () => {
+  it('replaces the l10n-storage projectId and separates the cache of each domain by project', () => {
+    const rc: L10nConf = {
+      'domains': {
+        app: { type: 'android', tag: 'android', locales: ['en'], outputs: [] },
+        web: { 'type': 'vue-i18n', 'tag': 'web', 'locales': ['en'], 'outputs': [], 'cache-dir': 'l10n-cache' },
+      },
+      'sync-target': 'l10n-storage',
+      'l10n-storage': { projectId: 'prod', source: 'main' },
+    }
+    const overridden = overrideL10nStorageProjectId(rc, 'rehearsal')
+    assert.deepEqual(overridden['l10n-storage'], { projectId: 'rehearsal', source: 'main' })
+    assert.equal(overridden.domains['app']['cache-dir'], path.join('.l10n-tools', 'projects', 'rehearsal'))
+    assert.equal(overridden.domains['web']['cache-dir'], path.join('l10n-cache', 'projects', 'rehearsal'))
+    assert.equal(rc['l10n-storage']?.projectId, 'prod')
+    assert.equal(rc.domains['app']['cache-dir'], undefined)
+  })
+
+  it('throws when the rc file has no l10n-storage', () => {
+    assert.throws(() => overrideL10nStorageProjectId({ domains: {} }, 'rehearsal'), /requires l10n-storage/)
   })
 })

@@ -13,14 +13,17 @@ import {
   fileExists,
   getKeysPath,
   getTransPath,
+  type KeyEntry,
   type KeyMode,
   L10nConfig,
   materializeSnapshotsToTempDir,
+  overrideL10nStorageProjectId,
   parseL10nConf,
   pluginRegistry,
   type ProgramOptions,
   readKeyEntries,
   readTransEntries,
+  type SyncerKeyMigration,
   type SyncerKeySnapshot,
   type SyncerKeyWarning,
   type SyncerOptions,
@@ -30,6 +33,7 @@ import {
 } from 'l10n-tools-core'
 import * as path from 'path'
 import fsp from 'node:fs/promises'
+import os from 'node:os'
 import { cosmiconfig } from 'cosmiconfig'
 import { fileURLToPath } from 'url'
 
@@ -127,6 +131,7 @@ async function run() {
     .option('-n, --dry-sync', 'skip actual sync')
     .option('-v, --verbose', 'log verbose')
     .option('-q, --quiet', 'be quiet')
+    .option('--project-id <projectId>', 'use this l10n-storage project instead of the one in the rc file (e.g. a cloned project for a migration rehearsal)')
     .on('--help', () => {
       console.info('\nRC file:\n  refer to [L10nConf] type or see \'l10nrc.schema.json\'')
     })
@@ -419,6 +424,124 @@ async function run() {
       }
     })
 
+  type MigrateKeysOptions = {
+    apply?: boolean,
+    minSyncerVersion?: string,
+    rollback?: string,
+    output?: string,
+  }
+  program.command('migrate-keys')
+    .description('Copy translations of the source keys each resource uses to its id key and switch the tag to id key mode '
+      + '(l10n-storage, resource formats only). Dry-run unless --apply is given')
+    .option('--apply', 'apply the migration (or rollback); without it the server only computes the plan')
+    .option('--min-syncer-version <version>', 'minimum syncer version to set on the tag after migration (required unless --rollback)')
+    .option('--rollback <migrationId>', 'roll back an applied migration instead of migrating')
+    .option('--output <path>', 'write the server responses as JSON')
+    .action(async (opts: MigrateKeysOptions, cmd: Command) => {
+      const dryRun = !opts.apply
+      const outputs: unknown[] = []
+      const writeOutput = async () => {
+        if (opts.output != null) {
+          await fsp.writeFile(opts.output, JSON.stringify(outputs, null, 2) + '\n', { encoding: 'utf-8' })
+        }
+      }
+      // 적용한 뒤에 파일 쓰기가 실패해 나머지 도메인이 중단되지 않도록 요청 전에 쓸 수 있는지 확인한다.
+      // 실패한 실행이 이전 실행의 이관 id 를 지우지 않도록 내용은 수정하지 않는다.
+      if (opts.output != null) {
+        await (await fsp.open(opts.output, 'a')).close()
+      }
+
+      if (opts.rollback != null) {
+        if (opts.minSyncerVersion != null) {
+          log.error(cmd.name(), '--min-syncer-version cannot be used with --rollback')
+          process.exit(1)
+        }
+        const config = await loadCommandConfig(cmd.name())
+        const keyMigration = getKeyMigrationOrExit(cmd.name(), config)
+        const { response } = await keyMigration.rollback(config, opts.rollback, { dryRun })
+        outputs.push({ migrationId: opts.rollback, response })
+        await writeOutput()
+        return
+      }
+
+      if (opts.minSyncerVersion == null) {
+        log.error(cmd.name(), '--min-syncer-version is required')
+        process.exit(1)
+      }
+      const minSyncerVersion = opts.minSyncerVersion
+      // 한 도메인을 적용한 뒤 다른 도메인에서 실패하지 않도록, 모든 도메인을 추출해 검사한 뒤 요청한다
+      type DomainKeys = {
+        domainName: string,
+        config: L10nConfig,
+        domainConfig: DomainConfig,
+        sourceKeyEntries: KeyEntry[],
+        idKeyEntries: KeyEntry[],
+      }
+      const domainKeys: DomainKeys[] = []
+      await runSubCommand(cmd.name(), async (domainName, config, domainConfig) => {
+        getKeyMigrationOrExit(cmd.name(), config)
+        // 리포 파일을 두 키 방식으로 각각 추출한다. 캐시의 keys 파일은 수정하지 않는다.
+        const tempDir = await fsp.mkdtemp(path.join(os.tmpdir(), 'l10n-migrate-keys-'))
+        try {
+          const sourceKeysPath = getKeysPath(path.join(tempDir, 'source'))
+          const idKeysPath = getKeysPath(path.join(tempDir, 'id'))
+          await extractKeys(domainName, domainConfig, sourceKeysPath, { keyMode: 'source' })
+          await extractKeys(domainName, domainConfig, idKeysPath, { keyMode: 'id' })
+          const idKeyEntries = await readKeyEntries(idKeysPath)
+          if (!idKeyEntries.some(entry => entry.idKey != null)) {
+            log.error(cmd.name(), `domain ${domainName}: no resource uses an id key; the extractor of this domain does not support id keys`)
+            // process.exit 는 finally 를 실행하지 않는다
+            await fsp.rm(tempDir, { recursive: true, force: true })
+            process.exit(1)
+          }
+          domainKeys.push({ domainName, config, domainConfig, sourceKeyEntries: await readKeyEntries(sourceKeysPath), idKeyEntries })
+        } finally {
+          await fsp.rm(tempDir, { recursive: true, force: true })
+        }
+      }, { uniqueTags: true })
+
+      // 여러 도메인을 적용하면 이관 계획 오류도 모든 도메인을 dry-run 으로 확인한 뒤 적용한다
+      if (!dryRun && domainKeys.length > 1) {
+        const failedTags: string[] = []
+        for (const { domainName, config, domainConfig, sourceKeyEntries, idKeyEntries } of domainKeys) {
+          log.heading = `[${domainName}] ${cmd.name()}`
+          const tag = domainConfig.getTag()
+          const result = await getKeyMigrationOrExit(cmd.name(), config)
+            .migrate(config, domainConfig, tag, sourceKeyEntries, idKeyEntries, { dryRun: true, minSyncerVersion })
+          outputs.push({ domain: domainName, tag, response: result.response })
+          if (result.errorCount > 0) {
+            failedTags.push(tag)
+          }
+        }
+        if (failedTags.length > 0) {
+          await writeOutput()
+          log.error(cmd.name(), `migration of tags ${failedTags.join(', ')} has errors; nothing was applied`)
+          process.exit(1)
+        }
+        outputs.length = 0
+      }
+
+      for (const { domainName, config, domainConfig, sourceKeyEntries, idKeyEntries } of domainKeys) {
+        log.heading = `[${domainName}] ${cmd.name()}`
+        const tag = domainConfig.getTag()
+        const keyMigration = getKeyMigrationOrExit(cmd.name(), config)
+        const result = await keyMigration.migrate(config, domainConfig, tag, sourceKeyEntries, idKeyEntries, { dryRun, minSyncerVersion })
+        // 되돌리기에 필요한 값이므로 -q 로 로그를 숨겨도, --output 파일 쓰기가 실패해도 출력한다
+        if (result.migrationId != null) {
+          process.stdout.write(`${result.migrationId}\n`)
+        }
+        outputs.push({ domain: domainName, tag, response: result.response })
+        await writeOutput()
+        if (result.errorCount > 0) {
+          process.exitCode = 1
+          if (!dryRun) {
+            log.error(cmd.name(), `migration of tag ${tag} was rejected with ${result.errorCount} errors`)
+            process.exit(1)
+          }
+        }
+      }
+    })
+
   type ExtractKeysOptions = {
     keysDir?: string,
   }
@@ -651,7 +774,8 @@ async function run() {
   program.parse(process.argv)
 }
 
-async function runSubCommand(cmdName: string, action: (domainName: string, config: L10nConfig, domainConfig: DomainConfig, skipUpload: boolean) => Promise<void>) {
+/** 로그 수준을 지정하고 rc 파일을 읽는다. 도메인을 순회하지 않는 명령도 같은 전역 옵션을 따른다 */
+async function loadCommandConfig(cmdName: string): Promise<L10nConfig> {
   log.heading = cmdName
 
   const globalOpts = program.opts<ProgramOptions>()
@@ -661,8 +785,28 @@ async function runSubCommand(cmdName: string, action: (domainName: string, confi
     log.level = 'warn'
   }
 
-  const config = await loadConfig(globalOpts['rcfile'] || '.l10nrc')
-  const domainNames = globalOpts['domains'] || config.getDomainNames()
+  return await loadConfig(globalOpts['rcfile'] || '.l10nrc', globalOpts['projectId'])
+}
+
+function getKeyMigrationOrExit(cmdName: string, config: L10nConfig): SyncerKeyMigration {
+  const syncTarget = config.getSyncTarget()
+  const keyMigration = pluginRegistry.getKeyMigration(syncTarget)
+  if (!keyMigration) {
+    log.error(cmdName, `key migration is not supported by sync target '${syncTarget}'`)
+    process.exit(1)
+  }
+  return keyMigration
+}
+
+async function runSubCommand(
+  cmdName: string,
+  action: (domainName: string, config: L10nConfig, domainConfig: DomainConfig, skipUpload: boolean) => Promise<void>,
+  options?: { uniqueTags?: boolean },
+) {
+  const globalOpts = program.opts<ProgramOptions>()
+  const config = await loadCommandConfig(cmdName)
+  // -d 에 같은 도메인을 두 번 적으면 같은 작업을 두 번 실행하게 된다
+  const domainNames = [...new Set(globalOpts['domains'] || config.getDomainNames())]
   const skipUpload = globalOpts['drySync'] || false
   if (skipUpload) {
     log.warn(cmdName, '--dry-sync is deprecated. Use \'l10n download\' instead of \'l10n -n sync\'.')
@@ -674,15 +818,36 @@ async function runSubCommand(cmdName: string, action: (domainName: string, confi
       log.error(cmdName, `no config found for domain ${domainName}`)
       process.exit(1)
     }
+    // -d 로 일부 도메인만 지정해도 rc 의 다른 도메인이 같은 태그를 쓰면 그 도메인의 리소스가 처리되지 않는다
+    const sharingDomainNames = config.getDomainNames()
+      .filter(name => name !== domainName && config.getDomainConfig(name)?.getTag() === domainConfig.getTag())
+    if (options?.uniqueTags && sharingDomainNames.length > 0) {
+      const sharing = sharingDomainNames.join(', ')
+      log.error(cmdName, `domain ${domainName} shares tag ${domainConfig.getTag()} with ${sharing}, which ${cmdName} does not support`)
+      process.exit(1)
+    }
+  }
+
+  for (const domainName of domainNames) {
+    const domainConfig = config.getDomainConfig(domainName)!
     log.heading = `[${domainName}] ${cmdName}`
     await action(domainName, config, domainConfig, skipUpload)
   }
 }
 
-async function loadConfig(rcPath: string): Promise<L10nConfig> {
+async function loadConfig(rcPath: string, projectId: string | undefined): Promise<L10nConfig> {
   const explorer = cosmiconfig('l10n')
   const rc = await explorer.load(rcPath)
-  return new L10nConfig(parseL10nConf(rc?.config))
+  const conf = parseL10nConf(rc?.config)
+  if (projectId == null) {
+    return new L10nConfig(conf)
+  }
+  const config = new L10nConfig(overrideL10nStorageProjectId(conf, projectId))
+  if (config.getSyncTarget() !== 'l10n-storage') {
+    throw new Error(`--project-id requires sync target l10n-storage, but it is ${config.getSyncTarget()}`)
+  }
+  log.warn('l10n', `using l10n-storage project ${projectId} instead of ${conf['l10n-storage']?.projectId} in ${rcPath}`)
+  return config
 }
 
 try {

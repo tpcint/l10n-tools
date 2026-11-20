@@ -1,3 +1,4 @@
+import path from 'node:path'
 import { z } from 'zod'
 
 // Objects are strict so that a mistyped key in the rc file is reported as an error
@@ -15,6 +16,8 @@ export type ProgramOptions = {
   drySync?: boolean,
   verbose?: boolean,
   quiet?: boolean,
+  /** rc 파일의 l10n-storage `projectId` 대신 쓸 프로젝트 */
+  projectId?: string,
 }
 
 const SyncTargetSchema = z.enum(['lokalise', 'l10n-storage'])
@@ -229,6 +232,25 @@ export function parseL10nConf(rc: unknown): L10nConf {
   return result.data
 }
 
+const DEFAULT_CACHE_DIR = '.l10n-tools'
+
+/**
+ * rc 파일의 l10n-storage `projectId` 를 다른 프로젝트로 바꾼 설정을 반환한다.
+ * 이관 리허설처럼 복제 프로젝트에 같은 리포 설정으로 명령을 실행할 때 쓴다.
+ * 번역 캐시는 프로젝트마다 분리한다. 공유하면 다른 프로젝트의 번역이 컴파일 결과에 섞이고 sync 가 그 번역을 업로드한다.
+ */
+export function overrideL10nStorageProjectId(rc: L10nConf, projectId: string): L10nConf {
+  const sc = rc['l10n-storage']
+  if (sc == null) {
+    throw new Error('--project-id requires l10n-storage in rc')
+  }
+  const domains = Object.fromEntries(Object.entries(rc.domains).map(([name, dc]) => [name, {
+    ...dc,
+    'cache-dir': path.join(dc['cache-dir'] ?? DEFAULT_CACHE_DIR, 'projects', projectId),
+  }]))
+  return { ...rc, domains, 'l10n-storage': { ...sc, projectId } }
+}
+
 export class L10nConfig {
   private readonly rc: L10nConf
   constructor(rc: L10nConf) {
@@ -322,7 +344,7 @@ export class DomainConfig {
   }
 
   getCacheDir(): string {
-    return this.dc['cache-dir'] ?? '.l10n-tools'
+    return this.dc['cache-dir'] ?? DEFAULT_CACHE_DIR
   }
 
   // for ios only

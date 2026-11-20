@@ -1,10 +1,17 @@
 import { readFileSync } from 'node:fs'
 import log from 'npmlog'
 import { chunk } from 'es-toolkit/compat'
+import type { L10nConfig } from 'l10n-tools-core'
 import type {
   CreateL10nKeyInput,
   FindKeysBySourceTextsInput,
   FindKeysBySourceTextsResponse,
+  L10nKeyMigrationError,
+  L10nKeyMigrationInput,
+  L10nKeyMigrationInvalidPayload,
+  L10nKeyMigrationResponse,
+  L10nKeyMigrationRollbackInput,
+  L10nKeyMigrationRollbackResponse,
   L10nKeyToServe,
   L10nSourceTextMatchResult,
   L10nSyncerUpgradeRequiredPayload,
@@ -46,29 +53,70 @@ export class L10nSyncerUpgradeRequiredError extends L10nStorageApiError {
   }
 }
 
-function parseUpgradeRequired(text: string): L10nSyncerUpgradeRequiredError | null {
+/** 이관 계획에 오류가 있어 서버가 아무것도 기록하지 않고 400 으로 거부했다 */
+export class L10nKeyMigrationInvalidError extends L10nStorageApiError {
+  readonly errors: L10nKeyMigrationError[]
+
+  constructor(desc: string, errors: L10nKeyMigrationError[]) {
+    super(400, desc)
+    this.name = 'L10nKeyMigrationInvalidError'
+    this.errors = errors
+  }
+}
+
+interface ApiErrorBody {
+  name: string,
+  desc: string,
+  /** 오류마다 정한 payload 를 JSON 으로 직렬화한 문자열 */
+  payload: unknown,
+}
+
+/** 서버 오류 응답에서 `name`·`desc` 와 JSON 으로 해석한 `payload` 를 읽는다. 형식이 다르면 null */
+function parseApiErrorBody(text: string): ApiErrorBody | null {
   let body: { name?: unknown, desc?: unknown, payload?: unknown }
   try {
     body = JSON.parse(text) as typeof body
   } catch {
     return null
   }
-  if (body.name !== 'L10nSyncerUpgradeRequired' || typeof body.desc !== 'string') {
+  if (typeof body.name !== 'string' || typeof body.desc !== 'string') {
     return null
   }
-  let payload: L10nSyncerUpgradeRequiredPayload | null = null
+  let payload: unknown = null
   if (typeof body.payload === 'string') {
     try {
-      payload = JSON.parse(body.payload) as L10nSyncerUpgradeRequiredPayload
+      payload = JSON.parse(body.payload)
     } catch {
       payload = null
     }
   }
-  return new L10nSyncerUpgradeRequiredError(body.desc, payload)
+  return { name: body.name, desc: body.desc, payload }
+}
+
+function parseUpgradeRequired(text: string): L10nSyncerUpgradeRequiredError | null {
+  const body = parseApiErrorBody(text)
+  if (body == null || body.name !== 'L10nSyncerUpgradeRequired') {
+    return null
+  }
+  return new L10nSyncerUpgradeRequiredError(body.desc, body.payload as L10nSyncerUpgradeRequiredPayload | null)
+}
+
+function parseKeyMigrationInvalid(text: string): L10nKeyMigrationInvalidError | null {
+  const body = parseApiErrorBody(text)
+  if (body == null || body.name !== 'L10nKeyMigrationInvalid') {
+    return null
+  }
+  const errors = (body.payload as L10nKeyMigrationInvalidPayload | null)?.errors
+  return new L10nKeyMigrationInvalidError(body.desc, Array.isArray(errors) ? errors : [])
 }
 
 /** `POST /keys/by-source-texts` 의 `texts` 상한 */
 const SOURCE_TEXTS_LIMIT = 1000
+
+const DEFAULT_TIMEOUT_MS = 30_000
+
+/** 이관·되돌리기는 항목 수천 건을 한 트랜잭션으로 적용하므로 일반 요청보다 오래 기다린다 */
+const KEY_MIGRATION_TIMEOUT_MS = 10 * 60_000
 
 export class L10nStorageApiClient {
   private readonly baseUrl: string
@@ -79,13 +127,13 @@ export class L10nStorageApiClient {
     this.token = token
   }
 
-  private async request<T>(method: string, path: string, body?: unknown): Promise<T> {
+  private async request<T>(method: string, path: string, body?: unknown, timeoutMs = DEFAULT_TIMEOUT_MS): Promise<T> {
     const url = `${this.baseUrl}${path}`
     log.verbose('l10n-storage-api', `${method} ${url}`)
     const controller = new AbortController()
     const timeout = setTimeout(() => {
       controller.abort()
-    }, 30_000)
+    }, timeoutMs)
     let res: Response
     try {
       res = await fetch(url, {
@@ -108,6 +156,12 @@ export class L10nStorageApiClient {
         if (upgradeRequired) {
           log.error('l10n-storage', upgradeRequired.message)
           throw upgradeRequired
+        }
+      }
+      if (res.status === 400) {
+        const migrationInvalid = parseKeyMigrationInvalid(text)
+        if (migrationInvalid) {
+          throw migrationInvalid
         }
       }
       throw new L10nStorageApiError(res.status, `L10n Storage API error: ${res.status} ${res.statusText} - ${text}`)
@@ -207,11 +261,47 @@ export class L10nStorageApiClient {
     return results
   }
 
+  /**
+   * 원문 키를 공용 키로 이관한다. dry-run 이 아닌 요청에 계획 오류가 있으면 {@link L10nKeyMigrationInvalidError} 가
+   * 발생하며 서버는 아무것도 기록하지 않는다.
+   */
+  async migrateKeys(projectId: string, input: L10nKeyMigrationInput): Promise<L10nKeyMigrationResponse> {
+    return await this.request<L10nKeyMigrationResponse>(
+      'POST',
+      `/api/l10n/projects/${projectId}/key-migrations`,
+      input,
+      KEY_MIGRATION_TIMEOUT_MS,
+    )
+  }
+
+  /** 적용한 이관을 서버가 저장한 되돌리기 계획으로 되돌린다 */
+  async rollbackKeyMigration(projectId: string, input: L10nKeyMigrationRollbackInput): Promise<L10nKeyMigrationRollbackResponse> {
+    return await this.request<L10nKeyMigrationRollbackResponse>(
+      'POST',
+      `/api/l10n/projects/${projectId}/key-migrations/rollback`,
+      input,
+      KEY_MIGRATION_TIMEOUT_MS,
+    )
+  }
+
   async createKeys(projectId: string, keys: CreateL10nKeyInput[]): Promise<void> {
     await this.request('POST', `/api/l10n/projects/${projectId}/keys`, { keys })
   }
 
   async updateKeys(projectId: string, keys: UpdateL10nKeyInput[]): Promise<void> {
     await this.request('PUT', `/api/l10n/projects/${projectId}/keys`, { keys })
+  }
+}
+
+/** rc 설정의 l10n-storage 프로젝트에 `TPC_AGENT_TOKEN` 으로 접속하는 클라이언트 */
+export function createApiClient(config: L10nConfig): { apiClient: L10nStorageApiClient, projectId: string } {
+  const storageConfig = config.getL10nStorageConfig()
+  const token = process.env.TPC_AGENT_TOKEN
+  if (!token) {
+    throw new Error('TPC_AGENT_TOKEN environment variable is required')
+  }
+  return {
+    apiClient: new L10nStorageApiClient(storageConfig.getUrl(), token),
+    projectId: storageConfig.getProjectId(),
   }
 }

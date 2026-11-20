@@ -7,6 +7,7 @@ import type {
   L10nPlugin,
   PluginFactory,
   SyncerFunc,
+  SyncerKeyMigration,
   SyncerKeyModeFunc,
   SyncerKeyWarningsFunc,
   SyncerSourceFilterFunc,
@@ -85,6 +86,7 @@ export class PluginRegistry {
   private sourceFilters = new Map<string, SyncerSourceFilterFunc>()
   private keyModeResolvers = new Map<string, SyncerKeyModeFunc>()
   private keyWarningsFuncs = new Map<string, SyncerKeyWarningsFunc>()
+  private keyMigrations = new Map<string, SyncerKeyMigration>()
   private initialized = false
   private initPromise: Promise<void> | null = null
 
@@ -202,6 +204,7 @@ export class PluginRegistry {
       setOrDelete(this.sourceFilters, sync.syncTarget, sync.sourceFilter)
       setOrDelete(this.keyModeResolvers, sync.syncTarget, sync.keyMode)
       setOrDelete(this.keyWarningsFuncs, sync.syncTarget, sync.keyWarnings)
+      setOrDelete(this.keyMigrations, sync.syncTarget, sync.keyMigration)
     }
   }
 
@@ -245,6 +248,13 @@ export class PluginRegistry {
    */
   getKeyWarnings(syncTarget: string): SyncerKeyWarningsFunc | undefined {
     return this.keyWarningsFuncs.get(syncTarget)
+  }
+
+  /**
+   * Get the key migration functions for a sync target (optional capability)
+   */
+  getKeyMigration(syncTarget: string): SyncerKeyMigration | undefined {
+    return this.keyMigrations.get(syncTarget)
   }
 
   /**

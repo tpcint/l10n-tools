@@ -17,6 +17,11 @@ export type {
   SyncerKeyModeFunc,
   SyncerKeyWarning,
   SyncerKeyWarningsFunc,
+  SyncerKeyMigration,
+  SyncerKeyMigrationFunc,
+  SyncerKeyMigrationOptions,
+  SyncerKeyMigrationResult,
+  SyncerKeyMigrationRollbackFunc,
 } from './plugin-types.js'
 
 export { pluginRegistry } from './plugin-registry.js'
@@ -37,6 +42,7 @@ export {
   type L10nConf,
   L10nConfSchema,
   parseL10nConf,
+  overrideL10nStorageProjectId,
 } from './config.js'
 
 // Entry types and utilities

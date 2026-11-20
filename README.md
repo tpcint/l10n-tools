@@ -240,14 +240,17 @@ Start from a clean working tree and index: step 1 stages the baseline and step 5
 outputs with git, so it assumes the compiled outputs are tracked; if they are ignored, copy them aside after step 1 and
 compare them with `diff -r` in step 4. With `--project-id` the translation cache is kept per project
 (`<cache-dir>/projects/<projectId>`), so the clone's output does not include translations cached from the production project.
+The baseline also uses `--project-id` with the production project so that both start from an empty cache; delete
+`<cache-dir>/projects` left from an earlier rehearsal first.
 
 ```bash
 # curl does not read .env or the rc file: export the tpc-agent URL and the member token in the shell
 export TPC_AGENT_URL=<tpc-agent URL> TPC_AGENT_TOKEN=<member token>
 PROJECT=<projectId in .l10nrc>
 
-# 1. Baseline: compile from the production project without uploading, and stage the output
-l10n -n sync
+# 1. Baseline: compile from the production project with an empty cache without uploading, and stage the output
+rm -rf .l10n-tools/projects   # <cache-dir>/projects
+l10n --project-id "$PROJECT" -n sync
 git add -A
 
 # 2. Clone the project and note project.id of the response

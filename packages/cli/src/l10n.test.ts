@@ -8,7 +8,7 @@ import { fileURLToPath } from 'node:url'
 import { readKeyEntries, writeKeyModeRecord, writeTransEntries } from 'l10n-tools-core'
 
 // 동기화 대상에 접속하지 않는 명령을 실제 CLI 로 실행한다. 플러그인은 cwd 의 node_modules 에서 찾으므로
-// 임시 프로젝트에 리포의 node_modules 를 연결한다. 플러그인은 빌드된 dist 를 쓴다.
+// 임시 프로젝트에 리포의 node_modules 를 연결한다. 플러그인은 빌드된 dist 를 쓰므로 pretest 가 빌드한다.
 const cliDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const repoDir = path.resolve(cliDir, '..', '..')
 const cliPath = path.join(cliDir, 'src', 'l10n.ts')

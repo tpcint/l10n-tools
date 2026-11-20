@@ -5,7 +5,7 @@ import type { KeyMode } from './plugin-types.js'
 import { isErrnoException } from './utils.js'
 
 /**
- * 동기화 대상에서 조회한 태그의 키 방식을 도메인 캐시 디렉토리에 기록한 파일.
+ * 도메인 캐시 디렉토리의 keys 파일을 추출한 키 방식을 기록한 파일.
  * 동기화 대상에 접속하지 않는 명령이 이 값으로 추출·컴파일해야 캐시의 keys·trans 파일과 같은 키 방식을 쓴다.
  */
 type KeyModeRecord = {
@@ -24,8 +24,8 @@ export async function writeKeyModeRecord(domainCacheDir: string, tag: string, ke
 }
 
 /**
- * 기록된 키 방식을 반환한다. 기록이 없거나, 읽을 수 없거나, 다른 태그의 기록이면 null 이다.
- * 읽을 수 없는 기록과 다른 태그의 기록은 경고를 출력한다.
+ * 기록된 키 방식을 반환한다. 기록이 없거나, 형식이 잘못됐거나, 다른 태그의 기록이면 null 이다.
+ * 형식이 잘못된 기록과 다른 태그의 기록은 경고를 출력한다. 파일 읽기 오류는 다른 캐시 파일처럼 전파한다.
  */
 export async function readKeyModeRecord(domainCacheDir: string, tag: string): Promise<KeyMode | null> {
   const recordPath = getKeyModeRecordPath(domainCacheDir)
@@ -43,7 +43,7 @@ export async function readKeyModeRecord(domainCacheDir: string, tag: string): Pr
   try {
     record = JSON.parse(input) as Partial<KeyModeRecord> | null
   } catch {
-    // 아래에서 읽을 수 없는 기록으로 처리한다
+    // 아래에서 형식이 잘못된 기록으로 처리한다
   }
   if (record == null || typeof record !== 'object' || (record.keyMode !== 'source' && record.keyMode !== 'id')) {
     log.warn('l10n', `ignoring invalid key mode record ${recordPath}`)

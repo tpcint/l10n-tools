@@ -10,6 +10,7 @@
   "scripts": {
     "build": "tsc",
     "watch": "tsc -w",
+    "pretest": "tsc -b ../plugin-android ../syncer-l10n-storage",
     "test": "tsx --conditions source --test \"src/**/*.test.ts\""
   },
   "bin": {

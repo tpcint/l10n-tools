@@ -1,6 +1,6 @@
 {
   "name": "l10n-tools-plugin-ios",
-  "version": "7.4.8",
+  "version": "7.4.9",
   "description": "l10n-tools plugin for iOS platform",
   "type": "module",
   "engines": {
@@ -28,7 +28,7 @@
     "i18n-strings-files": "^2.0.0",
     "npmlog": "^7.0.1",
     "p-queue": "^10.0.0",
-    "plist": "^5.1.2",
+    "plist": "^5.1.1",
     "tinyglobby": "^0.2.17"
   },
   "devDependencies": {
